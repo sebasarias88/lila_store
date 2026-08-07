@@ -5,7 +5,7 @@ import { Check } from 'lucide-react'
 type Step = 'carrito' | 'datos' | 'resumen'
 
 const STEPS: { id: Step; label: string }[] = [
-  { id: 'carrito', label: 'Carrito' },
+  { id: 'carrito', label: 'Bolsita' },
   { id: 'datos', label: 'Datos' },
   { id: 'resumen', label: 'Confirmar' },
 ]

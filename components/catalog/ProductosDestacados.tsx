@@ -15,7 +15,7 @@ export default function ProductosDestacados({
     <ProductosCarousel
       productos={productos}
       catalogType={catalogType}
-      eyebrow="Selección"
+      eyebrow="Lo más cute 💕"
       title={
         <>
           Productos <span className="catalog-section-accent">destacados</span>
@@ -24,6 +24,9 @@ export default function ProductosDestacados({
       description="Piezas que enamoran: lo más pedido de la tienda ✨"
       verMasHref={catalogPath(catalogType, '/productos')}
       verMasLabel="Ver catálogo"
+      layout="grid"
+      sectionId="destacados"
+      muted
     />
   )
 }

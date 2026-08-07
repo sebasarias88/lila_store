@@ -50,7 +50,7 @@ export default function MobileCatalogToolbar({
             spellCheck={false}
             value={inputValue}
             onChange={e => onInputChange(e.target.value)}
-            placeholder="Buscar productos…"
+            placeholder="Busca tu favorito… ✨"
             className="min-w-0 flex-1 bg-transparent py-0 pl-1 pr-2 text-[15px] font-medium text-[var(--text-primary)] outline-none placeholder:text-[var(--placeholder)]"
           />
           {inputValue ? (

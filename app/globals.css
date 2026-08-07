@@ -2,16 +2,16 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg-base: #FFF7FA;
+  --color-bg-base: #F9F6FF;
   --color-bg-surface: #FFFFFF;
-  --color-bg-muted: #FCEEF5;
-  --color-accent-primary: #E888B5;
-  --color-accent-primary-hover: #D66FA0;
-  --color-accent-secondary: #B79CE8;
-  --color-accent-deep: #9C4B7C;
-  --color-text-primary: #2A1F2E;
-  --color-text-muted: #6F5C74;
-  --color-border: #F3D9E8;
+  --color-bg-muted: #F0EAFB;
+  --color-accent-primary: #A989E0;
+  --color-accent-primary-hover: #9472D4;
+  --color-accent-secondary: #E8A0C8;
+  --color-accent-deep: #6E4FA8;
+  --color-text-primary: #2A2240;
+  --color-text-muted: #6B6080;
+  --color-border: #E6DCF5;
   --color-success: #8FD9B6;
   --color-warning: #F4C77A;
   --color-danger: #E8798A;
@@ -21,22 +21,22 @@
   --radius-md: 20px;
   --radius-lg: 28px;
   --radius-pill: 999px;
-  --shadow-soft: 0 8px 24px -8px rgba(232, 136, 181, 0.25);
+  --shadow-soft: 0 8px 24px -8px rgba(169, 137, 224, 0.28);
 }
 
-/* ── lila-store — cosmetic pink/lilac theme ── */
+/* ── lila-store — lilac-first (sweet pink secondary) ── */
 :root {
   /* Core design tokens */
-  --bg-base: #FFF7FA;
+  --bg-base: #F9F6FF;
   --bg-surface: #FFFFFF;
-  --bg-muted: #FCEEF5;
-  --accent-primary: #E888B5;
-  --accent-primary-hover: #D66FA0;
-  --accent-secondary: #B79CE8;
-  --accent-deep: #9C4B7C;
-  --text-primary: #2A1F2E;
-  --text-muted: #6F5C74;
-  --border: #F3D9E8;
+  --bg-muted: #F0EAFB;
+  --accent-primary: #A989E0;
+  --accent-primary-hover: #9472D4;
+  --accent-secondary: #E8A0C8;
+  --accent-deep: #6E4FA8;
+  --text-primary: #2A2240;
+  --text-muted: #6B6080;
+  --border: #E6DCF5;
   --success: #8FD9B6;
   --warning: #F4C77A;
   --danger: #E8798A;
@@ -51,45 +51,45 @@
   --gold-bright: var(--accent-secondary);
   --gold-hover: var(--accent-primary-hover);
   --gold-light: var(--bg-muted);
-  --gold-muted: #FDF3F8;
+  --gold-muted: #F5F0FC;
   --gold-subtle: var(--accent-primary);
 
   --bg-card: var(--bg-surface);
-  --bg-footer: #FDF2F7;
+  --bg-footer: #F3EEFC;
   --bg-inverse: var(--text-primary);
   --bg-overlay: rgba(255, 255, 255, 0.97);
   --bg-glass: rgba(255, 255, 255, 0.92);
 
-  --text-secondary: #4A3B4E;
-  --text-subtle: #7A687F;
-  --text-faint: #968499;
+  --text-secondary: #453A58;
+  --text-subtle: #75688A;
+  --text-faint: #9186A3;
   --text-on-gold: #FFFFFF;
   --text-inverse: #FFFFFF;
 
   --border-subtle: var(--border);
-  --border-input: #EDCADE;
-  --border-strong: #EABFD6;
+  --border-input: #D9CCEF;
+  --border-strong: #CDBCE8;
   --border-card: var(--border);
 
   --placeholder: var(--text-muted);
-  --navbar-bg: rgba(255, 247, 250, 0.96);
+  --navbar-bg: rgba(249, 246, 255, 0.96);
 
-  --glow-gold: rgba(232, 136, 181, 0.14);
-  --glow-gold-strong: rgba(183, 156, 232, 0.2);
-  --shadow-soft: 0 8px 24px -8px rgba(232, 136, 181, 0.25);
+  --glow-gold: rgba(169, 137, 224, 0.16);
+  --glow-gold-strong: rgba(232, 160, 200, 0.22);
+  --shadow-soft: 0 8px 24px -8px rgba(169, 137, 224, 0.28);
   --shadow-card: var(--shadow-soft);
-  --shadow-card-hover: 0 12px 30px -8px rgba(232, 136, 181, 0.34);
-  --shadow-dropdown: 0 14px 36px -10px rgba(156, 75, 124, 0.25);
+  --shadow-card-hover: 0 12px 30px -8px rgba(169, 137, 224, 0.36);
+  --shadow-dropdown: 0 14px 36px -10px rgba(110, 79, 168, 0.28);
 
-  --overlay-backdrop: rgba(58, 46, 61, 0.38);
+  --overlay-backdrop: rgba(42, 34, 64, 0.4);
   --overlay-image: linear-gradient(
     to top,
-    rgba(58, 46, 61, 0.7) 0%,
-    rgba(58, 46, 61, 0.05) 55%,
+    rgba(42, 34, 64, 0.7) 0%,
+    rgba(42, 34, 64, 0.05) 55%,
     transparent 100%
   );
-  --badge-agotado-bg: rgba(156, 75, 124, 0.9);
-  --badge-oferta-bg: rgba(252, 238, 245, 0.94);
+  --badge-agotado-bg: rgba(110, 79, 168, 0.9);
+  --badge-oferta-bg: rgba(240, 234, 251, 0.94);
 }
 
 * {
@@ -136,7 +136,7 @@ button:disabled {
 ::-webkit-scrollbar-thumb:hover { background: var(--text-subtle); }
 
 ::selection {
-  background: rgba(232, 136, 181, 0.28);
+  background: rgba(169, 137, 224, 0.28);
   color: var(--text-primary);
 }
 
@@ -373,15 +373,15 @@ button:disabled {
   color: var(--text-primary);
   color-scheme: light;
   border-radius: var(--radius-sm);
-  box-shadow: inset 0 1px 2px rgba(156, 75, 124, 0.04);
+  box-shadow: inset 0 1px 2px rgba(110, 79, 168, 0.04);
 }
 
 .admin-input:focus,
 .admin-select:focus {
   border-color: color-mix(in srgb, var(--accent-primary) 65%, var(--border));
   box-shadow:
-    inset 0 1px 2px rgba(156, 75, 124, 0.03),
-    0 0 0 3px rgba(232, 136, 181, 0.18);
+    inset 0 1px 2px rgba(110, 79, 168, 0.03),
+    0 0 0 3px rgba(169, 137, 224, 0.18);
   outline: none;
 }
 
@@ -451,7 +451,7 @@ button:disabled {
   left: -5rem;
   width: 18rem;
   height: 18rem;
-  background: rgba(232, 136, 181, 0.08);
+  background: rgba(232, 160, 200, 0.1);
 }
 
 .admin-login__glow--lilac {
@@ -459,7 +459,7 @@ button:disabled {
   bottom: -5rem;
   width: 20rem;
   height: 20rem;
-  background: rgba(183, 156, 232, 0.08);
+  background: rgba(169, 137, 224, 0.12);
 }
 
 .admin-login__blob {
@@ -758,7 +758,7 @@ button:disabled {
   font-size: 0.9375rem;
   font-weight: 700;
   color: #ffffff;
-  box-shadow: 0 8px 24px -8px rgba(156, 75, 124, 0.45);
+  box-shadow: 0 8px 24px -8px rgba(110, 79, 168, 0.45);
   transition:
     background-color 0.2s ease,
     transform 0.2s ease,
@@ -882,7 +882,7 @@ button:disabled {
 .admin-upload-zone--active {
   border-color: var(--accent-secondary);
   background: color-mix(in srgb, var(--accent-primary) 10%, var(--bg-surface));
-  box-shadow: 0 0 0 3px rgba(232, 136, 181, 0.16);
+  box-shadow: 0 0 0 3px rgba(169, 137, 224, 0.16);
 }
 
 @media (max-width: 767px) {
@@ -2119,8 +2119,8 @@ header nav a {
   --bg-muted: #F3F2F4;
   --bg-surface: #FFFFFF;
   background:
-    radial-gradient(ellipse 70% 45% at 8% 0%, rgba(183, 156, 232, 0.08), transparent 55%),
-    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(232, 136, 181, 0.06), transparent 50%),
+    radial-gradient(ellipse 70% 45% at 8% 0%, rgba(169, 137, 224, 0.1), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(232, 160, 200, 0.08), transparent 50%),
     var(--bg-base);
 }
 
@@ -2323,7 +2323,7 @@ header nav a {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(232, 136, 181, 0.72),
+    rgba(169, 137, 224, 0.72),
     transparent
   );
 }

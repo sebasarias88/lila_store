@@ -102,8 +102,8 @@ function MobileProductRow({
 }) {
   const BadgeIcon = badgeTone === 'success' ? CheckCircle2 : XCircle
   return (
-    <div className="flex items-center gap-3 border-b border-[rgba(232,136,181,0.1)] px-4 py-3 last:border-b-0">
-      <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-[rgba(232,136,181,0.18)] bg-[var(--bg-muted)]">
+    <div className="flex items-center gap-3 border-b border-[rgba(169,137,224,0.1)] px-4 py-3 last:border-b-0">
+      <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-lg border border-[rgba(169,137,224,0.18)] bg-[var(--bg-muted)]">
         {imagen ? (
           <img src={imagen} alt={nombre} className="h-full w-full bg-white object-cover" />
         ) : null}
@@ -137,7 +137,7 @@ export default function MobileDashboardView({
     <div className="mobile-admin-page px-4 pb-10 md:hidden">
       <div className="mb-5 flex items-end justify-between gap-3">
         <div>
-          <p className="text-[10px] tracking-normal text-[rgba(232,136,181,0.82)]">Panel</p>
+          <p className="text-[10px] tracking-normal text-[rgba(169,137,224,0.82)]">Panel</p>
           <p className="mt-1 capitalize text-[12px] font-light text-[var(--text-muted)]">{hoy}</p>
           {destacados > 0 ? (
             <p className="mt-1 text-[11px] text-[var(--text-subtle)]">
@@ -148,7 +148,7 @@ export default function MobileDashboardView({
         <Link
           href="/"
           target="_blank"
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-[rgba(232,136,181,0.35)] px-3 py-2 text-[10px] uppercase tracking-[0.8px] text-[var(--accent-primary)]"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-[rgba(169,137,224,0.35)] px-3 py-2 text-[10px] uppercase tracking-[0.8px] text-[var(--accent-primary)]"
         >
           <ExternalLink size={12} />
           Tienda
@@ -175,7 +175,7 @@ export default function MobileDashboardView({
       </div>
 
       <MobileSectionTitle title="Accesos rápidos" />
-      <div className="mobile-admin-panel mb-6 overflow-hidden rounded-xl border border-[rgba(232,136,181,0.22)] bg-[var(--bg-card)]">
+      <div className="mobile-admin-panel mb-6 overflow-hidden rounded-xl border border-[rgba(169,137,224,0.22)] bg-[var(--bg-card)]">
         {acciones.map(({ href, label, desc, iconKey }) => {
           const Icon = ACCION_ICONS[iconKey]
           return (
@@ -200,7 +200,7 @@ export default function MobileDashboardView({
           ) : undefined
         }
       />
-      <div className="mobile-admin-panel mb-6 overflow-hidden rounded-xl border border-[rgba(232,136,181,0.22)] bg-[var(--bg-card)]">
+      <div className="mobile-admin-panel mb-6 overflow-hidden rounded-xl border border-[rgba(169,137,224,0.22)] bg-[var(--bg-card)]">
         {productosAgotados.length > 0 ? (
           productosAgotados.map(p => (
             <Link key={p.id} href="/admin/productos">
@@ -233,7 +233,7 @@ export default function MobileDashboardView({
               </Link>
             }
           />
-          <div className="mobile-admin-panel overflow-hidden rounded-xl border border-[rgba(232,136,181,0.22)] bg-[var(--bg-card)]">
+          <div className="mobile-admin-panel overflow-hidden rounded-xl border border-[rgba(169,137,224,0.22)] bg-[var(--bg-card)]">
             {productosRecientes.map(p => {
               const cat = resolveCategoria(p.categoria)
               return (

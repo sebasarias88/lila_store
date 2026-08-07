@@ -15,16 +15,18 @@ export default function ProductosNovedades({
     <ProductosCarousel
       productos={productos}
       catalogType={catalogType}
-      eyebrow="Recién llegados"
+      eyebrow="Recién llegados ✨"
       title={
         <>
           Nuevos <span className="catalog-section-accent">en catálogo</span>
         </>
       }
-      description="Lo último en belleza para explorar 💕"
+      description="Lo último en belleza para consentirte 💕"
       verMasHref={catalogPath(catalogType, '/productos')}
       verMasLabel="Ver más"
       sectionId="novedades"
+      layout="carousel"
+      muted
     />
   )
 }

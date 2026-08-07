@@ -242,7 +242,7 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
                     <button
                       type="button"
                       onClick={() => handleGuardarNombreTipo(tipo.id)}
-                      className="rounded-lg p-2 text-[var(--accent-secondary)] hover:bg-[rgba(232,136,181,0.12)]"
+                      className="rounded-lg p-2 text-[var(--accent-secondary)] hover:bg-[rgba(169,137,224,0.12)]"
                       aria-label="Guardar nombre"
                     >
                       <Check size={14} />
@@ -260,7 +260,7 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
                       setEditingTipoId(tipo.id)
                       setEditTipoNombre(tipo.nombre)
                     }}
-                    className="rounded-lg p-2 text-[var(--text-muted)] hover:bg-[rgba(232,136,181,0.1)] hover:text-[var(--accent-secondary)]"
+                    className="rounded-lg p-2 text-[var(--text-muted)] hover:bg-[rgba(169,137,224,0.1)] hover:text-[var(--accent-secondary)]"
                     aria-label="Editar tipo"
                   >
                     <Pencil size={14} />
@@ -283,7 +283,7 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
                       key={opcion.id}
                       className={`inline-flex items-center gap-2 rounded-lg border px-2.5 py-1.5 ${
                         opcion.disponible
-                          ? 'border-[rgba(232,136,181,0.3)] bg-[rgba(232,136,181,0.08)]'
+                          ? 'border-[rgba(169,137,224,0.3)] bg-[rgba(169,137,224,0.08)]'
                           : 'border-[var(--border-subtle)] bg-[rgba(248,246,241,0.04)] opacity-60'
                       }`}
                     >
@@ -358,7 +358,7 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
                       type="text"
                       value={getNewOpcion(tipo.id).valor_color}
                       onChange={e => setNewOpcion(tipo.id, { valor_color: e.target.value })}
-                      placeholder="#E888B5"
+                      placeholder="#A989E0"
                       className={`${inputClass} py-2`}
                     />
                   </div>
@@ -380,7 +380,7 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
 
       <div className="admin-form-panel p-4 sm:p-5">
         <div className="mb-4 flex items-center gap-2.5">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[rgba(232,136,181,0.28)] bg-[rgba(232,136,181,0.1)] text-[var(--accent-secondary)]">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[rgba(169,137,224,0.28)] bg-[rgba(169,137,224,0.1)] text-[var(--accent-secondary)]">
             <Plus size={15} />
           </span>
           <p className="admin-form-section-title">Nuevo tipo de variación</p>

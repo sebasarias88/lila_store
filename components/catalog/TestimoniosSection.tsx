@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Heart, Quote } from 'lucide-react'
+import { Heart, Quote, Sparkles } from 'lucide-react'
 import HorizontalCarousel from '@/components/ui/HorizontalCarousel'
 
 const TESTIMONIOS = [
@@ -37,6 +37,14 @@ const TESTIMONIOS = [
   },
 ] as const
 
+const CARD_TINTS = [
+  'from-[#FBF8FF] to-[#EEE8FC]',
+  'from-[#F9F6FF] to-[#F0EAFB]',
+  'from-[#F5F0FC] to-[#E8E0FA]',
+  'from-[#FBF8FF] to-[#F3EBFF]',
+  'from-[#F9F6FF] to-[#F8EAF4]',
+]
+
 function Stars() {
   return (
     <div className="flex gap-0.5" aria-hidden>
@@ -51,8 +59,11 @@ function Stars() {
 
 export default function TestimoniosSection() {
   return (
-    <section className="bg-[var(--bg-muted)] py-12 sm:py-14">
-      <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
+    <section className="relative overflow-hidden bg-[var(--bg-base)] py-12 sm:py-14">
+      <div className="pointer-events-none absolute -left-8 top-12 h-40 w-40 rounded-full bg-[rgba(169,137,224,0.14)] blur-3xl" />
+      <div className="pointer-events-none absolute -right-10 bottom-8 h-44 w-44 rounded-full bg-[rgba(232,160,200,0.12)] blur-3xl" />
+
+      <div className="relative mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -60,17 +71,17 @@ export default function TestimoniosSection() {
           transition={{ duration: 0.55 }}
           className="mb-10 text-center"
         >
-          <div className="mb-4 flex items-center justify-center gap-2">
-            <Heart size={14} className="fill-[var(--accent-primary)] text-[var(--accent-primary)]" />
-            <span className="catalog-eyebrow">Testimonios</span>
-            <Heart size={14} className="fill-[var(--accent-primary)] text-[var(--accent-primary)]" />
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[var(--bg-muted)] px-3.5 py-1.5">
+            <Heart size={13} className="fill-[var(--accent-primary)] text-[var(--accent-primary)]" />
+            <span className="text-[12px] font-bold text-[var(--accent-deep)]">Testimonios</span>
+            <Sparkles size={13} className="text-[var(--accent-secondary)]" />
           </div>
-          <h2 className="catalog-section-title text-[1.85rem] sm:text-[2.15rem]">
+          <h2 className="text-[1.85rem] font-bold text-[var(--text-primary)] sm:text-[2.15rem]">
             Lo que dicen{' '}
-            <span className="catalog-section-accent">nuestras clientas</span>
+            <span className="text-[var(--accent-primary)]">nuestras clientas</span>
           </h2>
-          <p className="mx-auto mt-3 max-w-md text-[14px] catalog-lead leading-relaxed">
-            Historias reales de quienes ya compraron ✨
+          <p className="mx-auto mt-3 max-w-md text-[14px] font-medium leading-relaxed text-[var(--text-secondary)]">
+            Historias cute de quienes ya compraron 💕
           </p>
         </motion.div>
 
@@ -85,7 +96,7 @@ export default function TestimoniosSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.05, duration: 0.45 }}
-              className="flex h-full flex-col rounded-[20px] border border-[var(--border)] bg-[var(--bg-surface)] p-6 shadow-[var(--shadow-soft)] sm:p-7"
+              className={`flex h-full flex-col rounded-[24px] border border-[var(--border)] bg-gradient-to-br ${CARD_TINTS[i % CARD_TINTS.length]} p-6 shadow-[var(--shadow-soft)] sm:p-7`}
             >
               <Quote
                 size={22}
@@ -96,7 +107,7 @@ export default function TestimoniosSection() {
               <p className="mt-4 flex-1 text-[14px] font-medium leading-[1.75] text-[var(--text-secondary)]">
                 “{t.texto}”
               </p>
-              <div className="mt-6 border-t border-[var(--border)] pt-4">
+              <div className="mt-6 border-t border-[color-mix(in_srgb,var(--accent-primary)_18%,var(--border))] pt-4">
                 <p className="text-[14px] font-bold text-[var(--text-primary)]">
                   {t.nombre}
                 </p>

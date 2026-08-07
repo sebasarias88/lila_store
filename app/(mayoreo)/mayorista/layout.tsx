@@ -5,6 +5,7 @@ import PageTransition from '@/components/catalog/PageTransition'
 import NavigationProgress from '@/components/catalog/NavigationProgress'
 import FloatingWhatsApp from '@/components/catalog/FloatingWhatsApp'
 import { formatPrecio, MAYOREO_MIN_COMPRA, MAYOREO_RECOMPRA } from '@/lib/catalog'
+import { resolveWhatsAppNumero } from '@/lib/negocio'
 
 export default async function MayoreoLayout({
   children,
@@ -61,11 +62,11 @@ export default async function MayoreoLayout({
       </main>
       <Footer
         nombreNegocio="lila-store"
-        whatsapp={config['whatsapp_numero'] || '573185867702'}
+        whatsapp={resolveWhatsAppNumero(config['whatsapp_numero'])}
         catalogType="mayoreo"
       />
       <FloatingWhatsApp
-        whatsapp={config['whatsapp_numero'] || '573185867702'}
+        whatsapp={resolveWhatsAppNumero(config['whatsapp_numero'])}
         catalogType="mayoreo"
       />
     </div>

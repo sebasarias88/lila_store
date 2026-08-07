@@ -9,9 +9,11 @@ import ProductosNovedades from '@/components/catalog/ProductosNovedades'
 import TestimoniosSection from '@/components/catalog/TestimoniosSection'
 import NosotrosSection from '@/components/catalog/NosotrosSection'
 import ProcesoPedido from '@/components/catalog/ProcesoPedido'
+import AnuncioModalPromo from '@/components/catalog/AnuncioModalPromo'
 import { buildMetadata } from '@/lib/seo'
 import { getSiteConfig, getSiteName } from '@/lib/site-config'
 import { rethrowIfNextControlFlowError } from '@/lib/next-errors'
+import { getAnuncioModalVigente } from '@/lib/anuncio-modal-server'
 import type { Banner, Categoria, Producto, Promocion } from '@/types'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -104,36 +106,46 @@ export default async function MayoreoHomePage() {
         .sort((a, b) => a.orden - b.orden),
     }))
     destacados = (destacadosData as Producto[] | null) || []
-    ofertas = ((ofertasData as Producto[] | null) || []).filter(p => {
-      const antes = p.precio_antes_mayoreo
-      const actual = p.precio_mayoreo ?? p.precio
-      return antes != null && actual != null && antes > actual
-    })
     const destacadosIds = new Set(destacados.map(p => p.id))
-    novedades = uniqueById((novedadesData as Producto[] | null) || [])
+    ofertas = ((ofertasData as Producto[] | null) || [])
+      .filter(p => {
+        const antes = p.precio_antes_mayoreo
+        const actual = p.precio_mayoreo ?? p.precio
+        return antes != null && actual != null && antes > actual
+      })
       .filter(p => !destacadosIds.has(p.id))
+      .slice(0, 10)
+    const ofertasIds = new Set(ofertas.map(p => p.id))
+    novedades = uniqueById((novedadesData as Producto[] | null) || [])
+      .filter(p => !destacadosIds.has(p.id) && !ofertasIds.has(p.id))
       .slice(0, 10)
   } catch (error) {
     rethrowIfNextControlFlowError(error)
     console.error('[MayoreoHomePage] Error cargando datos:', error)
   }
 
+  const anuncioModal = await getAnuncioModalVigente()
+
   return (
     <div className="min-h-screen bg-[var(--bg-base)]">
+      <AnuncioModalPromo anuncio={anuncioModal} catalogType="mayoreo" />
       <HeroBanner banners={banners} config={config} catalogType="mayoreo" />
+      <CategoriasGrid categorias={categorias} catalogType="mayoreo" />
       <ProductosDestacados productos={destacados} catalogType="mayoreo" />
       <PromoStrip promociones={promociones} />
-      <CategoriasGrid categorias={categorias} catalogType="mayoreo" />
       <ProductosNovedades productos={novedades} catalogType="mayoreo" />
       <ProductosOfertas productos={ofertas} catalogType="mayoreo" />
+      <ProcesoPedido
+        catalogHref="/mayorista/productos"
+        variant="whatsapp"
+      />
       <TestimoniosSection />
       <NosotrosSection
         texto={config['texto_nosotros'] || ''}
-        whatsapp={config['whatsapp_numero'] || '573185867702'}
+        whatsapp={config['whatsapp_numero']}
         nombreNegocio="lila-store"
         catalogType="mayoreo"
       />
-      <ProcesoPedido />
     </div>
   )
 }

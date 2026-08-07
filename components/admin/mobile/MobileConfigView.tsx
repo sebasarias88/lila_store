@@ -42,7 +42,7 @@ export default function MobileConfigView({
                 onClick={() => onTabChange(id)}
                 className={`flex shrink-0 items-center gap-2 rounded-full border px-3.5 py-2.5 text-[11px] uppercase tracking-[0.7px] transition-colors ${
                   activo
-                    ? 'border-[rgba(232,136,181,0.45)] bg-[rgba(232,136,181,0.14)] text-[var(--accent-primary)]'
+                    ? 'border-[rgba(169,137,224,0.45)] bg-[rgba(169,137,224,0.14)] text-[var(--accent-primary)]'
                     : 'border-[var(--border-input)] bg-[var(--bg-card)] text-[var(--text-muted)]'
                 }`}
               >

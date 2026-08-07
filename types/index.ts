@@ -49,6 +49,25 @@ export type ProductoSeccion = {
   orden: number
 }
 
+export type VideoTipo = 'youtube' | 'tiktok' | 'instagram'
+
+export type AnuncioModal = {
+  id: string
+  activo: boolean
+  imagen_url: string | null
+  titulo: string | null
+  descripcion: string | null
+  texto_boton: string | null
+  producto_id: string | null
+  enlace_manual: string | null
+  fecha_inicio: string | null
+  fecha_fin: string | null
+  mostrar_una_vez_por_sesion: boolean
+  created_at?: string
+  /** Join opcional al listar en admin */
+  producto?: { id: string; nombre: string; slug: string } | null
+}
+
 export type Producto = {
   id: string
   nombre: string
@@ -58,6 +77,8 @@ export type Producto = {
   precio_antes: number | null
   precio_mayoreo: number | null
   precio_antes_mayoreo: number | null
+  /** Unidades disponibles (inventario). Independiente de los toggles de visibilidad. */
+  stock: number
   disponible: boolean
   disponible_detal: boolean
   disponible_mayoreo: boolean
@@ -68,6 +89,10 @@ export type Producto = {
   categorias?: Categoria[]
   secciones?: ProductoSeccion[]
   imagenes: string[]
+  /** Link a video de producto (YouTube, TikTok o Instagram). */
+  video_url?: string | null
+  /** Plataforma del video */
+  video_tipo?: VideoTipo | null
   sku: string | null
   orden: number
   created_at: string
@@ -89,6 +114,8 @@ export type ItemCarrito = {
   lineKey?: string
 }
 
+export type TipoEntrega = 'envio' | 'recogida'
+
 export type DatosCliente = {
   nombre: string
   celular: string
@@ -96,6 +123,10 @@ export type DatosCliente = {
   ciudad: string
   metodoPago: string
   notas: string
+  /** Envío a domicilio o recoger en tienda física */
+  tipoEntrega: TipoEntrega
+  /** Texto de la sucursal elegida (solo si tipoEntrega === 'recogida') */
+  sucursalRecogida: string
 }
 
 export type Banner = {

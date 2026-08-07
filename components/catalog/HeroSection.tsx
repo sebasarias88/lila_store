@@ -179,7 +179,7 @@ export default function HeroSection({ titulo, subtitulo, categorias, catalogType
               className="absolute inset-0 pointer-events-none"
               style={{
                 background:
-                  'radial-gradient(ellipse at center, rgba(232,136,181,0.14) 0%, rgba(232,136,181,0.24) 40%, transparent 70%)',
+                  'radial-gradient(ellipse at center, rgba(169,137,224,0.14) 0%, rgba(169,137,224,0.24) 40%, transparent 70%)',
               }}
             />
             <div className="absolute inset-0">

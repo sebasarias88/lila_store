@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Producto, Categoria } from '@/types'
+import { Producto, Categoria, VideoTipo } from '@/types'
 import { Input, Textarea } from '@/components/ui/Input'
 import { AdminMultiSelect } from '@/components/ui/AdminSelect'
 import { CopInput } from '@/components/ui/CopInput'
 import { formatCopInput, parseCopInput } from '@/lib/currency'
 import Button from '@/components/ui/Button'
 import ImageUploader from '@/components/admin/ImageUploader'
+import AdminVideoPreview from '@/components/admin/AdminVideoPreview'
 import VariacionesEditor from '@/components/admin/VariacionesEditor'
 import SeccionesEditor from '@/components/admin/SeccionesEditor'
 import AdminFormLayout from '@/components/admin/mobile/AdminFormLayout'
@@ -30,11 +31,11 @@ function FormSection({
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-3">
-        <div className="h-px flex-1 bg-gradient-to-r from-[rgba(232,136,181,0.35)] to-transparent" />
+        <div className="h-px flex-1 bg-gradient-to-r from-[rgba(169,137,224,0.35)] to-transparent" />
         <h3 className="admin-form-section-title shrink-0">
           {title}
         </h3>
-        <div className="h-px flex-1 bg-gradient-to-l from-[rgba(232,136,181,0.35)] to-transparent" />
+        <div className="h-px flex-1 bg-gradient-to-l from-[rgba(169,137,224,0.35)] to-transparent" />
       </div>
       {children}
     </section>
@@ -52,10 +53,13 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
     precio_antes: '',
     precio_mayoreo: '',
     precio_antes_mayoreo: '',
+    stock: 0,
     disponible_detal: true,
     disponible_mayoreo: true,
     destacado: false,
     imagenes: [] as string[],
+    video_url: '',
+    video_tipo: '' as '' | VideoTipo,
     sku: '',
     marca: '',
     orden: 0,
@@ -80,10 +84,13 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
         precio_mayoreo: producto.precio_mayoreo != null ? formatCopInput(producto.precio_mayoreo) : '',
         precio_antes_mayoreo:
           producto.precio_antes_mayoreo != null ? formatCopInput(producto.precio_antes_mayoreo) : '',
+        stock: Math.max(0, Math.floor(producto.stock ?? 0)),
         disponible_detal: producto.disponible_detal ?? producto.disponible,
         disponible_mayoreo: producto.disponible_mayoreo ?? producto.disponible,
         destacado: producto.destacado,
         imagenes: producto.imagenes || [],
+        video_url: producto.video_url || '',
+        video_tipo: (producto.video_tipo as VideoTipo | null) || '',
         sku: producto.sku || '',
         marca: producto.marca || '',
         orden: producto.orden,
@@ -153,6 +160,24 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
       return
     }
 
+    const videoUrl = form.video_url.trim()
+    if (videoUrl) {
+      try {
+        const parsed = new URL(videoUrl)
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+          toast.error('El link de video debe ser una URL válida (http/https)')
+          return
+        }
+      } catch {
+        toast.error('El link de video no es una URL válida')
+        return
+      }
+      if (!form.video_tipo) {
+        toast.error('Elige la plataforma del video')
+        return
+      }
+    }
+
     setSaving(true)
     const mainCatId = categorias_ids[0] || null
     const payload = {
@@ -163,12 +188,15 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
       precio_antes: parseCopInput(form.precio_antes),
       precio_mayoreo: parseCopInput(form.precio_mayoreo),
       precio_antes_mayoreo: parseCopInput(form.precio_antes_mayoreo),
+      stock: Math.max(0, Math.floor(Number(form.stock) || 0)),
       disponible_detal: form.disponible_detal,
       disponible_mayoreo: form.disponible_mayoreo,
       disponible: form.disponible_detal || form.disponible_mayoreo,
       destacado: form.destacado,
       categoria_id: mainCatId,
       imagenes: form.imagenes,
+      video_url: videoUrl || null,
+      video_tipo: videoUrl && form.video_tipo ? form.video_tipo : null,
       sku: form.sku.trim() || null,
       marca: form.marca.trim() || null,
       orden: form.orden,
@@ -241,6 +269,46 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
         <ImageUploader
           imagenes={form.imagenes}
           onChange={imgs => setForm(f => ({ ...f, imagenes: imgs }))}
+        />
+      </FormSection>
+
+      <FormSection title="Video (opcional)">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,180px)_minmax(0,1fr)]">
+          <div className="space-y-1.5">
+            <label className="admin-form-label" htmlFor="producto-video-tipo">
+              Plataforma
+            </label>
+            <select
+              id="producto-video-tipo"
+              value={form.video_tipo}
+              onChange={e =>
+                setForm(f => ({
+                  ...f,
+                  video_tipo: e.target.value as '' | VideoTipo,
+                }))
+              }
+              className="admin-input w-full rounded-xl border px-4 py-3 text-[13px] md:rounded-[2px]"
+            >
+              <option value="">Sin video</option>
+              <option value="youtube">YouTube</option>
+              <option value="tiktok">TikTok</option>
+              <option value="instagram">Instagram</option>
+            </select>
+          </div>
+          <Input
+            label="Link de video (opcional)"
+            type="url"
+            inputMode="url"
+            value={form.video_url}
+            onChange={e => setForm(f => ({ ...f, video_url: e.target.value }))}
+            placeholder="https://..."
+            hint="Pega el link del video o reel. Si lo dejas vacío, no se muestra video."
+          />
+        </div>
+        <AdminVideoPreview
+          url={form.video_url}
+          tipo={form.video_tipo}
+          posterUrl={form.imagenes[0] || null}
         />
       </FormSection>
 
@@ -346,6 +414,29 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
       </FormSection>
 
       <FormSection title="Visibilidad">
+        <div className="admin-form-panel px-4 py-3.5">
+          <Input
+            label="Stock disponible"
+            type="number"
+            min={0}
+            step={1}
+            value={form.stock}
+            onChange={e => {
+              const raw = e.target.value
+              if (raw === '') {
+                setForm(f => ({ ...f, stock: 0 }))
+                return
+              }
+              const n = Math.floor(Number(raw))
+              setForm(f => ({
+                ...f,
+                stock: Number.isFinite(n) && n > 0 ? n : 0,
+              }))
+            }}
+            hint="Unidades en inventario. Si es 0, el catálogo lo muestra como agotado aunque el toggle esté activo."
+          />
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           {[
             {

@@ -204,7 +204,7 @@ export default function ProductosPage() {
     <>
     <div className="hidden min-h-screen bg-[var(--bg-base)] p-6 sm:p-8 lg:p-10 md:block">
       {/* Header */}
-      <div className="mb-8 flex flex-col gap-5 border-b border-[rgba(232,136,181,0.16)] pb-8 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-8 flex flex-col gap-5 border-b border-[rgba(169,137,224,0.16)] pb-8 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="mb-3 flex items-center gap-3">
             <div className="h-px w-8 bg-[var(--accent-secondary)]" />
@@ -498,7 +498,7 @@ export default function ProductosPage() {
       <button
         type="button"
         onClick={abrirCrear}
-        className="mobile-admin-fab fixed z-40 flex h-14 w-14 items-center justify-center rounded-full border border-[rgba(232,136,181,0.45)] bg-[var(--accent-secondary)] text-[var(--bg-base)] shadow-lg md:hidden"
+        className="mobile-admin-fab fixed z-40 flex h-14 w-14 items-center justify-center rounded-full border border-[rgba(169,137,224,0.45)] bg-[var(--accent-secondary)] text-[var(--bg-base)] shadow-lg md:hidden"
         aria-label="Nuevo producto"
       >
         <Plus size={22} strokeWidth={1.75} />

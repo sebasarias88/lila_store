@@ -13,8 +13,9 @@ import {
   type CatalogType,
 } from '@/lib/catalog'
 import { categoriaTieneDescuentoActivo } from '@/lib/descuentos'
-import { ShoppingBag, ImageIcon } from 'lucide-react'
+import { ShoppingBag, ImageIcon, Play } from 'lucide-react'
 import MobileQuickAddSheet from '@/components/catalog/mobile/MobileQuickAddSheet'
+import { productoTieneVideo } from '@/lib/video-url'
 
 const MAX_TITULO_CARD = 48
 
@@ -62,7 +63,7 @@ export default function ProductCardMobile({
         whileTap={{ scale: 0.985 }}
         transition={{ type: 'spring', stiffness: 420, damping: 28 }}
       >
-        <div className="relative block aspect-[4/5] w-full shrink-0 overflow-hidden bg-gradient-to-b from-[#FDEBF4] to-[var(--bg-muted)]">
+        <div className="relative block aspect-[4/5] w-full shrink-0 overflow-hidden bg-gradient-to-b from-[#EEE8FC] to-[var(--bg-muted)]">
           <Link href={productHref} className="block h-full w-full">
             {producto.imagenes?.[0] ? (
               <img
@@ -77,6 +78,12 @@ export default function ProductCardMobile({
               </div>
             )}
           </Link>
+
+          {productoTieneVideo(producto) ? (
+            <span className="pointer-events-none absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-[var(--accent-deep)] shadow-[var(--shadow-soft)]">
+              <Play size={13} className="ml-0.5" fill="currentColor" />
+            </span>
+          ) : null}
 
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-[rgba(34,34,34,0.4)] to-transparent" />
 

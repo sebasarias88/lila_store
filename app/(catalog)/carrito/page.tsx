@@ -16,6 +16,10 @@ import {
 } from '@/lib/cart'
 import { parseCopValue } from '@/lib/currency'
 import { catalogPath, MAYOREO_MIN_COMPRA, type CatalogType } from '@/lib/catalog'
+import { resolveWhatsAppNumero } from '@/lib/negocio'
+import { metodosPagoParaCheckout } from '@/lib/payment-methods'
+import EntregaPicker from '@/components/catalog/cart/EntregaPicker'
+import MetodoPagoPicker from '@/components/catalog/cart/MetodoPagoPicker'
 import CarritoMobile from '@/components/catalog/mobile/cart/CarritoMobile'
 import PageGoldAccent from '@/components/catalog/PageGoldAccent'
 import StickySidebar from '@/components/catalog/StickySidebar'
@@ -34,6 +38,8 @@ import {
   Package,
   Truck,
   Sparkles,
+  Heart,
+  Store,
 } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -69,7 +75,6 @@ type Config = {
   envio_gratis_desde: string
   tiempo_entrega_armenia: string
   tiempo_entrega_nacional: string
-  metodos_pago: string[]
 }
 
 type Step = 'carrito' | 'datos' | 'resumen'
@@ -77,7 +82,7 @@ type Step = 'carrito' | 'datos' | 'resumen'
 const CIUDADES_ARMENIA = ['armenia', 'armenia quindío', 'armenia quindio']
 
 const STEPS: { id: Step; label: string }[] = [
-  { id: 'carrito', label: 'Carrito' },
+  { id: 'carrito', label: 'Bolsita' },
   { id: 'datos', label: 'Tus datos' },
   { id: 'resumen', label: 'Confirmar' },
 ]
@@ -118,6 +123,7 @@ function OrderSummaryPanel({
   tiempoEntrega,
   envioGratis,
   showEnvio = false,
+  esRecogida = false,
 }: {
   items: ItemCarrito[]
   subtotal: number
@@ -127,10 +133,14 @@ function OrderSummaryPanel({
   tiempoEntrega?: string
   envioGratis?: boolean
   showEnvio?: boolean
+  esRecogida?: boolean
 }) {
   return (
-    <div className="space-y-4 rounded-[24px] border border-[var(--border)] bg-[var(--bg-surface)] p-5 shadow-[var(--shadow-soft)]">
-      <p className="text-[13px] font-bold text-[var(--accent-deep)]">Resumen</p>
+    <div className="space-y-4 rounded-[24px] border border-[var(--border)] bg-white/90 p-5 shadow-[var(--shadow-soft)] backdrop-blur-sm">
+      <div className="flex items-center gap-2">
+        <Sparkles size={13} className="text-[var(--accent-primary)]" />
+        <p className="text-[13px] font-bold text-[var(--accent-deep)]">Tu resumen ✨</p>
+      </div>
 
       <div className="space-y-3 border-b border-[var(--border)] pb-4">
         {items.map(item => {
@@ -181,7 +191,13 @@ function OrderSummaryPanel({
             <div className="flex justify-between text-[13px] font-medium">
               <span className="text-[var(--text-muted)]">Envío</span>
               <span className="font-bold text-[var(--text-primary)]">
-                {envioGratis ? 'Gratis' : envio === 0 ? 'A convenir' : formatPrecio(envio ?? 0)}
+                {esRecogida
+                  ? 'Sin envío'
+                  : envioGratis
+                    ? 'Gratis 💕'
+                    : envio === 0
+                      ? 'A convenir'
+                      : formatPrecio(envio ?? 0)}
               </span>
             </div>
             {tiempoEntrega && (
@@ -199,6 +215,13 @@ function OrderSummaryPanel({
           </div>
         )}
       </div>
+
+      {catalogType === 'detal' && (
+        <p className="flex items-center gap-1.5 text-[11px] font-medium text-[var(--text-muted)]">
+          <CreditCard size={12} className="text-[var(--accent-primary)]" />
+          ePayco · Addi · Sistecrédito · Su+ Pay ✨
+        </p>
+      )}
     </div>
   )
 }
@@ -215,15 +238,13 @@ export default function CarritoPage() {
   const [mounted, setMounted] = useState(false)
   const [step, setStep] = useState<Step>('carrito')
   const [config, setConfig] = useState<Config>({
-    whatsapp_numero: '573185867702',
+    whatsapp_numero: '573104244912',
     envio_armenia: '5000',
     envio_nacional: '0',
     envio_gratis_desde: '0',
     tiempo_entrega_armenia: 'El mismo día',
     tiempo_entrega_nacional: '2 a 3 días hábiles',
-    metodos_pago: ['Efectivo contra entrega', 'Nequi', 'Daviplata', 'Transferencia bancaria'],
   })
-  const [loadingConfig, setLoadingConfig] = useState(true)
   const [enviando, setEnviando] = useState(false)
 
   const [datos, setDatos] = useState<DatosCliente>({
@@ -233,6 +254,8 @@ export default function CarritoPage() {
     ciudad: '',
     metodoPago: '',
     notas: '',
+    tipoEntrega: 'envio',
+    sucursalRecogida: '',
   })
 
   const [errores, setErrores] = useState<Partial<DatosCliente>>({})
@@ -245,48 +268,44 @@ export default function CarritoPage() {
         map[r.clave] = r.valor
       })
       setConfig({
-        whatsapp_numero: map['whatsapp_numero'] || '573185867702',
+        whatsapp_numero: map['whatsapp_numero'] || '573104244912',
         envio_armenia: map['envio_armenia'] || '5000',
         envio_nacional: map['envio_nacional'] || '0',
         envio_gratis_desde: map['envio_gratis_desde'] || '0',
         tiempo_entrega_armenia: map['tiempo_entrega_armenia'] || 'El mismo día',
         tiempo_entrega_nacional: map['tiempo_entrega_nacional'] || '2 a 3 días hábiles',
-        metodos_pago: (() => {
-          const key =
-            catalogType === 'mayoreo' ? 'metodos_pago_mayoreo' : 'metodos_pago_detal'
-          const raw = map[key] ?? map['metodos_pago']
-          try {
-            const parsed = JSON.parse(raw || '[]')
-            return Array.isArray(parsed) ? parsed : []
-          } catch {
-            return []
-          }
-        })(),
       })
     }
-    setLoadingConfig(false)
-  }, [catalogType])
+  }, [])
 
   useEffect(() => {
     setMounted(true)
     void fetchConfig()
   }, [fetchConfig])
 
+  const esRecogida = datos.tipoEntrega === 'recogida'
+  const metodosPago = metodosPagoParaCheckout(datos.tipoEntrega)
   const esArmenia = CIUDADES_ARMENIA.includes(datos.ciudad.toLowerCase().trim())
   const subtotal = useMemo(
     () => cartSubtotal(items, catalogType),
     [items, catalogType],
   )
   const envioGratisDesde = parseCopValue(config.envio_gratis_desde)
-  const envioGratis = envioGratisDesde > 0 && subtotal >= envioGratisDesde
+  const envioGratis = !esRecogida && envioGratisDesde > 0 && subtotal >= envioGratisDesde
 
-  const costoEnvio = envioGratis
+  const costoEnvio = esRecogida
     ? 0
-    : esArmenia
-      ? parseCopValue(config.envio_armenia)
-      : parseCopValue(config.envio_nacional)
+    : envioGratis
+      ? 0
+      : esArmenia
+        ? parseCopValue(config.envio_armenia)
+        : parseCopValue(config.envio_nacional)
 
-  const tiempoEntrega = esArmenia ? config.tiempo_entrega_armenia : config.tiempo_entrega_nacional
+  const tiempoEntrega = esRecogida
+    ? 'Recoger en tienda'
+    : esArmenia
+      ? config.tiempo_entrega_armenia
+      : config.tiempo_entrega_nacional
 
   const totalFinal = subtotal + costoEnvio
   const stepIndex = STEPS.findIndex(s => s.id === step)
@@ -301,8 +320,10 @@ export default function CarritoPage() {
     if (!datos.nombre.trim()) e.nombre = 'El nombre es requerido'
     if (!datos.celular.trim()) e.celular = 'El celular es requerido'
     else if (!/^[0-9+\s]{7,15}$/.test(datos.celular.trim())) e.celular = 'Número inválido'
-    if (!datos.direccion.trim()) e.direccion = 'La dirección es requerida'
-    if (!datos.ciudad.trim()) e.ciudad = 'La ciudad es requerida'
+    if (!esRecogida) {
+      if (!datos.direccion.trim()) e.direccion = 'La dirección es requerida'
+      if (!datos.ciudad.trim()) e.ciudad = 'La ciudad es requerida'
+    }
     if (!datos.metodoPago) e.metodoPago = 'Selecciona un método de pago'
     setErrores(e)
     return Object.keys(e).length === 0
@@ -321,6 +342,12 @@ export default function CarritoPage() {
       )
       return
     }
+    if (esRecogida && !datos.sucursalRecogida.trim()) {
+      setErrores(er => ({ ...er, sucursalRecogida: 'Elige en qué tienda recoges' }))
+      toast.error('Elige la tienda donde vas a recoger')
+      return
+    }
+    setErrores(er => ({ ...er, sucursalRecogida: '' }))
     setStep('datos')
     scrollTop()
   }
@@ -344,10 +371,10 @@ export default function CarritoPage() {
       catalogType,
     )
     setTimeout(() => {
-      abrirWhatsApp(mensaje, config.whatsapp_numero)
+      abrirWhatsApp(mensaje, resolveWhatsAppNumero(config.whatsapp_numero))
       vaciar()
       setEnviando(false)
-      toast.success('¡Pedido enviado! Revisa tu WhatsApp')
+      toast.success('¡Pedido listo! Revisa tu WhatsApp ✨')
     }, 800)
   }
 
@@ -388,8 +415,7 @@ export default function CarritoPage() {
           setDatos={setDatos}
           errores={errores}
           setErrores={setErrores}
-          config={config}
-          loadingConfig={loadingConfig}
+          metodosPago={metodosPago}
           enviando={enviando}
           costoEnvio={costoEnvio}
           envioGratis={envioGratis}
@@ -403,7 +429,8 @@ export default function CarritoPage() {
       </div>
 
       {/* ── Desktop ── */}
-      <div className="relative hidden min-h-screen pb-16 pt-28 sm:pt-32 md:block">
+      <div className="relative hidden min-h-screen bg-[var(--bg-base)] pb-16 pt-28 sm:pt-32 md:block">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-[rgba(169,137,224,0.08)] to-transparent" />
       <div className="relative z-10 mx-auto max-w-6xl px-5 sm:px-6 lg:px-8">
         {/* Header */}
         <motion.div
@@ -411,15 +438,25 @@ export default function CarritoPage() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
-          <div className="mb-3 flex items-center gap-2">
-            <Sparkles size={14} className="text-[var(--accent-primary)]" />
+          <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[var(--bg-muted)] px-3.5 py-1.5">
+            <Heart size={13} className="fill-[var(--accent-primary)] text-[var(--accent-primary)]" />
             <span className="text-[12px] font-bold text-[var(--accent-deep)]">
-              Mi pedido
+              Tu bolsita ✨
             </span>
           </div>
           <h1 className="text-[1.85rem] font-bold leading-none text-[var(--text-primary)] sm:text-[2.15rem]">
-            Tu carrito
+            {step === 'carrito' && 'Carrito cute'}
+            {step === 'datos' && 'Tus datos 💕'}
+            {step === 'resumen' && 'Revisa y confirma ✨'}
           </h1>
+          <p className="mt-2 text-[14px] font-medium text-[var(--text-secondary)]">
+            {step === 'carrito' && 'Tus tesoros listos para consentirte'}
+            {step === 'datos' &&
+              (esRecogida
+                ? 'Solo necesitamos tus datos de contacto'
+                : 'Cuéntanos a dónde enviamos tu pedido')}
+            {step === 'resumen' && 'Último pasito antes de confirmar'}
+          </p>
 
           {/* Steps */}
           <div className="mt-7 flex flex-wrap items-center gap-2">
@@ -433,13 +470,19 @@ export default function CarritoPage() {
                   disabled={i > stepIndex}
                   className={`rounded-full px-4 py-2 text-[13px] font-bold transition-colors ${
                     step === s.id
-                      ? 'bg-[var(--bg-muted)] text-[var(--accent-deep)]'
+                      ? 'bg-[var(--accent-primary)] text-white shadow-[var(--shadow-soft)]'
                       : i < stepIndex
-                        ? 'text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] hover:text-[var(--accent-deep)]'
+                        ? 'bg-[var(--bg-muted)] text-[var(--accent-deep)] hover:bg-white'
                         : 'cursor-default text-[var(--text-faint)]'
                   }`}
                 >
-                  <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-[11px] tabular-nums shadow-sm">
+                  <span
+                    className={`mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] tabular-nums ${
+                      step === s.id
+                        ? 'bg-white/25 text-white'
+                        : 'bg-white text-[var(--accent-deep)] shadow-sm'
+                    }`}
+                  >
                     {i + 1}
                   </span>
                   {s.label}
@@ -464,12 +507,12 @@ export default function CarritoPage() {
             >
               <div className="min-w-0">
                 {items.length === 0 ? (
-                  <div className="flex flex-col items-center rounded-[24px] border border-[var(--border)] bg-[var(--bg-surface)] py-16 text-center shadow-[var(--shadow-soft)]">
-                    <span className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--bg-muted)] text-[var(--accent-primary)]">
-                      <ShoppingBag size={28} />
+                  <div className="flex flex-col items-center rounded-[28px] border border-[var(--border)] bg-gradient-to-br from-[#F9F6FF] to-[#F8EAF4] py-16 text-center shadow-[var(--shadow-soft)]">
+                    <span className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white text-[var(--accent-primary)] shadow-[var(--shadow-soft)]">
+                      <Heart size={28} className="fill-[var(--accent-primary)]" />
                     </span>
                     <p className="text-[15px] font-bold text-[var(--text-primary)]">
-                      Tu carrito está vacío
+                      Tu bolsita está vacía 💕
                     </p>
                     <p className="mt-1.5 text-[13px] font-medium text-[var(--text-muted)]">
                       Agrega algo cute y vuelve aquí ✨
@@ -478,11 +521,12 @@ export default function CarritoPage() {
                       href={productosHref}
                       className="catalog-gold-cta mt-6 rounded-full px-5 py-2.5 text-[13px] font-bold"
                     >
-                      Ver catálogo
+                      Explorar tesoros ✨
                     </Link>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-8">
+                    <div className="space-y-1">
                     <AnimatePresence initial={false}>
                       {items.map(item => {
                         const key = itemLineKey(item)
@@ -496,11 +540,11 @@ export default function CarritoPage() {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0, height: 0 }}
-                            className="flex gap-4 rounded-[20px] border border-[var(--border)] bg-[var(--bg-surface)] p-4 shadow-[var(--shadow-soft)]"
+                            className="flex gap-4 rounded-[20px] px-2 py-4 transition-colors hover:bg-[var(--bg-muted)]/70"
                           >
                             <Link
                               href={catalogPath(catalogType, `/productos/${producto.slug}`)}
-                              className="h-24 w-20 shrink-0 overflow-hidden rounded-[16px] bg-gradient-to-b from-[#FDEBF4] to-[var(--bg-muted)] sm:h-28 sm:w-24"
+                              className="h-24 w-20 shrink-0 overflow-hidden rounded-[16px] bg-gradient-to-b from-[#EEE8FC] to-[var(--bg-muted)] ring-1 ring-[var(--border)] sm:h-28 sm:w-24"
                             >
                               {producto.imagenes?.[0] ? (
                                 <img
@@ -532,11 +576,11 @@ export default function CarritoPage() {
                               )}
 
                               <div className="flex flex-wrap items-center justify-between gap-3">
-                                <div className="inline-flex items-center gap-0.5 rounded-full border border-[var(--border)] bg-[var(--bg-muted)] p-0.5">
+                                <div className="inline-flex items-center gap-0.5 rounded-full border border-[var(--border)] bg-white p-0.5">
                                   <button
                                     type="button"
                                     onClick={() => actualizarCantidad(key, cantidad - 1)}
-                                    className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--accent-deep)] transition-colors hover:bg-white"
+                                    className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--accent-deep)] transition-colors hover:bg-[var(--bg-muted)]"
                                     aria-label="Disminuir cantidad"
                                   >
                                     <Minus size={13} />
@@ -547,7 +591,7 @@ export default function CarritoPage() {
                                   <button
                                     type="button"
                                     onClick={() => actualizarCantidad(key, cantidad + 1)}
-                                    className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--accent-deep)] transition-colors hover:bg-white"
+                                    className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--accent-deep)] transition-colors hover:bg-[var(--bg-muted)]"
                                     aria-label="Aumentar cantidad"
                                   >
                                     <Plus size={13} />
@@ -565,9 +609,9 @@ export default function CarritoPage() {
                                     type="button"
                                     onClick={() => {
                                       quitar(key)
-                                      toast.success('Producto eliminado')
+                                      toast.success('Listo, lo quitamos ✨')
                                     }}
-                                    className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-subtle)] transition-colors hover:bg-[var(--bg-muted)] hover:text-red-400"
+                                    className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--text-subtle)] transition-colors hover:bg-white hover:text-red-400"
                                     aria-label="Eliminar producto"
                                   >
                                     <Trash2 size={15} />
@@ -579,6 +623,36 @@ export default function CarritoPage() {
                         )
                       })}
                     </AnimatePresence>
+                    </div>
+
+                    <section className="rounded-[24px] border border-[var(--border)] bg-[var(--bg-surface)] p-5 shadow-[var(--shadow-soft)] sm:p-6">
+                      <EntregaPicker
+                        tipoEntrega={datos.tipoEntrega}
+                        sucursalRecogida={datos.sucursalRecogida}
+                        error={errores.sucursalRecogida}
+                        onTipoChange={tipo => {
+                          setDatos(d => {
+                            const nextMetodos = metodosPagoParaCheckout(tipo)
+                            const pagoOk = nextMetodos.some(m => m.label === d.metodoPago)
+                            return {
+                              ...d,
+                              tipoEntrega: tipo,
+                              sucursalRecogida: tipo === 'envio' ? '' : d.sucursalRecogida,
+                              metodoPago: pagoOk ? d.metodoPago : '',
+                            }
+                          })
+                          if (errores.sucursalRecogida) {
+                            setErrores(er => ({ ...er, sucursalRecogida: '' }))
+                          }
+                        }}
+                        onSucursalChange={label => {
+                          setDatos(d => ({ ...d, sucursalRecogida: label }))
+                          if (errores.sucursalRecogida) {
+                            setErrores(er => ({ ...er, sucursalRecogida: '' }))
+                          }
+                        }}
+                      />
+                    </section>
                   </div>
                 )}
               </div>
@@ -589,6 +663,12 @@ export default function CarritoPage() {
                     items={items}
                     subtotal={subtotal}
                     catalogType={catalogType}
+                    envio={costoEnvio}
+                    total={esRecogida ? totalFinal : undefined}
+                    tiempoEntrega={esRecogida ? tiempoEntrega : undefined}
+                    envioGratis={envioGratis}
+                    showEnvio={esRecogida}
+                    esRecogida={esRecogida}
                   />
                   {catalogType === 'mayoreo' && !cumpleMinimo && (
                     <div className="rounded-[20px] border border-[color-mix(in_srgb,var(--accent-primary)_40%,var(--border))] bg-[var(--bg-muted)] p-4">
@@ -605,7 +685,11 @@ export default function CarritoPage() {
                     </div>
                   )}
                   <p className="text-[12px] font-medium text-[var(--text-subtle)]">
-                    El envío se calcula en el siguiente paso según tu ciudad.
+                    {esRecogida
+                      ? datos.sucursalRecogida
+                        ? 'Listo: recoges en tienda sin costo de envío 💕'
+                        : 'Elige la tienda donde quieres recoger ✨'
+                      : 'El envío se calcula según tu ciudad 💕'}
                   </p>
                   <motion.button
                     type="button"
@@ -618,14 +702,14 @@ export default function CarritoPage() {
                         : ''
                     }`}
                   >
-                    Continuar
+                    Continuar ✨
                     <ChevronRight size={14} />
                   </motion.button>
                   <Link
                     href={productosHref}
                     className="block text-center text-[13px] font-bold text-[var(--text-muted)] transition-colors hover:text-[var(--accent-deep)]"
                   >
-                    ← Seguir comprando
+                    ← Seguir explorando 💕
                   </Link>
                 </div>
               )}
@@ -643,7 +727,7 @@ export default function CarritoPage() {
             >
               <div className="min-w-0 space-y-8">
                 <section className="rounded-[24px] border border-[var(--border)] bg-[var(--bg-surface)] p-5 shadow-[var(--shadow-soft)] sm:p-6">
-                  <SectionTitle icon={User}>Datos personales</SectionTitle>
+                  <SectionTitle icon={User}>Datos personales 💕</SectionTitle>
                   <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                     <div>
                       <label className="mb-2 block text-[12px] font-bold text-[var(--text-muted)]">
@@ -685,113 +769,124 @@ export default function CarritoPage() {
                 </section>
 
                 <section className="rounded-[24px] border border-[var(--border)] bg-[var(--bg-surface)] p-5 shadow-[var(--shadow-soft)] sm:p-6">
-                  <SectionTitle icon={MapPin}>Dirección de entrega</SectionTitle>
-                  <div className="space-y-5">
-                    <div>
-                      <label className="mb-2 block text-[12px] font-bold text-[var(--text-muted)]">
-                        Ciudad *
-                      </label>
-                      <input
-                        type="text"
-                        value={datos.ciudad}
-                        onChange={e => {
-                          setDatos(d => ({ ...d, ciudad: e.target.value }))
-                          if (errores.ciudad) setErrores(er => ({ ...er, ciudad: '' }))
+                  {esRecogida ? (
+                    <>
+                      <SectionTitle icon={Store}>Recoges en tienda ✨</SectionTitle>
+                      <div className="rounded-[18px] border border-[var(--border)] bg-[var(--bg-muted)] px-4 py-3.5">
+                        <p className="text-[12px] font-bold text-[var(--accent-deep)]">
+                          Sucursal elegida
+                        </p>
+                        <p className="mt-1 text-[13px] font-medium leading-relaxed text-[var(--text-primary)]">
+                          {datos.sucursalRecogida}
+                        </p>
+                        <p className="mt-2 text-[12px] font-medium text-[var(--text-muted)]">
+                          Sin costo de envío · te avisamos cuando esté listo
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStep('carrito')
+                          scrollTop()
                         }}
-                        placeholder="Ej: Armenia, Bogotá, Medellín..."
-                        className={inputClass('ciudad')}
-                      />
-                      {errores.ciudad && (
-                        <p className="mt-1.5 text-[12px] font-medium text-red-400">{errores.ciudad}</p>
-                      )}
-                      {datos.ciudad.trim() && (
-                        <motion.p
-                          initial={{ opacity: 0, y: 4 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="mt-2.5 flex items-start gap-2 rounded-full bg-[var(--bg-muted)] px-3.5 py-2 text-[12px] font-medium text-[var(--accent-deep)]"
-                        >
-                          <Truck size={13} className="mt-0.5 shrink-0 text-[var(--accent-primary)]" />
-                          {envioGratis
-                            ? 'Envío gratis para tu pedido'
-                            : costoEnvio === 0
-                              ? 'Envío a convenir con el negocio'
-                              : `Envío estimado: ${formatPrecio(costoEnvio)} — ${tiempoEntrega}`}
-                        </motion.p>
-                      )}
-                    </div>
-                    <div>
-                      <label className="mb-2 block text-[12px] font-bold text-[var(--text-muted)]">
-                        Dirección completa *
-                      </label>
-                      <input
-                        type="text"
-                        value={datos.direccion}
-                        onChange={e => {
-                          setDatos(d => ({ ...d, direccion: e.target.value }))
-                          if (errores.direccion) setErrores(er => ({ ...er, direccion: '' }))
-                        }}
-                        placeholder="Ej: Calle 10 #5-20, Barrio Los Andes"
-                        className={inputClass('direccion')}
-                      />
-                      {errores.direccion && (
-                        <p className="mt-1.5 text-[12px] font-medium text-red-400">{errores.direccion}</p>
-                      )}
-                    </div>
-                  </div>
-                </section>
-
-                <section className="rounded-[24px] border border-[var(--border)] bg-[var(--bg-surface)] p-5 shadow-[var(--shadow-soft)] sm:p-6">
-                  <SectionTitle icon={CreditCard}>Método de pago</SectionTitle>
-                  {loadingConfig ? (
-                    <div className="space-y-3">
-                      {[1, 2, 3].map(i => (
-                        <div key={i} className="h-12 animate-pulse rounded-full bg-[var(--bg-muted)]" />
-                      ))}
-                    </div>
+                        className="mt-3 text-[12px] font-bold text-[var(--accent-deep)] transition-colors hover:text-[var(--accent-primary)]"
+                      >
+                        Cambiar tienda o tipo de entrega
+                      </button>
+                    </>
                   ) : (
-                    <div className="space-y-2">
-                      {config.metodos_pago.map(metodo => (
-                        <button
-                          key={metodo}
-                          type="button"
-                          onClick={() => {
-                            setDatos(d => ({ ...d, metodoPago: metodo }))
-                            if (errores.metodoPago) setErrores(er => ({ ...er, metodoPago: '' }))
-                          }}
-                          className={`flex w-full items-center justify-between rounded-full border px-4 py-3.5 text-left transition-colors ${
-                            datos.metodoPago === metodo
-                              ? 'border-[var(--accent-primary)] bg-[var(--bg-muted)] text-[var(--accent-deep)]'
-                              : 'border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--accent-primary)] hover:text-[var(--accent-deep)]'
-                          }`}
-                        >
-                          <span className="text-[14px] font-bold">{metodo}</span>
-                          <span
-                            className={`flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all ${
-                              datos.metodoPago === metodo
-                                ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)]'
-                                : 'border-[var(--border)]'
-                            }`}
-                          >
-                            {datos.metodoPago === metodo && (
-                              <span className="block h-2 w-2 rounded-full bg-white" />
-                            )}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  {errores.metodoPago && (
-                    <p className="mt-2 text-[12px] font-medium text-red-400">{errores.metodoPago}</p>
+                    <>
+                      <SectionTitle icon={MapPin}>Dirección de entrega ✨</SectionTitle>
+                      <div className="space-y-5">
+                        <div>
+                          <label className="mb-2 block text-[12px] font-bold text-[var(--text-muted)]">
+                            Ciudad *
+                          </label>
+                          <input
+                            type="text"
+                            value={datos.ciudad}
+                            onChange={e => {
+                              setDatos(d => ({ ...d, ciudad: e.target.value }))
+                              if (errores.ciudad) setErrores(er => ({ ...er, ciudad: '' }))
+                            }}
+                            placeholder="Ej: Armenia, Bogotá, Medellín..."
+                            className={inputClass('ciudad')}
+                          />
+                          {errores.ciudad && (
+                            <p className="mt-1.5 text-[12px] font-medium text-red-400">
+                              {errores.ciudad}
+                            </p>
+                          )}
+                          {datos.ciudad.trim() && (
+                            <motion.p
+                              initial={{ opacity: 0, y: 4 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="mt-2.5 flex items-start gap-2 rounded-full bg-[var(--bg-muted)] px-3.5 py-2 text-[12px] font-medium text-[var(--accent-deep)]"
+                            >
+                              <Truck
+                                size={13}
+                                className="mt-0.5 shrink-0 text-[var(--accent-primary)]"
+                              />
+                              {envioGratis
+                                ? 'Envío gratis para tu pedido'
+                                : costoEnvio === 0
+                                  ? 'Envío a convenir con el negocio'
+                                  : `Envío estimado: ${formatPrecio(costoEnvio)} — ${tiempoEntrega}`}
+                            </motion.p>
+                          )}
+                        </div>
+                        <div>
+                          <label className="mb-2 block text-[12px] font-bold text-[var(--text-muted)]">
+                            Dirección completa *
+                          </label>
+                          <input
+                            type="text"
+                            value={datos.direccion}
+                            onChange={e => {
+                              setDatos(d => ({ ...d, direccion: e.target.value }))
+                              if (errores.direccion) setErrores(er => ({ ...er, direccion: '' }))
+                            }}
+                            placeholder="Ej: Calle 10 #5-20, Barrio Los Andes"
+                            className={inputClass('direccion')}
+                          />
+                          {errores.direccion && (
+                            <p className="mt-1.5 text-[12px] font-medium text-red-400">
+                              {errores.direccion}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </>
                   )}
                 </section>
 
                 <section className="rounded-[24px] border border-[var(--border)] bg-[var(--bg-surface)] p-5 shadow-[var(--shadow-soft)] sm:p-6">
-                  <SectionTitle icon={FileText}>Notas adicionales</SectionTitle>
+                  <SectionTitle icon={CreditCard}>Cómo quieres pagar ✨</SectionTitle>
+                  <p className="mb-4 text-[12px] font-medium text-[var(--text-muted)]">
+                    Elige el medio — ePayco incluye tarjeta, PSE y más
+                  </p>
+                  <MetodoPagoPicker
+                    metodos={metodosPago}
+                    selected={datos.metodoPago}
+                    error={errores.metodoPago}
+                    onSelect={label => {
+                      setDatos(d => ({ ...d, metodoPago: label }))
+                      if (errores.metodoPago) setErrores(er => ({ ...er, metodoPago: '' }))
+                    }}
+                  />
+                </section>
+
+                <section className="rounded-[24px] border border-[var(--border)] bg-[var(--bg-surface)] p-5 shadow-[var(--shadow-soft)] sm:p-6">
+                  <SectionTitle icon={FileText}>Notitas extras 💕</SectionTitle>
                   <p className="mb-3 text-[12px] font-medium text-[var(--text-subtle)]">Opcional</p>
                   <textarea
                     value={datos.notas}
                     onChange={e => setDatos(d => ({ ...d, notas: e.target.value }))}
-                    placeholder="Indicaciones especiales para la entrega, referencias, etc."
+                    placeholder={
+                      esRecogida
+                        ? 'Algo que debamos saber para tu recogida… ✨'
+                        : 'Indicaciones especiales, referencias del edificio… ✨'
+                    }
                     rows={3}
                     className="w-full resize-none rounded-[20px] border border-[var(--border)] bg-[var(--bg-muted)] px-4 py-3 text-[14px] font-medium text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-faint)] focus:border-[var(--accent-primary)] focus:bg-white"
                   />
@@ -812,7 +907,7 @@ export default function CarritoPage() {
                     onClick={handleConfirmar}
                     className="catalog-gold-cta flex flex-1 items-center justify-center gap-2 rounded-full py-3.5 text-[14px] font-bold"
                   >
-                    Revisar pedido
+                    Revisar pedido ✨
                     <ChevronRight size={14} />
                   </motion.button>
                 </div>
@@ -823,6 +918,12 @@ export default function CarritoPage() {
                   items={items}
                   subtotal={subtotal}
                   catalogType={catalogType}
+                  envio={costoEnvio}
+                  total={totalFinal}
+                  tiempoEntrega={tiempoEntrega}
+                  envioGratis={envioGratis}
+                  showEnvio
+                  esRecogida={esRecogida}
                 />
               </CartSidebar>
             </motion.div>
@@ -835,162 +936,263 @@ export default function CarritoPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="mx-auto max-w-2xl space-y-6"
+              className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-14"
             >
-              <div className="rounded-[24px] border border-[var(--border)] bg-[var(--bg-surface)] p-5 shadow-[var(--shadow-soft)] sm:p-7">
-                <div className="mb-6 flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#E8F8EE] text-[#25D366]">
-                    <WhatsAppIcon size={18} />
+              <div className="min-w-0 space-y-8">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--bg-muted)] text-[var(--accent-primary)]">
+                    {catalogType === 'mayoreo' ? (
+                      <WhatsAppIcon size={18} />
+                    ) : (
+                      <Sparkles size={18} />
+                    )}
                   </span>
                   <div>
                     <p className="text-[15px] font-bold text-[var(--text-primary)]">
-                      Resumen del pedido
+                      Resumen del pedido ✨
                     </p>
                     <p className="mt-0.5 text-[12px] font-medium text-[var(--text-muted)]">
-                      Esto es lo que se enviará por WhatsApp
+                      {catalogType === 'mayoreo'
+                        ? 'Lo enviamos por WhatsApp para confirmar juntos'
+                        : 'Revisa todo — por ahora confirmamos por WhatsApp'}
                     </p>
                   </div>
                 </div>
 
-                <div className="space-y-6">
-                  <section>
-                    <p className="mb-3 text-[12px] font-bold text-[var(--accent-deep)]">
-                      Datos del cliente
-                    </p>
-                    <dl className="space-y-2.5">
-                      {[
-                        { label: 'Nombre', value: datos.nombre },
-                        { label: 'Celular', value: datos.celular },
-                        { label: 'Ciudad', value: datos.ciudad },
-                        { label: 'Dirección', value: datos.direccion },
-                        { label: 'Pago', value: datos.metodoPago },
-                        ...(datos.notas ? [{ label: 'Notas', value: datos.notas }] : []),
-                      ].map(({ label, value }) => (
-                        <div key={label} className="flex gap-4 text-[13px] font-medium">
-                          <dt className="w-20 shrink-0 text-[var(--text-subtle)]">{label}</dt>
-                          <dd className="font-bold text-[var(--text-primary)]">{value}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                  </section>
+                <section className="rounded-[24px] border border-[var(--border)] bg-[var(--bg-surface)] p-5 shadow-[var(--shadow-soft)] sm:p-6">
+                  <SectionTitle icon={User}>Datos del cliente 💕</SectionTitle>
+                  <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {[
+                      { label: 'Nombre', value: datos.nombre },
+                      { label: 'Celular', value: datos.celular },
+                      ...(esRecogida
+                        ? [{ label: 'Recoger en', value: datos.sucursalRecogida }]
+                        : [
+                            { label: 'Ciudad', value: datos.ciudad },
+                            { label: 'Dirección', value: datos.direccion },
+                          ]),
+                      { label: 'Pago', value: datos.metodoPago },
+                      ...(datos.notas ? [{ label: 'Notas', value: datos.notas }] : []),
+                    ].map(({ label, value }) => (
+                      <div key={label} className="min-w-0">
+                        <dt className="text-[11px] font-bold text-[var(--text-subtle)]">{label}</dt>
+                        <dd className="mt-0.5 text-[13px] font-bold text-[var(--text-primary)]">
+                          {value}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
 
-                  <section className="border-t border-[var(--border)] pt-6">
-                    <p className="mb-4 text-[12px] font-bold text-[var(--accent-deep)]">
-                      Productos
-                    </p>
-                    <div className="space-y-3">
-                      {items.map(item => {
-                        const key = itemLineKey(item)
-                        const { producto, cantidad, variacionesSeleccionadas } = item
-                        const vars = formatVariacionesResumen(variacionesSeleccionadas)
+                <section className="rounded-[24px] border border-[var(--border)] bg-[var(--bg-surface)] p-5 shadow-[var(--shadow-soft)] sm:p-6">
+                  <SectionTitle icon={Package}>Tus tesoros</SectionTitle>
+                  <div className="space-y-3">
+                    {items.map(item => {
+                      const key = itemLineKey(item)
+                      const { producto, cantidad, variacionesSeleccionadas } = item
+                      const vars = formatVariacionesResumen(variacionesSeleccionadas)
 
-                        return (
-                          <div key={key} className="flex items-center gap-3">
-                            <div className="h-12 w-12 shrink-0 overflow-hidden rounded-[12px] bg-[var(--bg-muted)]">
-                              {producto.imagenes?.[0] && (
-                                <img
-                                  src={producto.imagenes[0]}
-                                  alt={producto.nombre}
-                                  className="h-full w-full object-cover"
-                                />
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-[13px] font-bold text-[var(--text-primary)]">
-                                {producto.nombre}
-                              </p>
-                              {vars && (
-                                <p className={`truncate ${variacionesCarritoClassName}`}>{vars}</p>
-                              )}
-                              <p className="text-[11px] font-medium text-[var(--text-subtle)]">
-                                × {cantidad}
-                              </p>
-                            </div>
-                            <p className="shrink-0 text-[13px] font-bold text-[var(--accent-deep)]">
-                              {(() => {
-                                const line = itemLineTotal(item, catalogType)
-                                return line != null ? formatPrecio(line) : 'Consultar'
-                              })()}
+                      return (
+                        <div key={key} className="flex items-center gap-3">
+                          <div className="h-14 w-14 shrink-0 overflow-hidden rounded-[14px] bg-[var(--bg-muted)]">
+                            {producto.imagenes?.[0] && (
+                              <img
+                                src={producto.imagenes[0]}
+                                alt={producto.nombre}
+                                className="h-full w-full object-cover"
+                              />
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-[13px] font-bold text-[var(--text-primary)]">
+                              {producto.nombre}
+                            </p>
+                            {vars && (
+                              <p className={`truncate ${variacionesCarritoClassName}`}>{vars}</p>
+                            )}
+                            <p className="text-[11px] font-medium text-[var(--text-subtle)]">
+                              × {cantidad}
                             </p>
                           </div>
-                        )
-                      })}
-                    </div>
-                  </section>
+                          <p className="shrink-0 text-[13px] font-bold text-[var(--accent-deep)]">
+                            {(() => {
+                              const line = itemLineTotal(item, catalogType)
+                              return line != null ? formatPrecio(line) : 'Consultar'
+                            })()}
+                          </p>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </section>
 
-                  <section className="border-t border-[var(--border)] pt-6">
-                    <p className="mb-4 flex items-center gap-2 text-[12px] font-bold text-[var(--accent-deep)]">
-                      <Package size={13} className="text-[var(--accent-primary)]" />
-                      Resumen de costos
-                    </p>
-                    <div className="space-y-2.5">
-                      <div className="flex justify-between text-[13px] font-medium">
-                        <span className="text-[var(--text-muted)]">Subtotal</span>
-                        <span className="font-bold text-[var(--text-primary)]">
-                          {formatPrecio(subtotal)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-[13px] font-medium">
-                        <span className="text-[var(--text-muted)]">Envío</span>
-                        <span className="font-bold text-[var(--text-primary)]">
-                          {envioGratis
-                            ? 'Gratis'
+                <section className="space-y-3 rounded-[24px] border border-[var(--border)] bg-[var(--bg-surface)] p-5 shadow-[var(--shadow-soft)] sm:p-6 lg:hidden">
+                  <SectionTitle icon={Package}>Totales</SectionTitle>
+                  <div className="space-y-2.5">
+                    <div className="flex justify-between text-[13px] font-medium">
+                      <span className="text-[var(--text-muted)]">Subtotal</span>
+                      <span className="font-bold text-[var(--text-primary)]">
+                        {formatPrecio(subtotal)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-[13px] font-medium">
+                      <span className="text-[var(--text-muted)]">Envío</span>
+                      <span className="font-bold text-[var(--text-primary)]">
+                        {esRecogida
+                          ? 'Sin envío'
+                          : envioGratis
+                            ? 'Gratis 💕'
                             : costoEnvio === 0
                               ? 'A convenir'
                               : formatPrecio(costoEnvio)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-[13px] font-medium">
-                        <span className="text-[var(--text-muted)]">Entrega</span>
-                        <span className="font-bold text-[var(--text-primary)]">{tiempoEntrega}</span>
-                      </div>
-                      <div className="flex items-baseline justify-between border-t border-[var(--border)] pt-4">
-                        <span className="text-[13px] font-bold text-[var(--text-secondary)]">
-                          Total
-                        </span>
-                        <span className="text-2xl font-bold text-[var(--accent-deep)]">
-                          {formatPrecio(totalFinal)}
-                        </span>
-                      </div>
+                      </span>
                     </div>
-                  </section>
+                    <div className="flex justify-between text-[13px] font-medium">
+                      <span className="text-[var(--text-muted)]">Entrega</span>
+                      <span className="font-bold text-[var(--text-primary)]">{tiempoEntrega}</span>
+                    </div>
+                    <div className="flex items-baseline justify-between border-t border-[var(--border)] pt-3">
+                      <span className="text-[13px] font-bold text-[var(--text-secondary)]">
+                        Total
+                      </span>
+                      <span className="text-xl font-bold text-[var(--accent-deep)]">
+                        {formatPrecio(totalFinal)}
+                      </span>
+                    </div>
+                  </div>
+                </section>
+
+                <div className="flex flex-col gap-3 sm:flex-row lg:hidden">
+                  <button
+                    type="button"
+                    onClick={() => setStep('datos')}
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-surface)] px-5 py-3.5 text-[13px] font-bold text-[var(--text-muted)] transition-colors hover:text-[var(--accent-deep)]"
+                  >
+                    <ChevronLeft size={14} />
+                    Volver
+                  </button>
+                  <motion.button
+                    type="button"
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleEnviarWhatsApp}
+                    disabled={enviando}
+                    className={`flex flex-1 items-center justify-center gap-2 rounded-full py-4 text-[14px] font-bold transition-colors disabled:opacity-60 ${
+                      catalogType === 'mayoreo'
+                        ? 'bg-[#25D366] text-white hover:bg-[#22c55e]'
+                        : 'catalog-gold-cta'
+                    }`}
+                  >
+                    {enviando ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        Abriendo WhatsApp...
+                      </>
+                    ) : catalogType === 'mayoreo' ? (
+                      <>
+                        <WhatsAppIcon size={16} />
+                        Enviar por WhatsApp
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles size={16} />
+                        Confirmar pedido ✨
+                      </>
+                    )}
+                  </motion.button>
                 </div>
-              </div>
 
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <button
-                  type="button"
-                  onClick={() => setStep('datos')}
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-surface)] px-5 py-3.5 text-[13px] font-bold text-[var(--text-muted)] transition-colors hover:text-[var(--accent-deep)]"
-                >
-                  <ChevronLeft size={14} />
-                  Volver
-                </button>
-                <motion.button
-                  type="button"
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleEnviarWhatsApp}
-                  disabled={enviando}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-full bg-[#25D366] py-4 text-[14px] font-bold text-white transition-colors hover:bg-[#22c55e] disabled:opacity-60"
-                >
-                  {enviando ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" />
-                      Abriendo WhatsApp...
-                    </>
-                  ) : (
-                    <>
-                      <WhatsAppIcon size={16} />
-                      Enviar pedido por WhatsApp
-                    </>
+                  {catalogType === 'detal' && (
+                    <p className="text-[12px] font-medium leading-relaxed text-[var(--text-subtle)] lg:hidden">
+                      Por ahora confirmamos por WhatsApp. Las pasarelas quedan listas en el pedido 💕
+                    </p>
                   )}
-                </motion.button>
               </div>
 
-              <p className="text-center text-[12px] font-medium leading-relaxed text-[var(--text-subtle)]">
-                Al confirmar, se abrirá WhatsApp con tu pedido listo para enviar. El pedido no se
-                procesa hasta que lo envíes por WhatsApp.
-              </p>
+              <CartSidebar className="hidden lg:block" top={stickyTop}>
+                <div className="space-y-4 rounded-[24px] border border-[var(--border)] bg-white/90 p-5 shadow-[var(--shadow-soft)] backdrop-blur-sm">
+                  <div className="flex items-center gap-2">
+                    <Sparkles size={13} className="text-[var(--accent-primary)]" />
+                    <p className="text-[13px] font-bold text-[var(--accent-deep)]">Totales ✨</p>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    <div className="flex justify-between text-[13px] font-medium">
+                      <span className="text-[var(--text-muted)]">Subtotal</span>
+                      <span className="font-bold text-[var(--text-primary)]">
+                        {formatPrecio(subtotal)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-[13px] font-medium">
+                      <span className="text-[var(--text-muted)]">Envío</span>
+                      <span className="font-bold text-[var(--text-primary)]">
+                        {esRecogida
+                          ? 'Sin envío'
+                          : envioGratis
+                            ? 'Gratis 💕'
+                            : costoEnvio === 0
+                              ? 'A convenir'
+                              : formatPrecio(costoEnvio)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-[13px] font-medium">
+                      <span className="text-[var(--text-muted)]">Entrega</span>
+                      <span className="font-bold text-[var(--text-primary)]">{tiempoEntrega}</span>
+                    </div>
+                    <div className="flex items-baseline justify-between border-t border-[var(--border)] pt-4">
+                      <span className="text-[13px] font-bold text-[var(--text-secondary)]">
+                        Total
+                      </span>
+                      <span className="text-2xl font-bold text-[var(--accent-deep)]">
+                        {formatPrecio(totalFinal)}
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setStep('datos')}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-surface)] px-5 py-3 text-[13px] font-bold text-[var(--text-muted)] transition-colors hover:text-[var(--accent-deep)]"
+                  >
+                    <ChevronLeft size={14} />
+                    Volver a datos
+                  </button>
+
+                  <motion.button
+                    type="button"
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleEnviarWhatsApp}
+                    disabled={enviando}
+                    className={`flex w-full items-center justify-center gap-2 rounded-full py-4 text-[14px] font-bold transition-colors disabled:opacity-60 ${
+                      catalogType === 'mayoreo'
+                        ? 'bg-[#25D366] text-white hover:bg-[#22c55e]'
+                        : 'catalog-gold-cta'
+                    }`}
+                  >
+                    {enviando ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        Abriendo WhatsApp...
+                      </>
+                    ) : catalogType === 'mayoreo' ? (
+                      <>
+                        <WhatsAppIcon size={16} />
+                        Enviar por WhatsApp
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles size={16} />
+                        Confirmar pedido ✨
+                      </>
+                    )}
+                  </motion.button>
+
+                  <p className="text-[12px] font-medium leading-relaxed text-[var(--text-subtle)]">
+                    {catalogType === 'mayoreo'
+                      ? 'Al confirmar se abrirá WhatsApp con tu pedido listo para enviar.'
+                      : 'Por ahora confirmamos por WhatsApp con tu medio de pago elegido 💕'}
+                  </p>
+                </div>
+              </CartSidebar>
             </motion.div>
           )}
         </AnimatePresence>

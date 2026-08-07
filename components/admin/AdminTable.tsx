@@ -23,8 +23,8 @@ export function AdminTableShell({
     <div
       className={`relative overflow-hidden rounded-[20px] border border-[var(--border)] bg-[var(--bg-surface)] shadow-[var(--shadow-soft)] ${className}`}
     >
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-px bg-gradient-to-r from-transparent via-[rgba(232,136,181,0.55)] to-transparent" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(232,136,181,0.05),transparent_55%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-px bg-gradient-to-r from-transparent via-[rgba(169,137,224,0.55)] to-transparent" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(169,137,224,0.05),transparent_55%)]" />
       <div className="relative">{children}</div>
     </div>
   )
@@ -108,7 +108,7 @@ export function AdminTableRow({
   className?: string
 }) {
   const rowClass =
-    `admin-table-row group relative border-b border-[var(--border)] transition-all duration-200 hover:bg-[rgba(232,136,181,0.07)] hover:shadow-[inset_3px_0_0_var(--accent-primary)] ${className}`.trim()
+    `admin-table-row group relative border-b border-[var(--border)] transition-all duration-200 hover:bg-[rgba(169,137,224,0.07)] hover:shadow-[inset_3px_0_0_var(--accent-primary)] ${className}`.trim()
 
   if (!animated) {
     return <tr className={rowClass}>{children}</tr>
@@ -140,11 +140,11 @@ export function AdminSectionTitle({
   return (
     <div className={`mb-5 flex min-h-[28px] items-center justify-between gap-4 ${className}`}>
       <div className="flex min-w-0 flex-1 items-center gap-3">
-        <div className="h-px max-w-[32px] flex-1 bg-gradient-to-r from-[rgba(232,136,181,0.5)] to-transparent" />
+        <div className="h-px max-w-[32px] flex-1 bg-gradient-to-r from-[rgba(169,137,224,0.5)] to-transparent" />
         <h2 className="shrink-0 text-[10px] font-semibold uppercase tracking-[2.5px] text-[var(--accent-primary)]">
           {title}
         </h2>
-        <div className="h-px flex-1 bg-gradient-to-r from-[rgba(232,136,181,0.2)] to-transparent" />
+        <div className="h-px flex-1 bg-gradient-to-r from-[rgba(169,137,224,0.2)] to-transparent" />
       </div>
       <div className="flex min-w-[4.5rem] shrink-0 items-center justify-end">
         {action ?? null}
@@ -191,7 +191,7 @@ export function AdminListToolbar<T extends string>({
           placeholder={searchPlaceholder}
           value={search}
           onChange={e => onSearchChange(e.target.value)}
-          className="w-full border-0 border-b border-[var(--border-input)] bg-transparent py-3 pl-7 pr-8 text-[13px] text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--placeholder)] focus:border-[rgba(232,136,181,0.55)]"
+          className="w-full border-0 border-b border-[var(--border-input)] bg-transparent py-3 pl-7 pr-8 text-[13px] text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--placeholder)] focus:border-[rgba(169,137,224,0.55)]"
         />
         {search && (
           <button
@@ -213,8 +213,8 @@ export function AdminListToolbar<T extends string>({
             onClick={() => onFilterChange(f.id)}
             className={`h-10 rounded-xl border px-3 text-[10px] uppercase tracking-[1.4px] transition-all ${
               activeFilter === f.id
-                ? 'border-[rgba(232,136,181,0.5)] bg-[rgba(232,136,181,0.12)] text-[var(--accent-secondary)] shadow-[0_0_12px_rgba(232,136,181,0.08)]'
-                : 'border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[rgba(232,136,181,0.32)] hover:text-[var(--accent-secondary)]'
+                ? 'border-[rgba(169,137,224,0.5)] bg-[rgba(169,137,224,0.12)] text-[var(--accent-secondary)] shadow-[0_0_12px_rgba(169,137,224,0.08)]'
+                : 'border-[var(--border-subtle)] text-[var(--text-muted)] hover:border-[rgba(169,137,224,0.32)] hover:text-[var(--accent-secondary)]'
             }`}
           >
             {f.label}
@@ -238,7 +238,7 @@ export function AdminListMeta({
   activeFilterLabel?: string
 }) {
   return (
-    <div className="mb-4 flex items-center justify-between border-b border-[rgba(232,136,181,0.12)] pb-3">
+    <div className="mb-4 flex items-center justify-between border-b border-[rgba(169,137,224,0.12)] pb-3">
       <p className="text-[12px] uppercase tracking-[1px] text-[var(--text-muted)]">
         {count} {noun}
         {count !== 1 ? 's' : ''}
@@ -273,8 +273,8 @@ export function AdminTableEmpty({
       <td colSpan={colSpan}>
         <div className="flex flex-col items-center justify-center px-8 py-20 text-center">
           <div className="relative mb-5">
-            <div className="absolute inset-0 scale-150 rounded-full bg-[rgba(232,136,181,0.12)] blur-xl" />
-            <div className="relative flex h-14 w-14 items-center justify-center rounded-xl border border-[rgba(232,136,181,0.3)] bg-[rgba(232,136,181,0.1)] shadow-[0_0_24px_rgba(232,136,181,0.15)]">
+            <div className="absolute inset-0 scale-150 rounded-full bg-[rgba(169,137,224,0.12)] blur-xl" />
+            <div className="relative flex h-14 w-14 items-center justify-center rounded-xl border border-[rgba(169,137,224,0.3)] bg-[rgba(169,137,224,0.1)] shadow-[0_0_24px_rgba(169,137,224,0.15)]">
               <Icon size={24} className="text-[var(--accent-secondary)]" />
             </div>
           </div>
@@ -304,13 +304,13 @@ export function AdminTableImage({
     size === 'sm' ? 'h-10 w-10' : size === 'row' ? 'h-11 w-11' : 'h-12 w-12'
   return (
     <div
-      className={`relative shrink-0 overflow-hidden rounded-xl ${dim} ring-1 ring-[rgba(232,136,181,0.25)] shadow-[0_4px_16px_rgba(0,0,0,0.3)]`}
+      className={`relative shrink-0 overflow-hidden rounded-xl ${dim} ring-1 ring-[rgba(169,137,224,0.25)] shadow-[0_4px_16px_rgba(0,0,0,0.3)]`}
     >
       {src ? (
         <img src={src} alt={alt} className="h-full w-full bg-white object-cover" />
       ) : (
         <div className="flex h-full w-full items-center justify-center bg-[var(--bg-muted)]">
-          <ImageIcon size={16} className="text-[rgba(232,136,181,0.45)]" />
+          <ImageIcon size={16} className="text-[rgba(169,137,224,0.45)]" />
         </div>
       )}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[rgba(0,0,0,0.15)] to-transparent" />
@@ -328,7 +328,7 @@ export function AdminTablePrimary({
   indent?: boolean
 }) {
   return (
-    <div className={indent ? 'pl-3 border-l-2 border-[rgba(232,136,181,0.25)]' : ''}>
+    <div className={indent ? 'pl-3 border-l-2 border-[rgba(169,137,224,0.25)]' : ''}>
       <p className="truncate text-[14px] font-semibold tracking-[0.2px] text-[var(--text-primary)]" title={title}>
         {title}
       </p>
@@ -349,9 +349,9 @@ export function AdminTableBadge({
   variant?: 'gold' | 'muted' | 'code'
 }) {
   const styles = {
-    gold: 'border-[rgba(232,136,181,0.3)] bg-[rgba(232,136,181,0.1)] text-[var(--accent-deep)]',
+    gold: 'border-[rgba(169,137,224,0.3)] bg-[rgba(169,137,224,0.1)] text-[var(--accent-deep)]',
     muted: 'border-[var(--border)] bg-[var(--bg-muted)] text-[var(--text-secondary)]',
-    code: 'border-[rgba(232,136,181,0.22)] bg-[rgba(232,136,181,0.06)] text-[var(--accent-deep)] font-mono',
+    code: 'border-[rgba(169,137,224,0.22)] bg-[rgba(169,137,224,0.06)] text-[var(--accent-deep)] font-mono',
   }
   return (
     <span
@@ -382,7 +382,7 @@ export function AdminTableCategory({
       className={`inline-flex max-w-[220px] items-center gap-2.5 rounded-full border py-1 pl-1 pr-3.5 shadow-[0_2px_12px_rgba(0,0,0,0.2)] transition-colors ${
         isSub
           ? 'border-[rgba(96,165,250,0.22)] bg-gradient-to-r from-[rgba(96,165,250,0.1)] via-[rgba(96,165,250,0.04)] to-transparent group-hover:border-[rgba(96,165,250,0.4)]'
-          : 'border-[rgba(232,136,181,0.22)] bg-gradient-to-r from-[rgba(232,136,181,0.1)] via-[rgba(232,136,181,0.04)] to-transparent group-hover:border-[rgba(232,136,181,0.35)]'
+          : 'border-[rgba(169,137,224,0.22)] bg-gradient-to-r from-[rgba(169,137,224,0.1)] via-[rgba(169,137,224,0.04)] to-transparent group-hover:border-[rgba(169,137,224,0.35)]'
       }`}
       title={isSub ? `${parent} › ${name}` : name}
     >
@@ -390,7 +390,7 @@ export function AdminTableCategory({
         className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ring-1 ${
           isSub
             ? 'bg-[rgba(96,165,250,0.14)] ring-[rgba(96,165,250,0.3)]'
-            : 'bg-[rgba(232,136,181,0.14)] ring-[rgba(232,136,181,0.28)]'
+            : 'bg-[rgba(169,137,224,0.14)] ring-[rgba(169,137,224,0.28)]'
         }`}
       >
         {isSub ? (
@@ -428,11 +428,11 @@ export function AdminTableCategoryEmpty() {
 export function AdminTableSlug({ slug, className = '' }: { slug: string; className?: string }) {
   return (
     <div
-      className={`inline-flex max-w-[220px] items-center gap-2.5 rounded-full border border-[var(--border-subtle)] bg-gradient-to-r from-[rgba(248,246,241,0.05)] via-transparent to-transparent py-1 pl-1 pr-3.5 shadow-[0_2px_10px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(248,246,241,0.05)] transition-colors group-hover:border-[rgba(232,136,181,0.28)] ${className}`}
+      className={`inline-flex max-w-[220px] items-center gap-2.5 rounded-full border border-[var(--border-subtle)] bg-gradient-to-r from-[rgba(248,246,241,0.05)] via-transparent to-transparent py-1 pl-1 pr-3.5 shadow-[0_2px_10px_rgba(0,0,0,0.18),inset_0_1px_0_rgba(248,246,241,0.05)] transition-colors group-hover:border-[rgba(169,137,224,0.28)] ${className}`}
       title={slug}
     >
       <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[rgba(248,246,241,0.04)] ring-1 ring-[rgba(248,246,241,0.1)]">
-        <Hash size={11} className="text-[rgba(232,136,181,0.6)]" strokeWidth={1.75} />
+        <Hash size={11} className="text-[rgba(169,137,224,0.6)]" strokeWidth={1.75} />
       </span>
       <span className="truncate text-[12px] tracking-[0.15px] text-[var(--text-primary)]">
         {slug}
@@ -471,7 +471,7 @@ export function AdminTableNumber({ value }: { value: number | string }) {
   const padded = String(value).padStart(2, '0')
   return (
     <div className="inline-flex items-center gap-2.5" title={`Orden: ${value}`}>
-      <span className="h-4 w-px shrink-0 bg-gradient-to-b from-transparent via-[rgba(232,136,181,0.55)] to-transparent" />
+      <span className="h-4 w-px shrink-0 bg-gradient-to-b from-transparent via-[rgba(169,137,224,0.55)] to-transparent" />
       <span className="text-[15px] tabular-nums tracking-[0.05em] text-[var(--text-primary)]">
         {padded}
       </span>
@@ -503,7 +503,7 @@ export function AdminTableStatus({
       'border-[rgba(248,113,113,0.3)] bg-[rgba(248,113,113,0.1)] text-red-400 shadow-[0_0_12px_rgba(248,113,113,0.08)]',
     neutral:
       'border-[var(--border-input)] bg-[var(--bg-muted)] text-[var(--text-muted)]',
-    gold: 'border-[rgba(232,136,181,0.35)] bg-[rgba(232,136,181,0.12)] text-[var(--accent-secondary)] shadow-[0_0_12px_rgba(232,136,181,0.1)]',
+    gold: 'border-[rgba(169,137,224,0.35)] bg-[rgba(169,137,224,0.12)] text-[var(--accent-secondary)] shadow-[0_0_12px_rgba(169,137,224,0.1)]',
   }
   const iconColors: Record<StatusVariant, string> = {
     success: 'text-emerald-400',
@@ -621,7 +621,7 @@ export function AdminTableActions({
         visibility: menuCoords ? 'visible' : 'hidden',
         zIndex: 9999,
       }}
-      className="min-w-[10.5rem] overflow-hidden rounded-xl border border-[rgba(232,136,181,0.22)] bg-[var(--bg-muted)] py-1 shadow-[0_12px_40px_rgba(0,0,0,0.5)]"
+      className="min-w-[10.5rem] overflow-hidden rounded-xl border border-[rgba(169,137,224,0.22)] bg-[var(--bg-muted)] py-1 shadow-[0_12px_40px_rgba(0,0,0,0.5)]"
     >
       <button
         type="button"
@@ -630,12 +630,12 @@ export function AdminTableActions({
           setOpen(false)
           onEdit()
         }}
-        className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-[12px] text-[var(--text-primary)] transition-colors hover:bg-[rgba(232,136,181,0.1)] hover:text-[var(--accent-secondary)]"
+        className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-[12px] text-[var(--text-primary)] transition-colors hover:bg-[rgba(169,137,224,0.1)] hover:text-[var(--accent-secondary)]"
       >
-        <Pencil size={14} className="shrink-0 text-[rgba(232,136,181,0.65)]" />
+        <Pencil size={14} className="shrink-0 text-[rgba(169,137,224,0.65)]" />
         {editLabel}
       </button>
-      <div className="mx-3 h-px bg-[rgba(232,136,181,0.1)]" />
+      <div className="mx-3 h-px bg-[rgba(169,137,224,0.1)]" />
       <button
         type="button"
         role="menuitem"
@@ -659,8 +659,8 @@ export function AdminTableActions({
         onClick={() => setOpen(v => !v)}
         className={`flex h-9 w-9 items-center justify-center rounded-full border transition-all ${
           open
-            ? 'border-[rgba(232,136,181,0.45)] bg-[rgba(232,136,181,0.12)] text-[var(--accent-secondary)]'
-            : 'border-transparent text-[var(--text-subtle)] hover:border-[rgba(232,136,181,0.25)] hover:bg-[rgba(232,136,181,0.08)] hover:text-[var(--accent-secondary)]'
+            ? 'border-[rgba(169,137,224,0.45)] bg-[rgba(169,137,224,0.12)] text-[var(--accent-secondary)]'
+            : 'border-transparent text-[var(--text-subtle)] hover:border-[rgba(169,137,224,0.25)] hover:bg-[rgba(169,137,224,0.08)] hover:text-[var(--accent-secondary)]'
         }`}
         aria-label="Acciones"
         aria-expanded={open}
@@ -713,13 +713,13 @@ export function AdminTablePagination({
   }
 
   const navBtnClass =
-    'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-muted)] px-3 text-[10px] uppercase tracking-[1.4px] text-[var(--text-muted)] transition-all hover:border-[rgba(232,136,181,0.4)] hover:bg-[rgba(232,136,181,0.1)] hover:text-[var(--accent-secondary)] hover:shadow-[0_0_16px_rgba(232,136,181,0.08)] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:border-[var(--border-subtle)] disabled:hover:bg-[var(--bg-muted)] disabled:hover:text-[var(--text-muted)] disabled:hover:shadow-none'
+    'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-muted)] px-3 text-[10px] uppercase tracking-[1.4px] text-[var(--text-muted)] transition-all hover:border-[rgba(169,137,224,0.4)] hover:bg-[rgba(169,137,224,0.1)] hover:text-[var(--accent-secondary)] hover:shadow-[0_0_16px_rgba(169,137,224,0.08)] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:border-[var(--border-subtle)] disabled:hover:bg-[var(--bg-muted)] disabled:hover:text-[var(--text-muted)] disabled:hover:shadow-none'
 
   const pageBtnClass = (active: boolean) =>
     `inline-flex h-9 min-w-9 items-center justify-center rounded-xl border px-2 text-[12px] tabular-nums transition-all ${
       active
-        ? 'border-[rgba(232,136,181,0.5)] bg-gradient-to-b from-[rgba(232,136,181,0.18)] to-[rgba(232,136,181,0.08)] text-[var(--accent-secondary)] shadow-[0_0_0_1px_rgba(232,136,181,0.12),0_4px_16px_rgba(232,136,181,0.12)]'
-        : 'border-transparent text-[var(--text-muted)] hover:border-[rgba(232,136,181,0.28)] hover:bg-[rgba(232,136,181,0.08)] hover:text-[var(--accent-secondary)]'
+        ? 'border-[rgba(169,137,224,0.5)] bg-gradient-to-b from-[rgba(169,137,224,0.18)] to-[rgba(169,137,224,0.08)] text-[var(--accent-secondary)] shadow-[0_0_0_1px_rgba(169,137,224,0.12),0_4px_16px_rgba(169,137,224,0.12)]'
+        : 'border-transparent text-[var(--text-muted)] hover:border-[rgba(169,137,224,0.28)] hover:bg-[rgba(169,137,224,0.08)] hover:text-[var(--accent-secondary)]'
     }`
 
   return (
@@ -727,7 +727,7 @@ export function AdminTablePagination({
       className={
         compact
           ? 'flex flex-col items-center gap-3 pt-3'
-          : 'flex flex-col gap-4 border-t border-[rgba(232,136,181,0.16)] bg-[rgba(232,136,181,0.04)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6'
+          : 'flex flex-col gap-4 border-t border-[rgba(169,137,224,0.16)] bg-[rgba(169,137,224,0.04)] px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6'
       }
       aria-label="Paginación de tabla"
     >

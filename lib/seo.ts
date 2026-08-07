@@ -7,7 +7,7 @@ import {
   getSiteName,
   type SiteConfigMap,
 } from '@/lib/site-config'
-import { DIRECCION_NEGOCIO } from '@/lib/negocio'
+import { DIRECCION_NEGOCIO, resolveWhatsAppNumero } from '@/lib/negocio'
 
 const LOCALE = 'es_CO'
 
@@ -148,7 +148,7 @@ export function breadcrumbJsonLd(items: { name: string; path: string }[]) {
 
 export function organizationJsonLd(config: SiteConfigMap) {
   const siteName = getSiteName(config)
-  const whatsapp = config.whatsapp_numero?.trim()
+  const whatsapp = resolveWhatsAppNumero(config.whatsapp_numero)
 
   return {
     '@context': 'https://schema.org',
@@ -156,20 +156,16 @@ export function organizationJsonLd(config: SiteConfigMap) {
     name: siteName,
     url: getSiteUrl(),
     description: getSiteDescription(config),
-    ...(whatsapp
-      ? {
-          contactPoint: {
-            '@type': 'ContactPoint',
-            telephone: `+${whatsapp}`,
-            contactType: 'customer service',
-            availableLanguage: 'Spanish',
-          },
-        }
-      : {}),
+    contactPoint: {
+      '@type': 'ContactPoint',
+      telephone: `+${whatsapp}`,
+      contactType: 'customer service',
+      availableLanguage: 'Spanish',
+    },
     address: {
       '@type': 'PostalAddress',
       streetAddress: DIRECCION_NEGOCIO,
-      addressLocality: 'Armenia',
+      addressLocality: 'Quimbaya',
       addressRegion: 'Quindío',
       addressCountry: 'CO',
     },

@@ -37,7 +37,7 @@ export function InfoBanner({
 }) {
   return (
     <div
-      className={`flex items-start gap-3 rounded-xl border border-[rgba(232,136,181,0.22)] bg-[rgba(232,136,181,0.06)] shadow-[inset_0_1px_0_rgba(232,136,181,0.08)] md:rounded-xl ${
+      className={`flex items-start gap-3 rounded-xl border border-[rgba(169,137,224,0.22)] bg-[rgba(169,137,224,0.06)] shadow-[inset_0_1px_0_rgba(169,137,224,0.08)] md:rounded-xl ${
         compact ? 'px-3.5 py-3' : 'px-4 py-3.5'
       }`}
     >
@@ -57,11 +57,11 @@ export function FormSection({
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-3">
-        <div className="h-px flex-1 bg-gradient-to-r from-[rgba(232,136,181,0.35)] to-transparent" />
+        <div className="h-px flex-1 bg-gradient-to-r from-[rgba(169,137,224,0.35)] to-transparent" />
         <h3 className="shrink-0 text-[10px] font-medium uppercase tracking-[2.5px] text-[var(--accent-primary)]">
           {title}
         </h3>
-        <div className="h-px flex-1 bg-gradient-to-l from-[rgba(232,136,181,0.35)] to-transparent" />
+        <div className="h-px flex-1 bg-gradient-to-l from-[rgba(169,137,224,0.35)] to-transparent" />
       </div>
       {children}
     </section>

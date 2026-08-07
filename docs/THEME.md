@@ -2,19 +2,19 @@
 
 ## Tema activo: claro (único)
 
-La tienda usa un tema claro cosmético con fondos rosa pálido, acentos rosa/lila y tipografía redondeada. Las variables viven en `app/globals.css` bajo `:root`.
+La tienda usa un tema claro cosmético **lila-first**: fondos lavanda, acento principal lila, rosa suave como secundario y tipografía redondeada. Las variables viven en `app/globals.css` bajo `:root`.
 
 | Token | Valor | Uso |
 |-------|-------|-----|
-| `--bg-base` | `#FFF7FA` | Fondo general |
+| `--bg-base` | `#F9F6FF` | Fondo general |
 | `--bg-surface` | `#FFFFFF` | Cards, paneles y modales |
-| `--bg-muted` | `#FCEEF5` | Superficies secundarias |
-| `--accent-primary` | `#E888B5` | Botones y estados activos |
-| `--accent-secondary` | `#B79CE8` | Badges, iconos y acentos |
-| `--accent-deep` | `#9C4B7C` | CTAs y precios destacados |
-| `--text-primary` | `#3A2E3D` | Títulos y texto principal |
-| `--text-muted` | `#8B7A91` | Texto secundario |
-| `--border` | `#F3D9E8` | Bordes |
+| `--bg-muted` | `#F0EAFB` | Superficies secundarias |
+| `--accent-primary` | `#A989E0` | Botones y estados activos |
+| `--accent-secondary` | `#E8A0C8` | Badges, iconos y acentos dulces |
+| `--accent-deep` | `#6E4FA8` | CTAs y precios destacados |
+| `--text-primary` | `#2A2240` | Títulos y texto principal |
+| `--text-muted` | `#6B6080` | Texto secundario |
+| `--border` | `#E6DCF5` | Bordes |
 | `--success` | `#8FD9B6` | Estados positivos |
 | `--warning` | `#F4C77A` | Alertas |
 | `--danger` | `#E8798A` | Errores y eliminación |

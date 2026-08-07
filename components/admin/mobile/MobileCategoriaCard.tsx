@@ -18,12 +18,12 @@ export default function MobileCategoriaCard({
 }: MobileCategoriaCardProps) {
   return (
     <article
-      className={`mobile-admin-categoria-card overflow-hidden rounded-xl border border-[rgba(232,136,181,0.22)] bg-[var(--bg-card)] shadow-[var(--shadow-soft)] ${
+      className={`mobile-admin-categoria-card overflow-hidden rounded-xl border border-[rgba(169,137,224,0.22)] bg-[var(--bg-card)] shadow-[var(--shadow-soft)] ${
         categoria.esSubcategoria ? 'ml-4' : ''
       }`}
     >
       <div className="flex gap-3 p-3">
-        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-[rgba(232,136,181,0.18)] bg-[var(--bg-muted)]">
+        <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-[rgba(169,137,224,0.18)] bg-[var(--bg-muted)]">
           {categoria.imagen_url ? (
             <img
               src={categoria.imagen_url}
@@ -56,7 +56,7 @@ export default function MobileCategoriaCard({
         </div>
       </div>
 
-      <div className="flex items-center justify-between border-t border-[rgba(232,136,181,0.12)] px-3 py-2.5">
+      <div className="flex items-center justify-between border-t border-[rgba(169,137,224,0.12)] px-3 py-2.5">
         <button
           type="button"
           onClick={onToggleActiva}
@@ -71,7 +71,7 @@ export default function MobileCategoriaCard({
           <button
             type="button"
             onClick={onEdit}
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-[var(--text-muted)] active:bg-[rgba(232,136,181,0.1)] active:text-[var(--accent-primary)]"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-[var(--text-muted)] active:bg-[rgba(169,137,224,0.1)] active:text-[var(--accent-primary)]"
             aria-label="Editar"
           >
             <Edit2 size={16} />

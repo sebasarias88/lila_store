@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { createSupabaseServer } from '@/lib/supabase-server'
 import HeroBanner from '@/components/catalog/HeroBanner'
-import TrustStrip from '@/components/catalog/TrustStrip'
 import PromoStrip from '@/components/catalog/PromoStrip'
 import CategoriasGrid from '@/components/catalog/CategoriasGrid'
 import ProductosDestacados from '@/components/catalog/ProductosDestacados'
@@ -10,9 +9,12 @@ import ProductosNovedades from '@/components/catalog/ProductosNovedades'
 import TestimoniosSection from '@/components/catalog/TestimoniosSection'
 import NosotrosSection from '@/components/catalog/NosotrosSection'
 import ProcesoPedido from '@/components/catalog/ProcesoPedido'
+import AnuncioModalPromo from '@/components/catalog/AnuncioModalPromo'
 import { buildMetadata } from '@/lib/seo'
 import { getSiteConfig, getSiteDescription } from '@/lib/site-config'
 import { rethrowIfNextControlFlowError } from '@/lib/next-errors'
+import { catalogPath } from '@/lib/catalog'
+import { getAnuncioModalVigente } from '@/lib/anuncio-modal-server'
 import type { Banner, Categoria, Producto, Promocion } from '@/types'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -74,12 +76,12 @@ export default async function HomePage() {
         .eq('disponible_detal', true)
         .not('precio_antes', 'is', null)
         .order('orden')
-        .limit(10),
+        .limit(12),
       supabase.from('productos')
         .select('*, categoria:categorias(id,nombre,slug,descuento_porcentaje,descuento_activo,descuento_fecha_fin,descuento_porcentaje_mayoreo,descuento_activo_mayoreo,descuento_fecha_fin_mayoreo)')
         .eq('disponible_detal', true)
         .order('created_at', { ascending: false })
-        .limit(10),
+        .limit(16),
     ])
 
     configData?.forEach(row => { config[row.clave] = row.valor })
@@ -87,34 +89,41 @@ export default async function HomePage() {
     promociones = (promocionesData as Promocion[] | null) || []
     categorias = (categoriasData as Categoria[] | null) || []
     destacados = (destacadosData as Producto[] | null) || []
-    ofertas = ((ofertasData as Producto[] | null) || []).filter(
-      p => p.precio_antes != null && p.precio_antes > p.precio,
-    )
+
     const destacadosIds = new Set(destacados.map(p => p.id))
-    novedades = uniqueById((novedadesData as Producto[] | null) || []).filter(
-      p => !destacadosIds.has(p.id),
-    ).slice(0, 10)
+
+    ofertas = ((ofertasData as Producto[] | null) || [])
+      .filter(p => p.precio_antes != null && p.precio_antes > p.precio)
+      .filter(p => !destacadosIds.has(p.id))
+      .slice(0, 10)
+
+    const ofertasIds = new Set(ofertas.map(p => p.id))
+    novedades = uniqueById((novedadesData as Producto[] | null) || [])
+      .filter(p => !destacadosIds.has(p.id) && !ofertasIds.has(p.id))
+      .slice(0, 10)
   } catch (error) {
     rethrowIfNextControlFlowError(error)
     console.error('[HomePage] Error cargando datos:', error)
   }
 
+  const anuncioModal = await getAnuncioModalVigente()
+
   return (
     <div className="min-h-screen bg-[var(--bg-base)]">
+      <AnuncioModalPromo anuncio={anuncioModal} catalogType="detal" />
       <HeroBanner banners={banners} config={config} />
-      <TrustStrip />
       <CategoriasGrid categorias={categorias} />
-      <PromoStrip promociones={promociones} />
       <ProductosDestacados productos={destacados} />
+      <PromoStrip promociones={promociones} />
       <ProductosNovedades productos={novedades} />
       <ProductosOfertas productos={ofertas} />
+      <ProcesoPedido catalogHref={catalogPath('detal', '/productos')} />
       <TestimoniosSection />
       <NosotrosSection
         texto={config['texto_nosotros'] || ''}
-        whatsapp={config['whatsapp_numero'] || '573185867702'}
+        whatsapp={config['whatsapp_numero']}
         nombreNegocio="lila-store"
       />
-      <ProcesoPedido />
     </div>
   )
 }

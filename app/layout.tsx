@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     template: '%s | lila-store',
   },
   description:
-    'Catálogo detal de belleza y cuidado capilar en Carrera 15 #19-25 Local 8, Armenia, Quindío. Envíos a toda Colombia.',
+    'Catálogo detal de belleza en Armenia y Quimbaya, Quindío. Maquillaje, skincare y cuidados con envíos a toda Colombia.',
   keywords: [
     'belleza',
     'cuidado capilar',

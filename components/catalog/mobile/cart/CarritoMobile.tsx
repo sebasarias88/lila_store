@@ -12,9 +12,14 @@ import {
   Package,
   Phone,
   Sparkles,
+  Store,
 } from 'lucide-react'
 import { ItemCarrito, DatosCliente } from '@/types'
 import { type CatalogType } from '@/lib/catalog'
+import type { MetodoPagoOpcion } from '@/lib/payment-methods'
+import { metodosPagoParaCheckout } from '@/lib/payment-methods'
+import EntregaPicker from '@/components/catalog/cart/EntregaPicker'
+import MetodoPagoPicker from '@/components/catalog/cart/MetodoPagoPicker'
 import MobileCartSteps, { type Step } from '@/components/catalog/mobile/cart/MobileCartSteps'
 import MobileCartItem, { formatPrecio } from '@/components/catalog/mobile/cart/MobileCartItem'
 import MobileCartSummary from '@/components/catalog/mobile/cart/MobileCartSummary'
@@ -37,10 +42,6 @@ function WhatsAppIcon({ size = 16 }: { size?: number }) {
   )
 }
 
-type Config = {
-  metodos_pago: string[]
-}
-
 type CarritoMobileProps = {
   catalogType: CatalogType
   productosHref: string
@@ -58,8 +59,7 @@ type CarritoMobileProps = {
   setDatos: React.Dispatch<React.SetStateAction<DatosCliente>>
   errores: Partial<DatosCliente>
   setErrores: React.Dispatch<React.SetStateAction<Partial<DatosCliente>>>
-  config: Config
-  loadingConfig: boolean
+  metodosPago: MetodoPagoOpcion[]
   enviando: boolean
   costoEnvio: number
   envioGratis: boolean
@@ -115,8 +115,7 @@ export default function CarritoMobile({
   setDatos,
   errores,
   setErrores,
-  config,
-  loadingConfig,
+  metodosPago,
   enviando,
   costoEnvio,
   envioGratis,
@@ -127,6 +126,7 @@ export default function CarritoMobile({
   handleEnviarWhatsApp,
   inputClass,
 }: CarritoMobileProps) {
+  const esRecogida = datos.tipoEntrega === 'recogida'
   const stickySpacer =
     step === 'resumen'
       ? 'h-[calc(10.5rem+env(safe-area-inset-bottom,0px))]'
@@ -220,15 +220,51 @@ export default function CarritoMobile({
                   </div>
                 </div>
 
-                <div className="mt-5">
+                <div className="mt-5 space-y-4">
+                  <div className="rounded-[20px] border border-[var(--border)] bg-[var(--bg-surface)] p-4 shadow-[var(--shadow-soft)]">
+                    <EntregaPicker
+                      compact
+                      tipoEntrega={datos.tipoEntrega}
+                      sucursalRecogida={datos.sucursalRecogida}
+                      error={errores.sucursalRecogida}
+                      onTipoChange={tipo => {
+                        setDatos(d => {
+                          const nextMetodos = metodosPagoParaCheckout(tipo)
+                          const pagoOk = nextMetodos.some(m => m.label === d.metodoPago)
+                          return {
+                            ...d,
+                            tipoEntrega: tipo,
+                            sucursalRecogida: tipo === 'envio' ? '' : d.sucursalRecogida,
+                            metodoPago: pagoOk ? d.metodoPago : '',
+                          }
+                        })
+                        if (errores.sucursalRecogida) {
+                          setErrores(er => ({ ...er, sucursalRecogida: '' }))
+                        }
+                      }}
+                      onSucursalChange={label => {
+                        setDatos(d => ({ ...d, sucursalRecogida: label }))
+                        if (errores.sucursalRecogida) {
+                          setErrores(er => ({ ...er, sucursalRecogida: '' }))
+                        }
+                      }}
+                    />
+                  </div>
+
                   <MobileCartSummary
                     items={items}
                     subtotal={subtotal}
                     catalogType={catalogType}
+                    envio={costoEnvio}
+                    total={esRecogida ? totalFinal : undefined}
+                    tiempoEntrega={esRecogida ? tiempoEntrega : undefined}
+                    envioGratis={envioGratis}
+                    showEnvio={esRecogida}
+                    esRecogida={esRecogida}
                     compact
                   />
                   {catalogType === 'mayoreo' && !cumpleMinimo && (
-                    <div className="mt-4 rounded-xl border border-[rgba(232,136,181,0.4)] bg-[rgba(232,136,181,0.08)] p-4 md:rounded-xl">
+                    <div className="rounded-xl border border-[rgba(169,137,224,0.4)] bg-[rgba(169,137,224,0.08)] p-4 md:rounded-xl">
                       <p className="text-[11px] font-medium text-[var(--accent-deep)]">
                         Compra mínima mayorista
                       </p>
@@ -241,14 +277,18 @@ export default function CarritoMobile({
                       </p>
                     </div>
                   )}
-                  <p className="mt-3 text-center text-[11px] font-light leading-relaxed text-[var(--text-subtle)]">
-                    El envío se calcula en el siguiente paso según tu ciudad.
+                  <p className="text-center text-[11px] font-light leading-relaxed text-[var(--text-subtle)]">
+                    {esRecogida
+                      ? datos.sucursalRecogida
+                        ? 'Recoges en tienda · sin costo de envío 💕'
+                        : 'Elige la tienda donde quieres recoger ✨'
+                      : 'El envío se calcula según tu ciudad 💕'}
                   </p>
                   <Link
                     href={productosHref}
-                    className="mt-4 block py-2 text-center text-[11px] font-medium text-[var(--text-muted)] active:text-[var(--accent-primary)]"
+                    className="mt-1 block py-2 text-center text-[11px] font-medium text-[var(--text-muted)] active:text-[var(--accent-primary)]"
                   >
-                    ← Seguir comprando
+                    ← Seguir explorando 💕
                   </Link>
                 </div>
 
@@ -257,13 +297,13 @@ export default function CarritoMobile({
                 <MobileCartStickyBar
                   totalLabel="Subtotal"
                   totalValue={formatPrecio(subtotal)}
-                  primaryLabel="Continuar"
+                  primaryLabel="Continuar ✨"
                   onPrimary={handleContinuar}
                   primaryDisabled={catalogType === 'mayoreo' && !cumpleMinimo}
                   hint={
                     catalogType === 'mayoreo' && !cumpleMinimo
                       ? `Mínimo ${formatPrecio(minimoMayoreo)} — faltan ${formatPrecio(faltaParaMinimo)}`
-                      : `${items.length} producto${items.length !== 1 ? 's' : ''} en tu carrito`
+                      : `${items.length} tesoro${items.length !== 1 ? 's' : ''} en tu bolsita`
                   }
                 />
               </>
@@ -284,10 +324,12 @@ export default function CarritoMobile({
               <div className="mobile-cart-list-panel__header">
                 <div>
                   <p className="text-[12px] font-bold text-[var(--accent-deep)]">
-                    Contacto y entrega
+                    {esRecogida ? 'Contacto' : 'Contacto y entrega'}
                   </p>
                   <p className="mt-1 text-[12px] font-light text-[var(--text-muted)]">
-                    Para coordinar tu pedido
+                    {esRecogida
+                      ? 'Solo necesitamos tus datos para avisar'
+                      : 'Para coordinar tu pedido'}
                   </p>
                 </div>
               </div>
@@ -324,50 +366,75 @@ export default function CarritoMobile({
                   />
                 </CartFormField>
 
-                <CartFormField id="cart-ciudad" label="Ciudad" required error={errores.ciudad}>
-                  <input
-                    id="cart-ciudad"
-                    type="text"
-                    value={datos.ciudad}
-                    onChange={e => {
-                      setDatos(d => ({ ...d, ciudad: e.target.value }))
-                      if (errores.ciudad) setErrores(er => ({ ...er, ciudad: '' }))
-                    }}
-                    placeholder="Ej: Armenia, Bogotá..."
-                    className={checkoutInputClass}
-                    autoComplete="address-level2"
-                  />
-                </CartFormField>
-
-                {datos.ciudad.trim() ? (
-                  <div className="mobile-cart-checkout-shipping">
-                    <p className="flex items-start gap-2">
-                      <Truck size={14} className="mt-0.5 shrink-0 text-[var(--accent-deep)]" />
-                      <span>
-                        {envioGratis
-                          ? 'Envío gratis para tu pedido'
-                          : costoEnvio === 0
-                            ? 'Envío a convenir con el negocio'
-                            : `Envío: ${formatPrecio(costoEnvio)} — ${tiempoEntrega}`}
-                      </span>
-                    </p>
+                {esRecogida ? (
+                  <div className="mx-4 mb-3 rounded-xl border border-[var(--border)] bg-[var(--bg-muted)] p-3.5">
+                    <div className="flex items-start gap-2.5">
+                      <Store size={15} className="mt-0.5 shrink-0 text-[var(--accent-primary)]" />
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-bold text-[var(--accent-deep)]">
+                          Recoges en tienda
+                        </p>
+                        <p className="mt-1 text-[12px] font-medium leading-relaxed text-[var(--text-primary)]">
+                          {datos.sucursalRecogida}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setStep('carrito')}
+                          className="mt-2 text-[11px] font-bold text-[var(--accent-deep)]"
+                        >
+                          Cambiar tienda
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                ) : null}
+                ) : (
+                  <>
+                    <CartFormField id="cart-ciudad" label="Ciudad" required error={errores.ciudad}>
+                      <input
+                        id="cart-ciudad"
+                        type="text"
+                        value={datos.ciudad}
+                        onChange={e => {
+                          setDatos(d => ({ ...d, ciudad: e.target.value }))
+                          if (errores.ciudad) setErrores(er => ({ ...er, ciudad: '' }))
+                        }}
+                        placeholder="Ej: Armenia, Bogotá..."
+                        className={checkoutInputClass}
+                        autoComplete="address-level2"
+                      />
+                    </CartFormField>
 
-                <CartFormField id="cart-direccion" label="Dirección" required error={errores.direccion}>
-                  <input
-                    id="cart-direccion"
-                    type="text"
-                    value={datos.direccion}
-                    onChange={e => {
-                      setDatos(d => ({ ...d, direccion: e.target.value }))
-                      if (errores.direccion) setErrores(er => ({ ...er, direccion: '' }))
-                    }}
-                    placeholder="Calle, barrio, referencias..."
-                    className={checkoutInputClass}
-                    autoComplete="street-address"
-                  />
-                </CartFormField>
+                    {datos.ciudad.trim() ? (
+                      <div className="mobile-cart-checkout-shipping">
+                        <p className="flex items-start gap-2">
+                          <Truck size={14} className="mt-0.5 shrink-0 text-[var(--accent-deep)]" />
+                          <span>
+                            {envioGratis
+                              ? 'Envío gratis para tu pedido'
+                              : costoEnvio === 0
+                                ? 'Envío a convenir con el negocio'
+                                : `Envío: ${formatPrecio(costoEnvio)} — ${tiempoEntrega}`}
+                          </span>
+                        </p>
+                      </div>
+                    ) : null}
+
+                    <CartFormField id="cart-direccion" label="Dirección" required error={errores.direccion}>
+                      <input
+                        id="cart-direccion"
+                        type="text"
+                        value={datos.direccion}
+                        onChange={e => {
+                          setDatos(d => ({ ...d, direccion: e.target.value }))
+                          if (errores.direccion) setErrores(er => ({ ...er, direccion: '' }))
+                        }}
+                        placeholder="Calle, barrio, referencias..."
+                        className={checkoutInputClass}
+                        autoComplete="street-address"
+                      />
+                    </CartFormField>
+                  </>
+                )}
               </div>
             </div>
 
@@ -378,51 +445,21 @@ export default function CarritoMobile({
                     Forma de pago
                   </p>
                   <p className="mt-1 text-[12px] font-light text-[var(--text-muted)]">
-                    Elige cómo deseas pagar
+                    ePayco incluye tarjeta, PSE y más
                   </p>
                 </div>
               </div>
 
-              {loadingConfig ? (
-                <div className="space-y-0 px-4 py-3">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="mb-2 h-11 animate-pulse rounded-lg bg-[var(--bg-muted)] last:mb-0" />
-                  ))}
-                </div>
-              ) : (
-                <div className="mobile-cart-pay-rows">
-                  {config.metodos_pago.map(metodo => (
-                    <button
-                      key={metodo}
-                      type="button"
-                      onClick={() => {
-                        setDatos(d => ({ ...d, metodoPago: metodo }))
-                        if (errores.metodoPago) setErrores(er => ({ ...er, metodoPago: '' }))
-                      }}
-                      className={`mobile-cart-pay-option${
-                        datos.metodoPago === metodo ? ' mobile-cart-pay-option--active' : ''
-                      }`}
-                    >
-                      <span className="text-[14px] font-medium">{metodo}</span>
-                      <span
-                        className={`mobile-cart-pay-radio flex h-5 w-5 items-center justify-center rounded-full border ${
-                          datos.metodoPago === metodo
-                            ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)]'
-                            : 'border-[var(--border-input)] bg-[var(--bg-card)]'
-                        }`}
-                      >
-                        {datos.metodoPago === metodo ? (
-                          <span className="h-2 w-2 rounded-full bg-white" />
-                        ) : null}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {errores.metodoPago ? (
-                <p className="px-4 pb-3 text-[11px] text-red-400">{errores.metodoPago}</p>
-              ) : null}
+              <MetodoPagoPicker
+                compact
+                metodos={metodosPago}
+                selected={datos.metodoPago}
+                error={errores.metodoPago}
+                onSelect={label => {
+                  setDatos(d => ({ ...d, metodoPago: label }))
+                  if (errores.metodoPago) setErrores(er => ({ ...er, metodoPago: '' }))
+                }}
+              />
 
               <div className="mobile-cart-checkout-notes">
                 <label htmlFor="cart-notas" className="mobile-cart-checkout-notes__label">
@@ -443,7 +480,7 @@ export default function CarritoMobile({
             <MobileCartStickyBar
               totalLabel="Subtotal"
               totalValue={formatPrecio(subtotal)}
-              primaryLabel="Revisar pedido"
+              primaryLabel="Revisar pedido ✨"
               onPrimary={handleConfirmar}
               secondaryLabel="Volver"
               onSecondary={() => setStep('carrito')}
@@ -461,16 +498,18 @@ export default function CarritoMobile({
             transition={{ duration: 0.2 }}
             className="space-y-5"
           >
-            <div className="mobile-cart-whatsapp-banner flex items-center gap-3.5 rounded-xl border border-[var(--border-card)] p-4 shadow-[var(--shadow-soft)]">
-              <span className="mobile-cart-whatsapp-banner__icon" aria-hidden>
-                <WhatsAppIcon size={20} />
+            <div className="mobile-cart-whatsapp-banner flex items-center gap-3.5 rounded-xl border border-[var(--border-card)] bg-[var(--bg-muted)] p-4 shadow-[var(--shadow-soft)]">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[var(--accent-primary)]" aria-hidden>
+                {catalogType === 'mayoreo' ? <WhatsAppIcon size={20} /> : <Sparkles size={18} />}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-semibold text-[#1a9e4b]">
-                  Listo para WhatsApp
+                <p className="text-[11px] font-semibold text-[var(--accent-deep)]">
+                  {catalogType === 'mayoreo' ? 'Listo para WhatsApp' : 'Último pasito ✨'}
                 </p>
                 <p className="mt-1 text-[12px] leading-relaxed text-[var(--text-muted)]">
-                  Último paso: confirma y te llevamos al chat con tu pedido armado.
+                  {catalogType === 'mayoreo'
+                    ? 'Confirma y te llevamos al chat con tu pedido armado.'
+                    : 'Por ahora confirmamos por WhatsApp · pronto pago en línea'}
                 </p>
               </div>
             </div>
@@ -512,15 +551,19 @@ export default function CarritoMobile({
                   <User size={15} strokeWidth={1.75} />
                 </span>
                 <p className="text-[12px] font-bold text-[var(--accent-deep)]">
-                  Datos de entrega
+                  {esRecogida ? 'Tus datos' : 'Datos de entrega'}
                 </p>
               </div>
               <dl className="mobile-cart-data-list">
                 {[
                   { label: 'Nombre', value: datos.nombre, icon: User },
                   { label: 'Celular', value: datos.celular, icon: Phone },
-                  { label: 'Ciudad', value: datos.ciudad, icon: MapPin },
-                  { label: 'Dirección', value: datos.direccion, icon: Truck },
+                  ...(esRecogida
+                    ? [{ label: 'Recoger en', value: datos.sucursalRecogida, icon: Store }]
+                    : [
+                        { label: 'Ciudad', value: datos.ciudad, icon: MapPin },
+                        { label: 'Dirección', value: datos.direccion, icon: Truck },
+                      ]),
                   { label: 'Pago', value: datos.metodoPago, icon: CreditCard },
                   ...(datos.notas ? [{ label: 'Notas', value: datos.notas, icon: FileText }] : []),
                 ].map(({ label, value, icon: Icon }) => (
@@ -548,11 +591,14 @@ export default function CarritoMobile({
               tiempoEntrega={tiempoEntrega}
               envioGratis={envioGratis}
               showEnvio
+              esRecogida={esRecogida}
               compact
             />
 
             <p className="text-center text-[11px] leading-relaxed text-[var(--text-subtle)]">
-              Al confirmar se abrirá WhatsApp con tu pedido listo. No se procesa hasta que lo envíes.
+              {catalogType === 'mayoreo'
+                ? 'Al confirmar se abrirá WhatsApp con tu pedido listo.'
+                : 'Por ahora confirmamos por WhatsApp con tu medio de pago elegido 💕'}
             </p>
 
             <div className={stickySpacer} aria-hidden />
@@ -560,12 +606,20 @@ export default function CarritoMobile({
             <MobileCartStickyBar
               totalLabel="Total a pagar"
               totalValue={formatPrecio(totalFinal)}
-              primaryLabel="Enviar por WhatsApp"
+              primaryLabel={
+                catalogType === 'mayoreo' ? 'Enviar por WhatsApp' : 'Confirmar pedido ✨'
+              }
               onPrimary={handleEnviarWhatsApp}
               primaryDisabled={enviando}
               primaryLoading={enviando}
-              primaryIcon={!enviando ? <WhatsAppIcon size={18} /> : undefined}
-              variant="whatsapp"
+              primaryIcon={
+                !enviando
+                  ? catalogType === 'mayoreo'
+                    ? <WhatsAppIcon size={18} />
+                    : <Sparkles size={18} />
+                  : undefined
+              }
+              variant={catalogType === 'mayoreo' ? 'whatsapp' : 'gold'}
               layout="stack"
               secondaryLabel="Volver a datos"
               onSecondary={() => setStep('datos')}

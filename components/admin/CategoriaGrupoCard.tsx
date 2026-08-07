@@ -21,8 +21,8 @@ const SUBS_VISIBLES = 4
 export function CategoriaGrupoCardSkeleton() {
   return (
     <div className="overflow-hidden rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card)] shadow-[var(--shadow-soft)]">
-      <div className="relative flex items-center gap-4 bg-gradient-to-r from-[rgba(232,136,181,0.04)] to-transparent p-4">
-        <span className="absolute inset-y-0 left-0 w-[3px] bg-[rgba(232,136,181,0.15)]" />
+      <div className="relative flex items-center gap-4 bg-gradient-to-r from-[rgba(169,137,224,0.04)] to-transparent p-4">
+        <span className="absolute inset-y-0 left-0 w-[3px] bg-[rgba(169,137,224,0.15)]" />
         <div className="h-14 w-14 shrink-0 animate-pulse rounded-xl bg-[var(--bg-muted)]" />
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex items-center gap-2">
@@ -34,7 +34,7 @@ export function CategoriaGrupoCardSkeleton() {
         <div className="hidden h-7 w-20 shrink-0 animate-pulse rounded-full bg-[var(--bg-muted)] sm:block" />
         <div className="h-7 w-7 shrink-0 animate-pulse rounded-lg bg-[var(--bg-muted)]" />
       </div>
-      <div className="border-t border-[var(--border-card)] bg-[rgba(232,136,181,0.02)]">
+      <div className="border-t border-[var(--border-card)] bg-[rgba(169,137,224,0.02)]">
         {Array.from({ length: 2 }).map((_, i) => (
           <div
             key={i}
@@ -65,14 +65,14 @@ function Thumb({
   const dim = size === 'lg' ? 'h-14 w-14 rounded-xl' : 'h-9 w-9 rounded-lg'
   return (
     <div
-      className={`relative shrink-0 overflow-hidden bg-[var(--bg-muted)] ring-1 ring-[rgba(232,136,181,0.22)] ${
+      className={`relative shrink-0 overflow-hidden bg-[var(--bg-muted)] ring-1 ring-[rgba(169,137,224,0.22)] ${
         size === 'lg' ? 'shadow-[0_6px_18px_rgba(0,0,0,0.18)]' : ''
       } ${dim}`}
     >
       {src ? (
         <img src={src} alt={alt} className="h-full w-full bg-white object-cover" />
       ) : (
-        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[rgba(232,136,181,0.12)] to-[rgba(232,136,181,0.03)] text-[rgba(232,136,181,0.55)]">
+        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[rgba(169,137,224,0.12)] to-[rgba(169,137,224,0.03)] text-[rgba(169,137,224,0.55)]">
           {fallback}
         </div>
       )}
@@ -104,11 +104,11 @@ export default function CategoriaGrupoCard({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04, duration: 0.3, ease: 'easeOut' }}
-      className="group overflow-hidden rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card)] shadow-[var(--shadow-soft)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[rgba(232,136,181,0.4)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.14)]"
+      className="group overflow-hidden rounded-2xl border border-[var(--border-card)] bg-[var(--bg-card)] shadow-[var(--shadow-soft)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[rgba(169,137,224,0.4)] hover:shadow-[0_12px_32px_rgba(0,0,0,0.14)]"
     >
       {/* Cabecera — categoría principal */}
-      <div className="relative flex items-center gap-3 bg-gradient-to-r from-[rgba(232,136,181,0.06)] to-transparent p-3.5 sm:gap-4 sm:p-4">
-        <span className="absolute inset-y-0 left-0 w-[3px] bg-gradient-to-b from-[var(--accent-secondary)] via-[var(--accent-primary)] to-[rgba(232,136,181,0.1)]" />
+      <div className="relative flex items-center gap-3 bg-gradient-to-r from-[rgba(169,137,224,0.06)] to-transparent p-3.5 sm:gap-4 sm:p-4">
+        <span className="absolute inset-y-0 left-0 w-[3px] bg-gradient-to-b from-[var(--accent-secondary)] via-[var(--accent-primary)] to-[rgba(169,137,224,0.1)]" />
 
         <Thumb
           src={root.imagen_url}
@@ -122,12 +122,12 @@ export default function CategoriaGrupoCard({
             <h3 className="truncate text-[15px] font-medium tracking-[0.2px] text-[var(--text-primary)]">
               {root.nombre}
             </h3>
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[rgba(232,136,181,0.28)] bg-[rgba(232,136,181,0.1)] px-2 py-0.5 text-[10px] font-medium tracking-[0.3px] text-[var(--accent-secondary)]">
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[rgba(169,137,224,0.28)] bg-[rgba(169,137,224,0.1)] px-2 py-0.5 text-[10px] font-medium tracking-[0.3px] text-[var(--accent-secondary)]">
               <FolderTree size={10} className="opacity-80" />
               {subs.length} {subs.length === 1 ? 'subcategoría' : 'subcategorías'}
             </span>
             {categoriaTieneDescuentoActivo(root, 'detal') && (
-              <span className="inline-flex shrink-0 items-center rounded-full border border-[rgba(232,136,181,0.35)] bg-[rgba(232,136,181,0.12)] px-2 py-0.5 text-[10px] font-medium text-[var(--accent-primary)]">
+              <span className="inline-flex shrink-0 items-center rounded-full border border-[rgba(169,137,224,0.35)] bg-[rgba(169,137,224,0.12)] px-2 py-0.5 text-[10px] font-medium text-[var(--accent-primary)]">
                 D -{root.descuento_porcentaje}%
               </span>
             )}
@@ -159,15 +159,15 @@ export default function CategoriaGrupoCard({
 
       {/* Cuerpo — subcategorías */}
       {subs.length > 0 ? (
-        <div className="border-t border-[var(--border-card)] bg-[rgba(232,136,181,0.02)]">
+        <div className="border-t border-[var(--border-card)] bg-[rgba(169,137,224,0.02)]">
           {subsVisibles.map(sub => (
             <div
               key={sub.id}
-              className="group/sub relative flex items-center gap-3 border-b border-[var(--border-card)] py-2.5 pl-6 pr-3.5 transition-colors last:border-b-0 hover:bg-[rgba(232,136,181,0.05)] sm:pl-9 sm:pr-4"
+              className="group/sub relative flex items-center gap-3 border-b border-[var(--border-card)] py-2.5 pl-6 pr-3.5 transition-colors last:border-b-0 hover:bg-[rgba(169,137,224,0.05)] sm:pl-9 sm:pr-4"
             >
               <CornerDownRight
                 size={14}
-                className="absolute left-2 shrink-0 text-[rgba(232,136,181,0.4)] transition-colors group-hover/sub:text-[var(--accent-primary)] sm:left-3.5"
+                className="absolute left-2 shrink-0 text-[rgba(169,137,224,0.4)] transition-colors group-hover/sub:text-[var(--accent-primary)] sm:left-3.5"
               />
               <Thumb
                 src={sub.imagen_url}
@@ -209,7 +209,7 @@ export default function CategoriaGrupoCard({
             <button
               type="button"
               onClick={() => setExpanded(v => !v)}
-              className="flex w-full items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium uppercase tracking-[0.8px] text-[var(--accent-primary)] transition-colors hover:bg-[rgba(232,136,181,0.06)]"
+              className="flex w-full items-center justify-center gap-1.5 py-2.5 text-[11px] font-medium uppercase tracking-[0.8px] text-[var(--accent-primary)] transition-colors hover:bg-[rgba(169,137,224,0.06)]"
             >
               {expanded
                 ? 'Ver menos'
@@ -223,7 +223,7 @@ export default function CategoriaGrupoCard({
         </div>
       ) : (
         <div className="flex items-center gap-2 border-t border-dashed border-[var(--border-card)] px-4 py-3 pl-6 text-[11px] font-light italic text-[var(--text-subtle)] sm:pl-9">
-          <CornerDownRight size={13} className="text-[rgba(232,136,181,0.3)]" />
+          <CornerDownRight size={13} className="text-[rgba(169,137,224,0.3)]" />
           Sin subcategorías aún
         </div>
       )}

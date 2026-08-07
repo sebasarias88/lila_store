@@ -17,7 +17,7 @@ export default function AdminError({
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 px-6 text-center">
-      <span className="flex h-16 w-16 items-center justify-center rounded-2xl border border-[rgba(232,136,181,0.25)] bg-[rgba(232,136,181,0.08)] text-[var(--accent-primary)]">
+      <span className="flex h-16 w-16 items-center justify-center rounded-2xl border border-[rgba(169,137,224,0.25)] bg-[rgba(169,137,224,0.08)] text-[var(--accent-primary)]">
         <TriangleAlert size={26} strokeWidth={1.5} />
       </span>
 

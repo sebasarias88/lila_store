@@ -157,7 +157,7 @@ export default function CategoriasPage() {
     <>
     <div className="hidden min-h-screen bg-[var(--bg-base)] p-6 sm:p-8 lg:p-10 md:block">
       {/* Header */}
-      <div className="mb-8 flex flex-col gap-5 border-b border-[rgba(232,136,181,0.16)] pb-8 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-8 flex flex-col gap-5 border-b border-[rgba(169,137,224,0.16)] pb-8 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="mb-3 flex items-center gap-3">
             <div className="h-px w-8 bg-[var(--accent-secondary)]" />
@@ -191,7 +191,7 @@ export default function CategoriasPage() {
         onFilterChange={setFiltroEstado}
       />
 
-      <div className="mb-4 flex items-center justify-between border-b border-[rgba(232,136,181,0.12)] pb-3">
+      <div className="mb-4 flex items-center justify-between border-b border-[rgba(169,137,224,0.12)] pb-3">
         <p className="text-[12px] uppercase tracking-[1px] text-[var(--text-muted)]">
           {conteos.principales} categoría{conteos.principales !== 1 ? 's' : ''}
           {conteos.subs > 0 && (
@@ -223,7 +223,7 @@ export default function CategoriasPage() {
         />
       ) : gruposFiltrados.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--border-card)] bg-[var(--bg-card)] px-6 py-20 text-center">
-          <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[rgba(232,136,181,0.25)] bg-[rgba(232,136,181,0.08)] text-[var(--accent-primary)]">
+          <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[rgba(169,137,224,0.25)] bg-[rgba(169,137,224,0.08)] text-[var(--accent-primary)]">
             <Tag size={22} />
           </span>
           <p className="text-[14px] font-light text-[var(--text-primary)]">
@@ -364,7 +364,7 @@ export default function CategoriasPage() {
       <button
         type="button"
         onClick={abrirCrear}
-        className="mobile-admin-fab fixed z-40 flex h-14 w-14 items-center justify-center rounded-full border border-[rgba(232,136,181,0.45)] bg-[var(--accent-secondary)] text-[var(--bg-base)] shadow-lg md:hidden"
+        className="mobile-admin-fab fixed z-40 flex h-14 w-14 items-center justify-center rounded-full border border-[rgba(169,137,224,0.45)] bg-[var(--accent-secondary)] text-[var(--bg-base)] shadow-lg md:hidden"
         aria-label="Nueva categoría"
       >
         <Plus size={22} strokeWidth={1.75} />

@@ -103,7 +103,7 @@ export default function DesktopSearchOverlay({
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
             className="relative z-10 w-full max-w-2xl overflow-hidden rounded-[28px] border border-[var(--border)] bg-[var(--bg-surface)] shadow-[var(--shadow-dropdown)]"
           >
-            <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-[rgba(232,136,181,0.14)] blur-2xl" />
+            <div className="pointer-events-none absolute -right-10 -top-10 h-36 w-36 rounded-full bg-[rgba(169,137,224,0.14)] blur-2xl" />
             <div className="pointer-events-none absolute -left-8 bottom-0 h-28 w-28 rounded-full bg-[rgba(183,156,232,0.12)] blur-2xl" />
 
             <div className="relative flex items-center justify-between border-b border-[var(--border)] px-5 py-4 sm:px-6">
