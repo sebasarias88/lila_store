@@ -264,7 +264,7 @@ export default function PromocionesPage() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-base)] p-6 sm:p-8 lg:p-10">
-      <div className="mb-8 flex flex-col gap-5 border-b border-[rgba(232,136,181,0.16)] pb-8 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-8 flex flex-col gap-5 border-b border-[rgba(169,137,224,0.16)] pb-8 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="mb-3 flex items-center gap-3">
             <div className="h-px w-8 bg-[var(--accent-secondary)]" />
@@ -301,7 +301,7 @@ export default function PromocionesPage() {
         />
       ) : promociones.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--border-card)] bg-[var(--bg-card)] px-6 py-20 text-center">
-          <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[rgba(232,136,181,0.25)] bg-[rgba(232,136,181,0.08)] text-[var(--accent-primary)]">
+          <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[rgba(169,137,224,0.25)] bg-[rgba(169,137,224,0.08)] text-[var(--accent-primary)]">
             <Tag size={22} />
           </span>
           <p className="text-[14px] font-light text-[var(--text-primary)]">

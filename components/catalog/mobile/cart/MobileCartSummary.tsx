@@ -22,6 +22,7 @@ type MobileCartSummaryProps = {
   tiempoEntrega?: string
   envioGratis?: boolean
   showEnvio?: boolean
+  esRecogida?: boolean
   compact?: boolean
   showProducts?: boolean
 }
@@ -35,6 +36,7 @@ export default function MobileCartSummary({
   tiempoEntrega,
   envioGratis = false,
   showEnvio = false,
+  esRecogida = false,
   compact = false,
   showProducts = false,
 }: MobileCartSummaryProps) {
@@ -73,7 +75,13 @@ export default function MobileCartSummary({
             <div className="mobile-cart-summary__row">
               <span>Envío</span>
               <span className="tabular-nums">
-                {envioGratis ? 'Gratis' : envio === 0 ? 'A convenir' : formatPrecio(envio ?? 0)}
+                {esRecogida
+                  ? 'Sin envío'
+                  : envioGratis
+                    ? 'Gratis'
+                    : envio === 0
+                      ? 'A convenir'
+                      : formatPrecio(envio ?? 0)}
               </span>
             </div>
             {tiempoEntrega ? (

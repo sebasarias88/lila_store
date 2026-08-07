@@ -19,9 +19,9 @@ export default function MobileQuickAction({
   return (
     <Link
       href={href}
-      className="mobile-admin-quick-action flex min-h-[56px] items-center gap-3 border-b border-[rgba(232,136,181,0.1)] px-4 py-3 last:border-b-0 active:bg-[rgba(232,136,181,0.06)]"
+      className="mobile-admin-quick-action flex min-h-[56px] items-center gap-3 border-b border-[rgba(169,137,224,0.1)] px-4 py-3 last:border-b-0 active:bg-[rgba(169,137,224,0.06)]"
     >
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[rgba(232,136,181,0.22)] bg-[rgba(232,136,181,0.08)]">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[rgba(169,137,224,0.22)] bg-[rgba(169,137,224,0.08)]">
         <Icon size={17} className="text-[var(--accent-primary)]" strokeWidth={1.5} />
       </span>
       <div className="min-w-0 flex-1">

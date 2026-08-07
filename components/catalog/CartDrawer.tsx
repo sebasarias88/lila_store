@@ -10,7 +10,7 @@ import {
   variacionesCarritoClassName,
 } from '@/lib/cart'
 import { catalogPath, getProductoPrecios, type CatalogType } from '@/lib/catalog'
-import { X, ShoppingBag, Minus, Plus, Trash2, Sparkles, Heart } from 'lucide-react'
+import { X, ShoppingBag, Minus, Plus, Trash2, Sparkles, Heart, CreditCard } from 'lucide-react'
 import Link from 'next/link'
 import { useScrollLock } from '@/lib/useScrollLock'
 
@@ -37,6 +37,7 @@ export default function CartDrawer({
   const carritoHref = catalogPath(catalogType, '/carrito')
   const productosHref = catalogPath(catalogType, '/productos')
   const subtotal = cartSubtotal(items, catalogType)
+  const totalUnidades = items.reduce((acc, i) => acc + i.cantidad, 0)
 
   useScrollLock(open)
 
@@ -45,7 +46,7 @@ export default function CartDrawer({
       {open && (
         <>
           <motion.div
-            className="fixed inset-0 z-40 bg-[rgba(42,31,46,0.35)] backdrop-blur-sm"
+            className="fixed inset-0 z-40 bg-[rgba(42,34,64,0.38)] backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -60,19 +61,28 @@ export default function CartDrawer({
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             onClick={e => e.stopPropagation()}
           >
+            {/* Soft top wash */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-[rgba(169,137,224,0.1)] to-transparent" />
+
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-[var(--border)] bg-[var(--bg-surface)] px-5 py-4 sm:px-6">
+            <div className="relative flex items-center justify-between px-5 py-4 sm:px-6">
               <div className="flex min-w-0 items-center gap-3">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--bg-muted)] text-[var(--accent-primary)]">
-                  <ShoppingBag size={18} />
+                  <Heart size={17} className="fill-[var(--accent-primary)]" />
                 </span>
                 <div className="min-w-0">
+                  <div className="mb-0.5 inline-flex items-center gap-1.5">
+                    <Sparkles size={12} className="text-[var(--accent-primary)]" />
+                    <span className="text-[11px] font-bold text-[var(--accent-deep)]">
+                      Tu bolsita ✨
+                    </span>
+                  </div>
                   <h2 className="text-[16px] font-bold text-[var(--text-primary)]">
-                    Tu carrito
+                    Carrito cute
                   </h2>
                   {items.length > 0 && (
                     <p className="text-[12px] font-medium text-[var(--text-muted)]">
-                      {items.length} {items.length === 1 ? 'producto' : 'productos'}
+                      {totalUnidades} {totalUnidades === 1 ? 'tesoro' : 'tesoros'} listos
                     </p>
                   )}
                 </div>
@@ -81,25 +91,27 @@ export default function CartDrawer({
                 type="button"
                 onClick={onClose}
                 aria-label="Cerrar carrito"
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--bg-muted)] text-[var(--accent-deep)] transition-colors hover:bg-[var(--accent-primary)] hover:text-white"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border)] bg-white text-[var(--accent-deep)] transition-colors hover:bg-[var(--accent-primary)] hover:text-white"
               >
                 <X size={16} />
               </button>
             </div>
 
+            <div className="mx-5 h-px bg-[var(--border)] sm:mx-6" />
+
             {/* Items */}
             <div
-              className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5"
+              className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-5"
               data-lenis-prevent
             >
               {items.length === 0 ? (
                 <div className="flex h-full flex-col items-center justify-center gap-4 px-4 text-center">
-                  <span className="flex h-20 w-20 items-center justify-center rounded-full bg-[var(--bg-muted)] text-[var(--accent-primary)]">
-                    <Heart size={28} />
+                  <span className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#EEE8FC] to-[#F8EAF4] text-[var(--accent-primary)] shadow-[var(--shadow-soft)]">
+                    <Heart size={28} className="fill-[var(--accent-primary)]" />
                   </span>
                   <div>
                     <p className="text-[15px] font-bold text-[var(--text-primary)]">
-                      Tu carrito está vacío
+                      Tu bolsita está vacía 💕
                     </p>
                     <p className="mt-1.5 text-[13px] font-medium text-[var(--text-muted)]">
                       Agrega algo cute y vuelve aquí ✨
@@ -110,12 +122,12 @@ export default function CartDrawer({
                     onClick={onClose}
                     className="catalog-gold-cta mt-1 rounded-full px-5 py-2.5 text-[13px] font-bold"
                   >
-                    Seguir comprando
+                    Seguir explorando ✨
                   </button>
                 </div>
               ) : (
                 <AnimatePresence>
-                  <div className="space-y-3">
+                  <div className="space-y-1">
                     {items.map(item => {
                       const key = itemLineKey(item)
                       const { producto, cantidad, variacionesSeleccionadas } = item
@@ -130,9 +142,9 @@ export default function CartDrawer({
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: -16 }}
                           layout
-                          className="flex gap-3 rounded-[20px] border border-[var(--border)] bg-[var(--bg-surface)] p-3 shadow-[var(--shadow-soft)]"
+                          className="flex gap-3 rounded-[18px] px-2 py-3 transition-colors hover:bg-[var(--bg-muted)]/70"
                         >
-                          <div className="h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-[16px] bg-gradient-to-b from-[#FDEBF4] to-[var(--bg-muted)]">
+                          <div className="h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-[16px] bg-gradient-to-b from-[#EEE8FC] to-[var(--bg-muted)] ring-1 ring-[var(--border)]">
                             {producto.imagenes?.[0] ? (
                               <img
                                 src={producto.imagenes[0]}
@@ -155,7 +167,7 @@ export default function CartDrawer({
                                 type="button"
                                 onClick={() => quitar(key)}
                                 aria-label="Quitar del carrito"
-                                className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--text-subtle)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--danger)]"
+                                className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[var(--text-subtle)] transition-colors hover:bg-white hover:text-[var(--danger)]"
                               >
                                 <Trash2 size={13} />
                               </button>
@@ -172,12 +184,12 @@ export default function CartDrawer({
                             </p>
 
                             <div className="mt-2.5 flex items-center justify-between gap-2">
-                              <div className="inline-flex items-center gap-0.5 rounded-full border border-[var(--border)] bg-[var(--bg-muted)] p-0.5">
+                              <div className="inline-flex items-center gap-0.5 rounded-full border border-[var(--border)] bg-white p-0.5">
                                 <button
                                   type="button"
                                   onClick={() => actualizarCantidad(key, cantidad - 1)}
                                   aria-label="Disminuir cantidad"
-                                  className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--accent-deep)] transition-colors hover:bg-white"
+                                  className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--accent-deep)] transition-colors hover:bg-[var(--bg-muted)]"
                                 >
                                   <Minus size={12} />
                                 </button>
@@ -188,7 +200,7 @@ export default function CartDrawer({
                                   type="button"
                                   onClick={() => actualizarCantidad(key, cantidad + 1)}
                                   aria-label="Aumentar cantidad"
-                                  className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--accent-deep)] transition-colors hover:bg-white"
+                                  className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--accent-deep)] transition-colors hover:bg-[var(--bg-muted)]"
                                 >
                                   <Plus size={12} />
                                 </button>
@@ -209,33 +221,42 @@ export default function CartDrawer({
 
             {/* Footer */}
             {items.length > 0 && (
-              <div className="space-y-3 border-t border-[var(--border)] bg-[var(--bg-surface)] px-5 py-5 sm:px-6">
-                <div className="flex items-center justify-between">
-                  <span className="text-[13px] font-bold text-[var(--text-muted)]">
-                    Subtotal
-                  </span>
-                  <span className="text-[1.35rem] font-bold text-[var(--accent-deep)]">
+              <div className="relative space-y-3.5 border-t border-[var(--border)] bg-gradient-to-t from-[rgba(169,137,224,0.08)] to-transparent px-5 py-5 sm:px-6">
+                <div className="flex items-end justify-between gap-3">
+                  <div>
+                    <p className="text-[12px] font-bold text-[var(--text-muted)]">
+                      Subtotal
+                    </p>
+                    <p className="mt-0.5 text-[11px] font-medium text-[var(--text-muted)]">
+                      Envío al finalizar ✨
+                    </p>
+                  </div>
+                  <span className="text-[1.4rem] font-bold leading-none text-[var(--accent-deep)]">
                     {formatPrecio(subtotal)}
                   </span>
                 </div>
-                <p className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[var(--text-muted)]">
-                  <Sparkles size={12} className="text-[var(--accent-primary)]" />
-                  Envío calculado al finalizar el pedido
-                </p>
+
+                {catalogType === 'detal' && (
+                  <p className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--text-muted)]">
+                    <CreditCard size={12} className="text-[var(--accent-primary)]" />
+                    Tarjeta, PSE, Addi, Sistecrédito o Su+ Pay
+                  </p>
+                )}
+
                 <Link
                   href={carritoHref}
                   onClick={onClose}
                   className="catalog-gold-cta flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-[14px] font-bold"
                 >
                   <ShoppingBag size={16} />
-                  Finalizar pedido
+                  Ir a pagar ✨
                 </Link>
                 <Link
                   href={productosHref}
                   onClick={onClose}
-                  className="block w-full rounded-full py-2.5 text-center text-[13px] font-bold text-[var(--accent-deep)] transition-colors hover:text-[var(--accent-primary)]"
+                  className="block w-full rounded-full py-2 text-center text-[13px] font-bold text-[var(--accent-deep)] transition-colors hover:text-[var(--accent-primary)]"
                 >
-                  Seguir comprando
+                  Seguir explorando 💕
                 </Link>
               </div>
             )}

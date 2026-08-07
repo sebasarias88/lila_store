@@ -12,10 +12,12 @@ import {
   type CatalogType,
 } from '@/lib/catalog'
 import { categoriaTieneDescuentoActivo } from '@/lib/descuentos'
-import { ShoppingBag, ImageIcon, Heart, Sparkles } from 'lucide-react'
+import { ShoppingBag, ImageIcon, Heart, Sparkles, Play } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { productoTieneVideo } from '@/lib/video-url'
 
 const MAX_TITULO_CARD = 52
+const NUEVO_DIAS = 21
 
 function tituloCard(producto: Producto): string {
   const nombre = producto.nombre.trim()
@@ -29,6 +31,13 @@ function tituloCard(producto: Producto): string {
   const corte = nombre.slice(0, MAX_TITULO_CARD)
   const ultimoEspacio = corte.lastIndexOf(' ')
   return (ultimoEspacio > 20 ? corte.slice(0, ultimoEspacio) : corte.trimEnd()) + '…'
+}
+
+function esNuevo(producto: Producto): boolean {
+  if (!producto.created_at) return false
+  const created = new Date(producto.created_at).getTime()
+  if (Number.isNaN(created)) return false
+  return Date.now() - created < NUEVO_DIAS * 24 * 60 * 60 * 1000
 }
 
 export default function ProductCard({
@@ -48,19 +57,20 @@ export default function ProductCard({
     catalogType === 'mayoreo'
       ? producto.categoria?.descuento_porcentaje_mayoreo
       : producto.categoria?.descuento_porcentaje
+  const nuevo = esNuevo(producto)
 
   const handleAgregar = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     if (!producto.disponible) return
     agregar(producto)
-    toast.success(`${producto.nombre} agregado al carrito ✨`)
+    toast.success(`${producto.nombre} al carrito ✨`)
   }
 
   return (
     <Link href={productHref} className="block h-full">
-      <div className="catalog-product-card group relative flex h-full min-h-0 flex-col overflow-hidden rounded-[24px] border border-[var(--border)] bg-[var(--bg-surface)] shadow-[var(--shadow-soft)] transition-all duration-300 hover:-translate-y-1 hover:border-[color-mix(in_srgb,var(--accent-primary)_45%,var(--border))] hover:shadow-[var(--shadow-card-hover)]">
-        <div className="relative aspect-[3/4] w-full flex-shrink-0 overflow-hidden bg-gradient-to-b from-[#FDEBF4] to-[var(--bg-muted)]">
+      <div className="catalog-product-card group relative flex h-full min-h-0 flex-col overflow-hidden rounded-[26px] border border-[var(--border)] bg-[var(--bg-surface)] shadow-[var(--shadow-soft)] transition-all duration-300 hover:-translate-y-1.5 hover:border-[color-mix(in_srgb,var(--accent-primary)_50%,var(--border))] hover:shadow-[var(--shadow-card-hover)]">
+        <div className="relative aspect-[3/4] w-full flex-shrink-0 overflow-hidden bg-gradient-to-b from-[#EEE8FC] to-[var(--bg-muted)]">
           {producto.imagenes?.[0] ? (
             <img
               src={producto.imagenes[0]}
@@ -73,7 +83,13 @@ export default function ProductCard({
             </div>
           )}
 
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[rgba(58,46,61,0.18)] to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+          {productoTieneVideo(producto) ? (
+            <span className="absolute bottom-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-[var(--accent-deep)] shadow-[var(--shadow-soft)]">
+              <Play size={14} className="ml-0.5" fill="currentColor" />
+            </span>
+          ) : null}
+
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[rgba(110,79,168,0.2)] to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
           <div className="absolute top-2.5 left-2.5 right-2.5 flex items-start justify-between gap-2">
             <div className="flex flex-wrap gap-1.5">
@@ -82,13 +98,19 @@ export default function ProductCard({
                   Agotado
                 </span>
               )}
+              {nuevo && producto.disponible && (
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--accent-secondary)] px-2.5 py-1 text-[10px] font-bold text-white shadow-sm">
+                  <Sparkles size={10} />
+                  Nuevo
+                </span>
+              )}
               {descuentoCategoria && producto.disponible && !consultar && (
                 <span className="shrink-0 rounded-full bg-[var(--accent-primary)] px-2.5 py-1 text-[10px] font-bold text-white shadow-sm">
                   -{pctDescuento}%
                 </span>
               )}
               {!descuentoCategoria && precioAntes && producto.disponible && !consultar && (
-                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--accent-secondary)] px-2.5 py-1 text-[10px] font-bold text-white shadow-sm">
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--accent-primary)] px-2.5 py-1 text-[10px] font-bold text-white shadow-sm">
                   <Sparkles size={10} />
                   Oferta
                 </span>
@@ -98,12 +120,12 @@ export default function ProductCard({
               className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-[var(--accent-primary)] shadow-sm backdrop-blur-sm transition-colors group-hover:bg-[var(--accent-primary)] group-hover:text-white"
               aria-hidden
             >
-              <Heart size={13} />
+              <Heart size={13} className="group-hover:fill-current" />
             </span>
           </div>
         </div>
 
-        <div className="flex flex-1 flex-col px-4 py-4 min-h-[8rem]">
+        <div className="flex flex-1 flex-col px-4 py-4 min-h-[8.25rem]">
           <div className="mb-1.5 flex items-center gap-1.5">
             <p className="truncate text-[11px] font-bold uppercase tracking-[0.04em] text-[var(--accent-deep)]">
               {producto.categoria?.nombre || 'Producto'}
@@ -172,12 +194,12 @@ export default function ProductCard({
               {producto.disponible ? (
                 <>
                   <ShoppingBag size={14} />
-                  Agregar al carrito
+                  Lo quiero ✨
                 </>
               ) : (
                 <>
                   <Heart size={14} />
-                  Agotado
+                  Agotado 💕
                 </>
               )}
             </motion.button>

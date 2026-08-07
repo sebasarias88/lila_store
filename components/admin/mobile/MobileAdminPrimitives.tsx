@@ -26,8 +26,8 @@ type MobileEmptyStateProps = {
 
 export function MobileEmptyState({ icon: Icon, title, description, action }: MobileEmptyStateProps) {
   return (
-    <div className="mobile-admin-empty flex flex-col items-center justify-center rounded-xl border border-dashed border-[rgba(232,136,181,0.22)] bg-[var(--bg-card)] px-6 py-12 text-center">
-      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-[rgba(232,136,181,0.22)] bg-[rgba(232,136,181,0.08)]">
+    <div className="mobile-admin-empty flex flex-col items-center justify-center rounded-xl border border-dashed border-[rgba(169,137,224,0.22)] bg-[var(--bg-card)] px-6 py-12 text-center">
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-[rgba(169,137,224,0.22)] bg-[rgba(169,137,224,0.08)]">
         <Icon size={20} className="text-[var(--accent-primary)]" strokeWidth={1.5} />
       </div>
       <p className="text-[13px] font-light text-[var(--text-primary)]">{title}</p>

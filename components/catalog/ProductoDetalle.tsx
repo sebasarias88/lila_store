@@ -11,6 +11,7 @@ import {
   Plus,
   Minus,
   ChevronLeft,
+  ChevronRight,
   ChevronDown,
   ZoomIn,
   Check,
@@ -18,7 +19,6 @@ import {
   ImageIcon,
   Package,
   Truck,
-  MessageCircle,
   CreditCard,
   X,
   Sparkles,
@@ -34,13 +34,25 @@ import {
 import ProductoPrecio from '@/components/catalog/ProductoPrecio'
 import PageGoldAccent from '@/components/catalog/PageGoldAccent'
 import MobileQuickAddSheet from '@/components/catalog/mobile/MobileQuickAddSheet'
+import ProductVideoThumb from '@/components/catalog/ProductVideoThumb'
+import ProductVideoModal from '@/components/catalog/ProductVideoModal'
+import { productoTieneVideo } from '@/lib/video-url'
+
+const NUEVO_DIAS = 21
 
 const ENVIO_INFO = [
-  { icon: Package, text: 'Envío en Armenia el mismo día', emoji: '📦' },
-  { icon: Truck, text: 'Envíos nacionales en 2 a 3 días hábiles', emoji: '🚚' },
-  { icon: MessageCircle, text: 'Pedido finalizado por WhatsApp', emoji: '💬' },
-  { icon: CreditCard, text: 'Paga a cuotas con Addi o Sistecrédito', emoji: '💳' },
+  { icon: Package, text: 'Envío en Armenia el mismo día ✨' },
+  { icon: Truck, text: 'Envíos a todo el país en 2–3 días 💕' },
+  { icon: CreditCard, text: 'ePayco · tarjeta y PSE' },
+  { icon: Sparkles, text: 'Addi, Sistecrédito o Su+ Pay ✨' },
 ] as const
+
+function esNuevo(producto: Producto): boolean {
+  if (!producto.created_at) return false
+  const created = new Date(producto.created_at).getTime()
+  if (Number.isNaN(created)) return false
+  return Date.now() - created < NUEVO_DIAS * 24 * 60 * 60 * 1000
+}
 
 function SeccionAcordeon({
   seccion,
@@ -118,11 +130,18 @@ export default function ProductoDetalle({
   const [imagenActiva, setImagenActiva] = useState(0)
   const [cantidad, setCantidad] = useState(1)
   const [zoomOpen, setZoomOpen] = useState(false)
+  const [videoOpen, setVideoOpen] = useState(false)
   const [agregado, setAgregado] = useState(false)
   const [quickAddOpen, setQuickAddOpen] = useState(false)
   const [selectedVariaciones, setSelectedVariaciones] = useState<Record<string, string[]>>({})
 
   const tieneVariaciones = variaciones.length > 0
+  const imagenes = producto.imagenes?.length ? producto.imagenes : []
+  const tieneVideo = productoTieneVideo(producto)
+  const totalSlides = imagenes.length + (tieneVideo ? 1 : 0)
+  const videoSlideIndex = tieneVideo ? imagenes.length : -1
+  const enSlideVideo = tieneVideo && imagenActiva === videoSlideIndex
+  const posterVideo = imagenes[0] || null
 
   const toggleOpcion = (tipoId: string, opcionId: string) => {
     setSelectedVariaciones(prev => {
@@ -146,7 +165,16 @@ export default function ProductoDetalle({
     const key = i.lineKey ?? getLineKey(i.producto.id, i.variacionesSeleccionadas)
     return key === lineKeyActual
   })
-  const imagenes = producto.imagenes?.length ? producto.imagenes : []
+
+  const imagenAnterior = () => {
+    if (totalSlides <= 1) return
+    setImagenActiva(i => (i - 1 + totalSlides) % totalSlides)
+  }
+
+  const imagenSiguiente = () => {
+    if (totalSlides <= 1) return
+    setImagenActiva(i => (i + 1) % totalSlides)
+  }
 
   const handleAgregar = () => {
     if (!producto.disponible) return
@@ -156,7 +184,7 @@ export default function ProductoDetalle({
         tipo => !(selectedVariaciones[tipo.id]?.length),
       )
       if (faltantes.length > 0) {
-        toast.error('Selecciona al menos una opción del producto')
+        toast.error('Elige tu opción favorita ✨')
         return
       }
     }
@@ -171,7 +199,7 @@ export default function ProductoDetalle({
     if (isMobile) {
       setQuickAddOpen(true)
     } else {
-      toast.success(`${producto.nombre} agregado al carrito ✨`)
+      toast.success(`${producto.nombre} al carrito 💕`)
     }
     setTimeout(() => setAgregado(false), 2500)
   }
@@ -181,7 +209,7 @@ export default function ProductoDetalle({
       await navigator.share({ title: producto.nombre, url: window.location.href })
     } catch {
       await navigator.clipboard.writeText(window.location.href)
-      toast.success('Enlace copiado')
+      toast.success('Enlace copiado ✨')
     }
   }
 
@@ -193,12 +221,14 @@ export default function ProductoDetalle({
 
   const productosHref = catalogPath(catalogType, '/productos')
   const homeHref = catalogPath(catalogType, '/')
+  const nuevo = esNuevo(producto)
 
   return (
-    <div className="relative min-h-screen max-md:pt-[6.5rem] pt-28 sm:pt-32">
+    <div className="relative min-h-screen bg-[var(--bg-base)] max-md:pt-[6.5rem] pt-28 sm:pt-32">
       <PageGoldAccent />
-      <div className="pointer-events-none absolute -left-10 top-40 h-48 w-48 rounded-full bg-[rgba(232,136,181,0.12)] blur-3xl" />
-      <div className="pointer-events-none absolute -right-8 top-[28rem] h-56 w-56 rounded-full bg-[rgba(183,156,232,0.12)] blur-3xl" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-gradient-to-b from-[rgba(169,137,224,0.08)] to-transparent" />
+      <div className="pointer-events-none absolute -left-10 top-40 h-48 w-48 rounded-full bg-[rgba(169,137,224,0.12)] blur-3xl" />
+      <div className="pointer-events-none absolute -right-8 top-[28rem] h-56 w-56 rounded-full bg-[rgba(232,160,200,0.12)] blur-3xl" />
 
       <div className="relative z-10 mx-auto max-w-7xl px-5 pb-12 sm:px-6 sm:pb-16 lg:px-8">
         {/* Breadcrumb */}
@@ -215,7 +245,7 @@ export default function ProductoDetalle({
               size={15}
               className="transition-transform group-hover:-translate-x-0.5"
             />
-            Volver al catálogo
+            Volver a explorar ✨
           </Link>
 
           <nav
@@ -227,7 +257,7 @@ export default function ProductoDetalle({
             </Link>
             <span className="text-[var(--border)]">/</span>
             <Link href={productosHref} className="transition-colors hover:text-[var(--accent-deep)]">
-              Catálogo
+              Todo lo cute
             </Link>
             {producto.categoria && (
               <>
@@ -253,10 +283,25 @@ export default function ProductoDetalle({
             className="space-y-4"
           >
             <div
-              className="group relative aspect-[3/4] cursor-zoom-in overflow-hidden rounded-[28px] border border-[var(--border)] bg-gradient-to-b from-[#FDEBF4] to-[var(--bg-muted)] shadow-[var(--shadow-soft)]"
-              onClick={() => imagenes.length && setZoomOpen(true)}
+              className={`group relative aspect-[3/4] overflow-hidden rounded-[28px] border border-[var(--border)] bg-gradient-to-b from-[#EEE8FC] to-[var(--bg-muted)] shadow-[var(--shadow-soft)] ${
+                enSlideVideo ? 'cursor-pointer' : 'cursor-zoom-in'
+              }`}
+              onClick={() => {
+                if (enSlideVideo) {
+                  setVideoOpen(true)
+                  return
+                }
+                if (imagenes.length) setZoomOpen(true)
+              }}
             >
-              {imagenes.length > 0 ? (
+              {enSlideVideo && producto.video_url && producto.video_tipo ? (
+                <ProductVideoThumb
+                  posterUrl={posterVideo}
+                  tipo={producto.video_tipo}
+                  playSize="lg"
+                  asButton={false}
+                />
+              ) : imagenes.length > 0 ? (
                 <AnimatePresence mode="wait">
                   <motion.img
                     key={imagenActiva}
@@ -275,10 +320,37 @@ export default function ProductoDetalle({
                 </div>
               )}
 
-              {imagenes.length > 0 && (
+              {totalSlides > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={e => {
+                      e.stopPropagation()
+                      imagenAnterior()
+                    }}
+                    className="absolute left-3 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/60 bg-white/90 text-[var(--accent-deep)] shadow-[var(--shadow-soft)] backdrop-blur-sm transition-colors hover:bg-[var(--accent-primary)] hover:text-white md:flex"
+                    aria-label="Anterior"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={e => {
+                      e.stopPropagation()
+                      imagenSiguiente()
+                    }}
+                    className="absolute right-3 top-1/2 z-10 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/60 bg-white/90 text-[var(--accent-deep)] shadow-[var(--shadow-soft)] backdrop-blur-sm transition-colors hover:bg-[var(--accent-primary)] hover:text-white md:flex"
+                    aria-label="Siguiente"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </>
+              )}
+
+              {!enSlideVideo && imagenes.length > 0 && (
                 <div className="absolute bottom-4 right-4 flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-[11px] font-bold text-[var(--accent-deep)] opacity-0 shadow-sm backdrop-blur-sm transition-opacity group-hover:opacity-100">
                   <ZoomIn size={12} className="text-[var(--accent-primary)]" />
-                  Ampliar
+                  Ampliar ✨
                 </div>
               )}
 
@@ -286,6 +358,12 @@ export default function ProductoDetalle({
                 {!producto.disponible && (
                   <span className="rounded-full bg-[var(--accent-deep)] px-3 py-1 text-[11px] font-bold text-white shadow-sm">
                     Agotado
+                  </span>
+                )}
+                {nuevo && producto.disponible && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent-secondary)] px-3 py-1 text-[11px] font-bold text-white shadow-sm">
+                    <Sparkles size={11} />
+                    Nuevo
                   </span>
                 )}
                 {descuento && producto.disponible && (
@@ -297,22 +375,42 @@ export default function ProductoDetalle({
               </div>
             </div>
 
-            {imagenes.length > 1 && (
+            {totalSlides > 1 && (
               <div className="flex gap-2.5 overflow-x-auto overscroll-x-contain pb-0.5 scrollbar-hide">
                 {imagenes.map((url, i) => (
                   <button
-                    key={i}
+                    key={url}
                     type="button"
                     onClick={() => setImagenActiva(i)}
-                    className={`relative h-[4.25rem] w-[4.25rem] shrink-0 overflow-hidden rounded-[16px] border-2 transition-all ${
+                    className={`relative h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-[16px] border-2 transition-all ${
                       imagenActiva === i
-                        ? 'border-[var(--accent-primary)] opacity-100 shadow-[var(--shadow-soft)]'
-                        : 'border-transparent opacity-60 hover:opacity-90'
+                        ? 'border-[var(--accent-primary)] opacity-100 shadow-[var(--shadow-soft)] ring-2 ring-[color-mix(in_srgb,var(--accent-primary)_35%,transparent)]'
+                        : 'border-transparent opacity-55 hover:opacity-90'
                     }`}
                   >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={url} alt={`Vista ${i + 1}`} className="h-full w-full object-cover" />
                   </button>
                 ))}
+                {tieneVideo && producto.video_tipo ? (
+                  <button
+                    type="button"
+                    onClick={() => setImagenActiva(videoSlideIndex)}
+                    className={`relative h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-[16px] border-2 transition-all ${
+                      enSlideVideo
+                        ? 'border-[var(--accent-primary)] opacity-100 shadow-[var(--shadow-soft)] ring-2 ring-[color-mix(in_srgb,var(--accent-primary)_35%,transparent)]'
+                        : 'border-transparent opacity-55 hover:opacity-90'
+                    }`}
+                    aria-label="Video del producto"
+                  >
+                    <ProductVideoThumb
+                      posterUrl={posterVideo}
+                      tipo={producto.video_tipo}
+                      playSize="sm"
+                      asButton={false}
+                    />
+                  </button>
+                ) : null}
               </div>
             )}
           </motion.div>
@@ -378,7 +476,7 @@ export default function ProductoDetalle({
                 {variaciones.map(tipo => (
                   <div key={tipo.id}>
                     <p className="mb-3 text-[12px] font-bold text-[var(--accent-deep)]">
-                      {tipo.nombre}
+                      Elige {tipo.nombre.toLowerCase()} ✨
                     </p>
                     <div className="flex flex-wrap gap-2.5">
                       {tipo.opciones?.map(opcion => {
@@ -467,7 +565,7 @@ export default function ProductoDetalle({
                   </div>
                   {enCarrito && (
                     <span className="rounded-full bg-[var(--bg-muted)] px-3 py-1 text-[12px] font-bold text-[var(--accent-primary)]">
-                      {enCarrito.cantidad} en carrito
+                      {enCarrito.cantidad} en tu carrito 💕
                     </span>
                   )}
                 </div>
@@ -492,7 +590,7 @@ export default function ProductoDetalle({
                         className="flex items-center gap-2"
                       >
                         <Check size={16} />
-                        Agregado al carrito
+                        ¡Listo, en tu carrito! 💕
                       </motion.span>
                     ) : (
                       <motion.span
@@ -503,7 +601,7 @@ export default function ProductoDetalle({
                         className="flex items-center gap-2"
                       >
                         <ShoppingBag size={16} />
-                        Agregar al carrito
+                        Lo quiero ✨
                       </motion.span>
                     )}
                   </AnimatePresence>
@@ -514,44 +612,52 @@ export default function ProductoDetalle({
                     href={catalogPath(catalogType, '/carrito')}
                     className="block w-full rounded-full py-3 text-center text-[13px] font-bold text-[var(--accent-deep)] transition-colors hover:text-[var(--accent-primary)]"
                   >
-                    Ver carrito →
+                    Ver mi carrito →
                   </Link>
                 )}
               </div>
             ) : (
-              <div className="rounded-[20px] bg-[var(--bg-muted)] py-5 text-center">
-                <Heart size={22} className="mx-auto text-[var(--accent-primary)]" />
-                <p className="mt-2 text-[13px] font-bold text-[var(--text-muted)]">
-                  Producto agotado
+              <div className="rounded-[22px] border border-[var(--border)] bg-gradient-to-br from-[#F9F6FF] to-[#F8EAF4] px-5 py-6 text-center shadow-[var(--shadow-soft)]">
+                <Heart size={24} className="mx-auto fill-[var(--accent-primary)] text-[var(--accent-primary)]" />
+                <p className="mt-2 text-[15px] font-bold text-[var(--text-primary)]">
+                  Uy, se agotó 💕
                 </p>
+                <p className="mt-1 text-[13px] font-medium text-[var(--text-secondary)]">
+                  Pronto vuelve — mientras tanto mira más tesoros
+                </p>
+                <Link
+                  href={productosHref}
+                  className="catalog-gold-cta mt-4 inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-[12px] font-bold"
+                >
+                  Ver más cute ✨
+                </Link>
               </div>
             )}
 
-            <ul className="mt-5 grid gap-2.5 sm:grid-cols-2">
-              {ENVIO_INFO.map(({ icon: Icon, text, emoji }) => (
-                <li
-                  key={text}
-                  className="flex items-start gap-3 rounded-[18px] border border-[var(--border)] bg-[var(--bg-surface)] px-3.5 py-3 shadow-[var(--shadow-soft)]"
-                >
-                  <span className="mt-0.5 text-[15px]" aria-hidden>
-                    {emoji}
-                  </span>
-                  <span className="text-[12px] font-medium leading-snug text-[var(--text-secondary)]">
-                    {text}
-                  </span>
-                  <Icon size={14} className="ml-auto mt-0.5 shrink-0 text-[var(--accent-primary)] opacity-0 sm:opacity-100" />
-                </li>
-              ))}
-            </ul>
+            <div className="mt-6 space-y-4">
+              <ul className="space-y-2.5">
+                {ENVIO_INFO.map(({ icon: Icon, text }) => (
+                  <li
+                    key={text}
+                    className="flex items-center gap-3 text-[13px] font-medium text-[var(--text-secondary)]"
+                  >
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--bg-muted)] text-[var(--accent-primary)]">
+                      <Icon size={14} strokeWidth={1.75} />
+                    </span>
+                    <span className="leading-snug">{text}</span>
+                  </li>
+                ))}
+              </ul>
 
-            <button
-              type="button"
-              onClick={handleCompartir}
-              className="mt-5 inline-flex items-center gap-2 self-start rounded-full border border-[var(--border)] bg-[var(--bg-surface)] px-4 py-2.5 text-[13px] font-bold text-[var(--text-secondary)] transition-colors hover:border-[var(--accent-primary)] hover:text-[var(--accent-deep)]"
-            >
-              <Share2 size={14} />
-              Compartir
-            </button>
+              <button
+                type="button"
+                onClick={handleCompartir}
+                className="inline-flex items-center gap-2 text-[13px] font-bold text-[var(--accent-deep)] transition-colors hover:text-[var(--accent-primary)]"
+              >
+                <Share2 size={14} />
+                Compartir este amor ✨
+              </button>
+            </div>
           </motion.div>
         </div>
 
@@ -563,13 +669,13 @@ export default function ProductoDetalle({
             transition={{ duration: 0.5 }}
             className="mt-12 sm:mt-16"
           >
-            <div className="mb-5 flex items-center gap-2">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-[var(--bg-muted)] px-3.5 py-1.5">
               <Sparkles size={14} className="text-[var(--accent-primary)]" />
-              <h2 className="text-[14px] font-bold text-[var(--accent-deep)]">
-                Información del producto
+              <h2 className="text-[12px] font-bold text-[var(--accent-deep)]">
+                Detallitos del producto 💕
               </h2>
             </div>
-            <div className="mx-auto max-w-3xl space-y-3">
+            <div className="w-full max-w-none space-y-3">
               {secciones.map((seccion, i) => (
                 <SeccionAcordeon
                   key={seccion.id}
@@ -583,7 +689,7 @@ export default function ProductoDetalle({
       </div>
 
       <AnimatePresence>
-        {zoomOpen && imagenes.length > 0 && (
+        {zoomOpen && imagenes.length > 0 && !enSlideVideo && (
           <motion.div
             className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(42,31,46,0.88)] p-6 backdrop-blur-md"
             data-lenis-prevent
@@ -612,6 +718,16 @@ export default function ProductoDetalle({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {tieneVideo && producto.video_url && producto.video_tipo ? (
+        <ProductVideoModal
+          open={videoOpen}
+          onClose={() => setVideoOpen(false)}
+          url={producto.video_url}
+          tipo={producto.video_tipo}
+          titulo={producto.nombre}
+        />
+      ) : null}
 
       <MobileQuickAddSheet
         open={quickAddOpen}

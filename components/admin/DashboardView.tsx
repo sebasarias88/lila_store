@@ -182,7 +182,7 @@ export default function DashboardView({
     />
     <div className="hidden min-h-screen bg-[var(--bg-base)] p-6 sm:p-8 lg:p-10 md:block">
       {/* Header */}
-      <div className="mb-10 flex flex-col gap-5 border-b border-[rgba(232,136,181,0.16)] pb-8 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mb-10 flex flex-col gap-5 border-b border-[rgba(169,137,224,0.16)] pb-8 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="mb-3 flex items-center gap-3">
             <div className="h-px w-8 bg-[var(--accent-secondary)]" />
@@ -206,7 +206,7 @@ export default function DashboardView({
         <Link
           href="/"
           target="_blank"
-          className="inline-flex shrink-0 items-center gap-2 self-start rounded-full border border-[rgba(232,136,181,0.35)] bg-[rgba(232,136,181,0.08)] px-5 py-2.5 text-[11px] font-light tracking-normal text-[var(--accent-secondary)] shadow-[0_4px_16px_rgba(0,0,0,0.2)] transition-all hover:border-[rgba(232,136,181,0.55)] hover:bg-[rgba(232,136,181,0.14)] hover:shadow-[0_4px_20px_rgba(232,136,181,0.12)] sm:self-auto"
+          className="inline-flex shrink-0 items-center gap-2 self-start rounded-full border border-[rgba(169,137,224,0.35)] bg-[rgba(169,137,224,0.08)] px-5 py-2.5 text-[11px] font-light tracking-normal text-[var(--accent-secondary)] shadow-[0_4px_16px_rgba(0,0,0,0.2)] transition-all hover:border-[rgba(169,137,224,0.55)] hover:bg-[rgba(169,137,224,0.14)] hover:shadow-[0_4px_20px_rgba(169,137,224,0.12)] sm:self-auto"
         >
           <ExternalLink size={13} />
           Ver tienda
@@ -262,11 +262,11 @@ export default function DashboardView({
                     <Link
                       key={href}
                       href={href}
-                      className={`group ${DASHBOARD_ROW_CLASS} transition-all hover:bg-[rgba(232,136,181,0.07)] hover:shadow-[inset_3px_0_0_var(--accent-secondary)] ${
-                        i < acciones.length - 1 ? 'border-b border-[rgba(232,136,181,0.08)]' : ''
+                      className={`group ${DASHBOARD_ROW_CLASS} transition-all hover:bg-[rgba(169,137,224,0.07)] hover:shadow-[inset_3px_0_0_var(--accent-secondary)] ${
+                        i < acciones.length - 1 ? 'border-b border-[rgba(169,137,224,0.08)]' : ''
                       }`}
                     >
-                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[rgba(232,136,181,0.22)] bg-gradient-to-br from-[rgba(232,136,181,0.14)] to-[rgba(232,136,181,0.04)] ring-1 ring-[rgba(232,136,181,0.15)] transition-all group-hover:border-[rgba(232,136,181,0.4)] group-hover:shadow-[0_0_16px_rgba(232,136,181,0.15)]">
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[rgba(169,137,224,0.22)] bg-gradient-to-br from-[rgba(169,137,224,0.14)] to-[rgba(169,137,224,0.04)] ring-1 ring-[rgba(169,137,224,0.15)] transition-all group-hover:border-[rgba(169,137,224,0.4)] group-hover:shadow-[0_0_16px_rgba(169,137,224,0.15)]">
                         <Icon size={18} className="text-[var(--accent-secondary)]" strokeWidth={1.5} />
                       </span>
                       <div className="min-w-0 flex-1">
@@ -279,7 +279,7 @@ export default function DashboardView({
                       </div>
                       <ArrowRight
                         size={16}
-                        className="shrink-0 text-[rgba(232,136,181,0.4)] transition-all group-hover:translate-x-0.5 group-hover:text-[var(--accent-secondary)]"
+                        className="shrink-0 text-[rgba(169,137,224,0.4)] transition-all group-hover:translate-x-0.5 group-hover:text-[var(--accent-secondary)]"
                       />
                     </Link>
                   )
@@ -315,7 +315,7 @@ export default function DashboardView({
                         <div
                           key={`empty-${i}`}
                           className={`${DASHBOARD_ROW_CLASS} ${
-                            i < 2 ? 'border-b border-[rgba(232,136,181,0.08)]' : ''
+                            i < 2 ? 'border-b border-[rgba(169,137,224,0.08)]' : ''
                           }`}
                           aria-hidden
                         />
@@ -325,8 +325,8 @@ export default function DashboardView({
                       <Link
                         key={p.id}
                         href="/admin/productos"
-                        className={`group ${DASHBOARD_ROW_CLASS} transition-all hover:bg-[rgba(232,136,181,0.07)] hover:shadow-[inset_3px_0_0_var(--accent-secondary)] ${
-                          i < 2 ? 'border-b border-[rgba(232,136,181,0.08)]' : ''
+                        className={`group ${DASHBOARD_ROW_CLASS} transition-all hover:bg-[rgba(169,137,224,0.07)] hover:shadow-[inset_3px_0_0_var(--accent-secondary)] ${
+                          i < 2 ? 'border-b border-[rgba(169,137,224,0.08)]' : ''
                         }`}
                       >
                         <AdminTableImage src={p.imagenes?.[0]} alt={p.nombre} size="row" />

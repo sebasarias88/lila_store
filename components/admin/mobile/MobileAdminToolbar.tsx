@@ -37,7 +37,7 @@ export default function MobileAdminToolbar<T extends string>({
           placeholder={searchPlaceholder}
           value={search}
           onChange={e => onSearchChange(e.target.value)}
-          className="mobile-admin-search w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-card)] py-3 pl-10 pr-10 text-[14px] font-light text-[var(--text-primary)] outline-none placeholder:text-[var(--text-subtle)] focus:border-[rgba(232,136,181,0.55)]"
+          className="mobile-admin-search w-full rounded-xl border border-[var(--border-input)] bg-[var(--bg-card)] py-3 pl-10 pr-10 text-[14px] font-light text-[var(--text-primary)] outline-none placeholder:text-[var(--text-subtle)] focus:border-[rgba(169,137,224,0.55)]"
         />
         {search ? (
           <button
@@ -60,7 +60,7 @@ export default function MobileAdminToolbar<T extends string>({
               onClick={() => onFilterChange(id)}
               className={`shrink-0 rounded-full border px-3.5 py-2 text-[11px] uppercase tracking-[0.8px] ${
                 active
-                  ? 'border-[rgba(232,136,181,0.45)] bg-[rgba(232,136,181,0.14)] text-[var(--accent-primary)]'
+                  ? 'border-[rgba(169,137,224,0.45)] bg-[rgba(169,137,224,0.14)] text-[var(--accent-primary)]'
                   : 'border-[var(--border-input)] bg-[var(--bg-card)] text-[var(--text-muted)]'
               }`}
             >

@@ -157,13 +157,13 @@ export default function ConfiguracionPage() {
     return (
       <>
         <div className="hidden min-h-screen bg-[var(--bg-base)] p-6 sm:p-8 lg:p-10 md:block">
-          <div className="mb-10 flex justify-between border-b border-[rgba(232,136,181,0.16)] pb-8">
+          <div className="mb-10 flex justify-between border-b border-[rgba(169,137,224,0.16)] pb-8">
             <div>
               <div className="mb-3 h-3 w-20 animate-pulse rounded-xl bg-[var(--bg-muted)]" />
               <div className="h-9 w-64 animate-pulse rounded-xl bg-[var(--bg-muted)]" />
             </div>
           </div>
-          <div className="h-80 animate-pulse rounded-xl border border-[rgba(232,136,181,0.1)] bg-[var(--bg-card)]" />
+          <div className="h-80 animate-pulse rounded-xl border border-[rgba(169,137,224,0.1)] bg-[var(--bg-card)]" />
         </div>
         <div className="mobile-config-page px-4 py-5 md:hidden">
           <div className="mb-4 h-4 w-48 animate-pulse rounded bg-[var(--bg-muted)]" />
@@ -189,7 +189,7 @@ export default function ConfiguracionPage() {
       />
 
       <div className="hidden min-h-screen bg-[var(--bg-base)] p-6 sm:p-8 lg:p-10 md:block">
-        <div className="mb-8 border-b border-[rgba(232,136,181,0.16)] pb-8">
+        <div className="mb-8 border-b border-[rgba(169,137,224,0.16)] pb-8">
           <div className="mb-3 flex items-center gap-3">
             <div className="h-px w-8 bg-[var(--accent-secondary)]" />
             <p className="text-[12px] font-bold text-[var(--accent-deep)]">
@@ -206,7 +206,7 @@ export default function ConfiguracionPage() {
 
         <AdminTableShell className="overflow-hidden">
           <div className="flex flex-col">
-            <nav className="grid grid-cols-2 gap-2 border-b border-[rgba(232,136,181,0.14)] bg-[color-mix(in_srgb,var(--bg-muted)_40%,var(--bg-card))] p-3 sm:grid-cols-4">
+            <nav className="grid grid-cols-2 gap-2 border-b border-[rgba(169,137,224,0.14)] bg-[color-mix(in_srgb,var(--bg-muted)_40%,var(--bg-card))] p-3 sm:grid-cols-4">
               {CONFIG_TABS.map(({ id, label, icon: Icon, desc }) => {
                 const activo = tab === id
                 return (
@@ -216,8 +216,8 @@ export default function ConfiguracionPage() {
                     onClick={() => setTab(id)}
                     className={`group relative flex items-start gap-2.5 rounded-xl border px-3 py-3 text-left transition-all sm:gap-3 sm:px-3.5 sm:py-3.5 ${
                       activo
-                        ? 'border-[rgba(232,136,181,0.42)] bg-[rgba(232,136,181,0.12)] shadow-[0_4px_20px_rgba(0,0,0,0.18)]'
-                        : 'border-[rgba(232,136,181,0.12)] bg-[var(--bg-muted)] hover:border-[rgba(232,136,181,0.28)] hover:bg-[rgba(232,136,181,0.05)]'
+                        ? 'border-[rgba(169,137,224,0.42)] bg-[rgba(169,137,224,0.12)] shadow-[0_4px_20px_rgba(0,0,0,0.18)]'
+                        : 'border-[rgba(169,137,224,0.12)] bg-[var(--bg-muted)] hover:border-[rgba(169,137,224,0.28)] hover:bg-[rgba(169,137,224,0.05)]'
                     }`}
                   >
                     {activo ? (
@@ -226,8 +226,8 @@ export default function ConfiguracionPage() {
                     <div
                       className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border transition-colors sm:h-9 sm:w-9 ${
                         activo
-                          ? 'border-[rgba(232,136,181,0.38)] bg-[rgba(232,136,181,0.18)]'
-                          : 'border-[rgba(232,136,181,0.14)] bg-[rgba(232,136,181,0.06)] group-hover:border-[rgba(232,136,181,0.28)]'
+                          ? 'border-[rgba(169,137,224,0.38)] bg-[rgba(169,137,224,0.18)]'
+                          : 'border-[rgba(169,137,224,0.14)] bg-[rgba(169,137,224,0.06)] group-hover:border-[rgba(169,137,224,0.28)]'
                       }`}
                     >
                       <Icon
@@ -235,7 +235,7 @@ export default function ConfiguracionPage() {
                         className={
                           activo
                             ? 'text-[var(--accent-secondary)]'
-                            : 'text-[rgba(232,136,181,0.55)] group-hover:text-[var(--accent-secondary)]'
+                            : 'text-[rgba(169,137,224,0.55)] group-hover:text-[var(--accent-secondary)]'
                         }
                       />
                     </div>

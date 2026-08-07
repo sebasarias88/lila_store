@@ -29,11 +29,11 @@ function FormSection({
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-3">
-        <div className="h-px flex-1 bg-gradient-to-r from-[rgba(232,136,181,0.35)] to-transparent" />
+        <div className="h-px flex-1 bg-gradient-to-r from-[rgba(169,137,224,0.35)] to-transparent" />
         <h3 className="admin-form-section-title shrink-0">
           {title}
         </h3>
-        <div className="h-px flex-1 bg-gradient-to-l from-[rgba(232,136,181,0.35)] to-transparent" />
+        <div className="h-px flex-1 bg-gradient-to-l from-[rgba(169,137,224,0.35)] to-transparent" />
       </div>
       {children}
     </section>
@@ -265,15 +265,15 @@ export default function CategoriaForm({
             aria-pressed={tipo === 'principal'}
             className={`flex flex-col gap-2 rounded-xl border p-4 text-left transition-all md:rounded-xl ${
               tipo === 'principal'
-                ? 'border-[rgba(232,136,181,0.5)] bg-[rgba(232,136,181,0.1)] shadow-[inset_0_1px_0_rgba(232,136,181,0.12)]'
-                : 'border-[var(--border-input)] bg-[var(--bg-card)] hover:border-[rgba(232,136,181,0.3)]'
+                ? 'border-[rgba(169,137,224,0.5)] bg-[rgba(169,137,224,0.1)] shadow-[inset_0_1px_0_rgba(169,137,224,0.12)]'
+                : 'border-[var(--border-input)] bg-[var(--bg-card)] hover:border-[rgba(169,137,224,0.3)]'
             }`}
           >
             <div className="flex items-center gap-2.5">
               <span
                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border ${
                   tipo === 'principal'
-                    ? 'border-[rgba(232,136,181,0.4)] bg-[rgba(232,136,181,0.18)] text-[var(--accent-secondary)]'
+                    ? 'border-[rgba(169,137,224,0.4)] bg-[rgba(169,137,224,0.18)] text-[var(--accent-secondary)]'
                     : 'border-[var(--border-input)] text-[var(--text-muted)]'
                 }`}
               >
@@ -299,15 +299,15 @@ export default function CategoriaForm({
             aria-pressed={tipo === 'subcategoria'}
             className={`flex flex-col gap-2 rounded-xl border p-4 text-left transition-all md:rounded-xl ${
               tipo === 'subcategoria'
-                ? 'border-[rgba(232,136,181,0.5)] bg-[rgba(232,136,181,0.1)] shadow-[inset_0_1px_0_rgba(232,136,181,0.12)]'
-                : 'border-[var(--border-input)] bg-[var(--bg-card)] hover:border-[rgba(232,136,181,0.3)]'
+                ? 'border-[rgba(169,137,224,0.5)] bg-[rgba(169,137,224,0.1)] shadow-[inset_0_1px_0_rgba(169,137,224,0.12)]'
+                : 'border-[var(--border-input)] bg-[var(--bg-card)] hover:border-[rgba(169,137,224,0.3)]'
             }`}
           >
             <div className="flex items-center gap-2.5">
               <span
                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border ${
                   tipo === 'subcategoria'
-                    ? 'border-[rgba(232,136,181,0.4)] bg-[rgba(232,136,181,0.18)] text-[var(--accent-secondary)]'
+                    ? 'border-[rgba(169,137,224,0.4)] bg-[rgba(169,137,224,0.18)] text-[var(--accent-secondary)]'
                     : 'border-[var(--border-input)] text-[var(--text-muted)]'
                 }`}
               >
@@ -364,7 +364,7 @@ export default function CategoriaForm({
         <div className="flex flex-col gap-4 md:flex-row md:items-stretch">
           {form.imagen_url ? (
             <div className="relative mx-auto h-36 w-36 shrink-0 md:mx-0 md:h-[9.5rem] md:w-[9.5rem]">
-              <div className="h-full w-full overflow-hidden rounded-xl border border-[rgba(232,136,181,0.2)] bg-white md:rounded-xl">
+              <div className="h-full w-full overflow-hidden rounded-xl border border-[rgba(169,137,224,0.2)] bg-white md:rounded-xl">
                 <img
                   src={form.imagen_url}
                   alt="Vista previa"
@@ -374,7 +374,7 @@ export default function CategoriaForm({
               <button
                 type="button"
                 onClick={() => setForm(f => ({ ...f, imagen_url: '' }))}
-                className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-[rgba(232,136,181,0.3)] bg-[var(--bg-card)] text-[var(--text-muted)] transition-colors hover:border-red-400/50 hover:text-red-400"
+                className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-[rgba(169,137,224,0.3)] bg-[var(--bg-card)] text-[var(--text-muted)] transition-colors hover:border-red-400/50 hover:text-red-400"
                 aria-label="Quitar imagen"
               >
                 <X size={12} />
@@ -389,7 +389,7 @@ export default function CategoriaForm({
                 </p>
               ) : (
                 <>
-                  <ImageIcon size={20} className="mx-auto mb-2 text-[rgba(232,136,181,0.72)]" />
+                  <ImageIcon size={20} className="mx-auto mb-2 text-[rgba(169,137,224,0.72)]" />
                   <p className="admin-upload-zone__title">
                     {form.imagen_url ? 'Cambiar imagen' : 'Subir imagen de categoría'}
                   </p>

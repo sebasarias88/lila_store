@@ -29,7 +29,7 @@ export function getSiteDescription(config: SiteConfigMap): string {
   return (
     clean(seo) ||
     clean(hero) ||
-    'Catálogo detal de belleza y cuidado capilar en Carrera 15 #19-25 Local 8, Armenia, Quindío. Envíos a toda Colombia.'
+    'Catálogo detal de belleza en Armenia y Quimbaya, Quindío. Envíos a toda Colombia.'
   )
 }
 

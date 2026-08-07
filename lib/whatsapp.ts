@@ -21,14 +21,14 @@ export function mensajeConsultaWhatsApp(
 
   if (context === 'nosotros') {
     return esMayorista
-      ? 'Hola, vengo del catálogo mayorista de Tienda VM Fashion y me gustaría hacer una consulta.'
-      : 'Hola, vengo del sitio de Tienda VM Fashion y me gustaría hacer una consulta.'
+      ? 'Hola, vengo del catálogo mayorista de lila-store y me gustaría hacer una consulta.'
+      : 'Hola, vengo del sitio de lila-store y me gustaría hacer una consulta.'
   }
 
   if (context === 'footer') {
     return esMayorista
-      ? 'Hola, me comunico desde el catálogo mayorista de Tienda VM Fashion.'
-      : 'Hola, me comunico desde el sitio de Tienda VM Fashion.'
+      ? 'Hola, me comunico desde el catálogo mayorista de lila-store.'
+      : 'Hola, me comunico desde el sitio de lila-store.'
   }
 
   // flotante
@@ -65,7 +65,8 @@ export function generarMensajeWhatsApp(
     return acc + unitario * item.cantidad
   }, 0)
 
-  const total = subtotal + costoEnvio
+  const esRecogida = cliente.tipoEntrega === 'recogida'
+  const total = subtotal + (esRecogida ? 0 : costoEnvio)
 
   const productosLineas = items
     .map((item) => {
@@ -91,19 +92,27 @@ export function generarMensajeWhatsApp(
     })
     .join('\n')
 
-  const envioTexto =
-    costoEnvio === 0 ? 'A convenir' : formatPrecio(costoEnvio)
+  const envioTexto = esRecogida
+    ? 'Sin envío (recogida en tienda)'
+    : costoEnvio === 0
+      ? 'A convenir'
+      : formatPrecio(costoEnvio)
+
+  const bloqueEntrega = esRecogida
+    ? `🏪 *Entrega:* Recoger en tienda
+📍 *Sucursal:* ${cliente.sucursalRecogida}`
+    : `📍 *Dirección:* ${cliente.direccion}
+🏙️ *Ciudad:* ${cliente.ciudad}`
 
   const encabezadoMayoreo =
     catalogType === 'mayoreo' ? '📦 *Pedido Mayorista*\n\n' : ''
 
-  const mensaje = `${encabezadoMayoreo}✨ *Nuevo Pedido — Tienda VM Fashion*
+  const mensaje = `${encabezadoMayoreo}✨ *Nuevo Pedido — lila-store*
 
 👤 *Datos del cliente*
 Nombre: ${cliente.nombre}
 Celular: ${cliente.celular}
-Dirección: ${cliente.direccion}
-Ciudad: ${cliente.ciudad}
+${bloqueEntrega}
 
 💳 *Método de pago:* ${cliente.metodoPago}${cliente.notas ? `\n📝 *Notas:* ${cliente.notas}` : ''}
 
@@ -113,11 +122,11 @@ ${productosLineas}
 📦 *Resumen*
 Subtotal: ${formatPrecio(subtotal)}
 Envío: ${envioTexto}
-⏱️ Entrega: ${tiempoEntrega}
+⏱️ Entrega: ${esRecogida ? 'Recoger en tienda' : tiempoEntrega}
 
 *TOTAL: ${formatPrecio(total)}* 💰
 
-_Pedido generado desde el catálogo online_`
+_Pedido generado desde el catálogo de lila-store_`
 
   return encodeURIComponent(mensaje)
 }

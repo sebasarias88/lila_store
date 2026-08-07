@@ -48,7 +48,7 @@ export default async function DashboardPage() {
       hint: 'En catálogo',
       iconKey: 'package' as const,
       accent: 'var(--accent-primary)',
-      bg: 'rgba(232,136,181,0.12)',
+      bg: 'rgba(169,137,224,0.12)',
     },
     {
       label: 'Categorías activas',
@@ -56,7 +56,7 @@ export default async function DashboardPage() {
       hint: 'Visibles en tienda',
       iconKey: 'tag' as const,
       accent: 'var(--accent-secondary)',
-      bg: 'rgba(232,136,181,0.08)',
+      bg: 'rgba(169,137,224,0.08)',
     },
     {
       label: 'Disponibles',

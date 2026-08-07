@@ -12,7 +12,7 @@ export default function MobilePaymentMethodCard({
   onRemove,
 }: MobilePaymentMethodCardProps) {
   return (
-    <div className="mobile-admin-payment-card flex min-h-[52px] items-center justify-between gap-3 rounded-xl border border-[rgba(232,136,181,0.16)] bg-[var(--bg-muted)] px-4 py-3.5">
+    <div className="mobile-admin-payment-card flex min-h-[52px] items-center justify-between gap-3 rounded-xl border border-[rgba(169,137,224,0.16)] bg-[var(--bg-muted)] px-4 py-3.5">
       <span className="min-w-0 flex-1 truncate text-[14px] font-light text-[var(--text-primary)]">
         {metodo}
       </span>

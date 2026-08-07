@@ -25,10 +25,10 @@ type MobileFiltersDrawerProps = {
 }
 
 const ordenOptions: FilterOption[] = [
-  { value: 'relevancia', label: 'Destacados' },
-  { value: 'precio-asc', label: 'Menor precio' },
-  { value: 'precio-desc', label: 'Mayor precio' },
-  { value: 'nombre', label: 'Nombre A-Z' },
+  { value: 'relevancia', label: 'Recomendados ✨' },
+  { value: 'precio-asc', label: 'Precio bajito' },
+  { value: 'precio-desc', label: 'Precio alto' },
+  { value: 'nombre', label: 'A → Z' },
 ]
 
 export default function MobileFiltersDrawer({
@@ -69,7 +69,7 @@ export default function MobileFiltersDrawer({
           onClick={onLimpiar}
           className="mobile-filters-clear min-h-[50px] flex-1 rounded-full text-[13px] font-bold"
         >
-          Limpiar
+          Limpiar ✨
         </button>
       ) : null}
       <button
@@ -77,7 +77,7 @@ export default function MobileFiltersDrawer({
         onClick={onClose}
         className="catalog-gold-cta min-h-[50px] flex-[1.35] rounded-full text-[13px] font-bold"
       >
-        Ver resultados
+        Ver tesoros ✨
       </button>
     </div>
   )
@@ -86,8 +86,8 @@ export default function MobileFiltersDrawer({
     <MobileBottomSheet
       open={open}
       onClose={onClose}
-      title="Filtros"
-      subtitle={`${resultCount} producto${resultCount !== 1 ? 's' : ''}`}
+      title="Filtros cute"
+      subtitle={`${resultCount} tesoro${resultCount !== 1 ? 's' : ''} ✨`}
       height={
         openDropdown === 'categoria' || openDropdown === 'marca' ? 'tall' : 'auto'
       }

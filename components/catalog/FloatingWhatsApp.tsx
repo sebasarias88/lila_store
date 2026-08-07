@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { usePathname } from 'next/navigation'
 import { catalogPath, type CatalogType } from '@/lib/catalog'
 import { buildWhatsAppUrl, mensajeConsultaWhatsApp } from '@/lib/whatsapp'
+import { resolveWhatsAppNumero } from '@/lib/negocio'
 
 type Props = {
   whatsapp: string
@@ -37,7 +38,7 @@ export default function FloatingWhatsApp({
   mensaje,
 }: Props) {
   const pathname = usePathname()
-  const digits = whatsapp.replace(/\D/g, '')
+  const digits = resolveWhatsAppNumero(whatsapp).replace(/\D/g, '')
   if (!digits) return null
 
   const carritoHref = catalogPath(catalogType, '/carrito')
@@ -47,7 +48,7 @@ export default function FloatingWhatsApp({
   if (isCarrito) return null
 
   const text = mensaje ?? mensajeConsultaWhatsApp('flotante', catalogType)
-  const href = buildWhatsAppUrl(whatsapp, text)
+  const href = buildWhatsAppUrl(digits, text)
 
   return (
     <motion.div
@@ -60,7 +61,7 @@ export default function FloatingWhatsApp({
         {/* Soft pastel halo */}
         <span
           aria-hidden
-          className="pointer-events-none absolute -inset-1 rounded-full bg-[rgba(232,136,181,0.22)] blur-[6px]"
+          className="pointer-events-none absolute -inset-1 rounded-full bg-[rgba(169,137,224,0.22)] blur-[6px]"
         />
         <motion.span
           aria-hidden
@@ -80,7 +81,7 @@ export default function FloatingWhatsApp({
           rel="noopener noreferrer"
           aria-label="Escribir por WhatsApp"
           title="WhatsApp"
-          className="group relative flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-[#3DDB7A] via-[#25D366] to-[#1EBE57] text-white shadow-[0_4px_0_0_rgba(22,163,74,0.35),0_10px_28px_-6px_rgba(232,136,181,0.4),0_8px_18px_-6px_rgba(37,211,102,0.55)] ring-[3px] ring-white transition-[transform,box-shadow,filter] duration-200 will-change-transform hover:scale-[1.06] hover:brightness-[1.03] hover:shadow-[0_5px_0_0_rgba(22,163,74,0.3),0_14px_32px_-6px_rgba(232,136,181,0.45),0_10px_22px_-6px_rgba(37,211,102,0.55)] active:translate-y-[2px] active:scale-[0.98] active:shadow-[0_2px_0_0_rgba(22,163,74,0.35),0_6px_16px_-4px_rgba(37,211,102,0.4)]"
+          className="group relative flex h-full w-full items-center justify-center rounded-full bg-gradient-to-br from-[#3DDB7A] via-[#25D366] to-[#1EBE57] text-white shadow-[0_4px_0_0_rgba(22,163,74,0.35),0_10px_28px_-6px_rgba(169,137,224,0.4),0_8px_18px_-6px_rgba(37,211,102,0.55)] ring-[3px] ring-white transition-[transform,box-shadow,filter] duration-200 will-change-transform hover:scale-[1.06] hover:brightness-[1.03] hover:shadow-[0_5px_0_0_rgba(22,163,74,0.3),0_14px_32px_-6px_rgba(169,137,224,0.45),0_10px_22px_-6px_rgba(37,211,102,0.55)] active:translate-y-[2px] active:scale-[0.98] active:shadow-[0_2px_0_0_rgba(22,163,74,0.35),0_6px_16px_-4px_rgba(37,211,102,0.4)]"
         >
           {/* Soft shine on top of the button */}
           <span

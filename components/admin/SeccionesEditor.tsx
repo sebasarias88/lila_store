@@ -162,7 +162,7 @@ export default function SeccionesEditor({ productoId }: SeccionesEditorProps) {
             <div key={seccion.id} className="admin-form-card p-4">
               <div className="mb-3 flex items-center justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-2.5">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-[rgba(232,136,181,0.25)] bg-[rgba(232,136,181,0.1)] text-[11px] font-medium text-[var(--accent-secondary)]">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-[rgba(169,137,224,0.25)] bg-[rgba(169,137,224,0.1)] text-[11px] font-medium text-[var(--accent-secondary)]">
                     {String(index + 1).padStart(2, '0')}
                   </span>
                   <span className="text-[10px] font-medium tracking-normal text-[var(--text-subtle)]">
@@ -174,7 +174,7 @@ export default function SeccionesEditor({ productoId }: SeccionesEditorProps) {
                     type="button"
                     onClick={() => handleMover(index, -1)}
                     disabled={index === 0}
-                    className="rounded-lg p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[rgba(232,136,181,0.1)] hover:text-[var(--accent-secondary)] disabled:cursor-not-allowed disabled:opacity-30"
+                    className="rounded-lg p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[rgba(169,137,224,0.1)] hover:text-[var(--accent-secondary)] disabled:cursor-not-allowed disabled:opacity-30"
                     aria-label="Subir sección"
                   >
                     <ChevronUp size={15} />
@@ -183,7 +183,7 @@ export default function SeccionesEditor({ productoId }: SeccionesEditorProps) {
                     type="button"
                     onClick={() => handleMover(index, 1)}
                     disabled={index === secciones.length - 1}
-                    className="rounded-lg p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[rgba(232,136,181,0.1)] hover:text-[var(--accent-secondary)] disabled:cursor-not-allowed disabled:opacity-30"
+                    className="rounded-lg p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[rgba(169,137,224,0.1)] hover:text-[var(--accent-secondary)] disabled:cursor-not-allowed disabled:opacity-30"
                     aria-label="Bajar sección"
                   >
                     <ChevronDown size={15} />
@@ -234,7 +234,7 @@ export default function SeccionesEditor({ productoId }: SeccionesEditorProps) {
 
       <div className="admin-form-panel p-4 sm:p-5">
         <div className="mb-4 flex items-center gap-2.5">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[rgba(232,136,181,0.28)] bg-[rgba(232,136,181,0.1)] text-[var(--accent-secondary)]">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[rgba(169,137,224,0.28)] bg-[rgba(169,137,224,0.1)] text-[var(--accent-secondary)]">
             <Plus size={15} />
           </span>
           <p className="admin-form-section-title">Nueva sección</p>

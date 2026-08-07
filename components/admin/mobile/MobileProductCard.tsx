@@ -23,9 +23,9 @@ export default function MobileProductCard({
   const imagen = producto.imagenes?.[0]
 
   return (
-    <article className="mobile-admin-product-card overflow-hidden rounded-xl border border-[rgba(232,136,181,0.22)] bg-[var(--bg-card)] shadow-[var(--shadow-soft)]">
+    <article className="mobile-admin-product-card overflow-hidden rounded-xl border border-[rgba(169,137,224,0.22)] bg-[var(--bg-card)] shadow-[var(--shadow-soft)]">
       <div className="flex gap-3 p-3">
-        <div className="relative h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-lg border border-[rgba(232,136,181,0.18)] bg-[var(--bg-muted)]">
+        <div className="relative h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-lg border border-[rgba(169,137,224,0.18)] bg-[var(--bg-muted)]">
           {imagen ? (
             <img src={imagen} alt={producto.nombre} className="h-full w-full bg-white object-cover" />
           ) : (
@@ -46,7 +46,7 @@ export default function MobileProductCard({
               ) : null}
             </div>
             {producto.destacado ? (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[rgba(232,136,181,0.3)] bg-[rgba(232,136,181,0.1)] px-2 py-0.5 text-[9px] uppercase tracking-[0.6px] text-[var(--accent-primary)]">
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[rgba(169,137,224,0.3)] bg-[rgba(169,137,224,0.1)] px-2 py-0.5 text-[9px] uppercase tracking-[0.6px] text-[var(--accent-primary)]">
                 <Star size={9} className="fill-[var(--accent-primary)]" />
                 Top
               </span>
@@ -63,7 +63,7 @@ export default function MobileProductCard({
               className={`mt-1.5 inline-flex max-w-full items-center gap-1 rounded-full border py-0.5 pl-1.5 pr-2 text-[10px] ${
                 parentCategoria
                   ? 'border-[rgba(96,165,250,0.25)] bg-[rgba(96,165,250,0.08)]'
-                  : 'border-[rgba(232,136,181,0.25)] bg-[rgba(232,136,181,0.08)]'
+                  : 'border-[rgba(169,137,224,0.25)] bg-[rgba(169,137,224,0.08)]'
               }`}
             >
               {parentCategoria ? (
@@ -85,7 +85,7 @@ export default function MobileProductCard({
         </div>
       </div>
 
-      <div className="flex items-center justify-between border-t border-[rgba(232,136,181,0.12)] px-3 py-2.5">
+      <div className="flex items-center justify-between border-t border-[rgba(169,137,224,0.12)] px-3 py-2.5">
         <button
           type="button"
           onClick={onToggleDisponible}
@@ -102,7 +102,7 @@ export default function MobileProductCard({
           <button
             type="button"
             onClick={onEdit}
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-[var(--text-muted)] active:bg-[rgba(232,136,181,0.1)] active:text-[var(--accent-primary)]"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-[var(--text-muted)] active:bg-[rgba(169,137,224,0.1)] active:text-[var(--accent-primary)]"
             aria-label="Editar"
           >
             <Edit2 size={16} />

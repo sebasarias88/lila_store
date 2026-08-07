@@ -100,7 +100,7 @@ export default function ImageUploader({ imagenes, onChange }: ImageUploaderProps
                   <img
                     src={url}
                     alt={`Imagen ${i + 1}`}
-                    className="h-full w-full rounded-lg border border-[rgba(232,136,181,0.28)] bg-white object-cover md:rounded-xl"
+                    className="h-full w-full rounded-lg border border-[rgba(169,137,224,0.28)] bg-white object-cover md:rounded-xl"
                   />
 
                   {i === 0 && (
@@ -114,7 +114,7 @@ export default function ImageUploader({ imagenes, onChange }: ImageUploaderProps
                       <button
                         type="button"
                         onClick={() => moverImagen(i, i - 1)}
-                        className="rounded-lg bg-[rgba(232,136,181,0.92)] p-1.5 text-[var(--text-on-gold)] transition-colors hover:bg-[var(--accent-secondary)] md:rounded-xl"
+                        className="rounded-lg bg-[rgba(169,137,224,0.92)] p-1.5 text-[var(--text-on-gold)] transition-colors hover:bg-[var(--accent-secondary)] md:rounded-xl"
                         title="Mover a principal"
                       >
                         <GripVertical size={12} />
@@ -153,7 +153,7 @@ export default function ImageUploader({ imagenes, onChange }: ImageUploaderProps
               </div>
             ) : (
               <>
-                <ImageIcon size={20} className="mb-2 text-[rgba(232,136,181,0.72)]" />
+                <ImageIcon size={20} className="mb-2 text-[rgba(169,137,224,0.72)]" />
                 <p className="admin-upload-zone__title">
                   Arrastra imágenes aquí o{' '}
                   <span className="text-[var(--accent-secondary)]">haz clic para seleccionar</span>

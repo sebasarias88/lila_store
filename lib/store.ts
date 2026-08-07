@@ -72,6 +72,6 @@ export const useCarrito = create<CartStore>()(
       cantidad: () =>
         get().items.reduce((acc, i) => acc + i.cantidad, 0),
     }),
-    { name: 'carrito-vm-fashion' },
+    { name: 'carrito-lila-store' },
   ),
 )

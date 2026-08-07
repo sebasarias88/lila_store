@@ -1,7 +1,12 @@
 import Link from 'next/link'
-import { Heart, MapPin } from 'lucide-react'
+import { Heart, MapPin, Phone } from 'lucide-react'
 import { catalogPath, type CatalogType } from '@/lib/catalog'
-import { DIRECCION_COMPLETA } from '@/lib/negocio'
+import {
+  SUCURSALES,
+  WHATSAPP_DISPLAY,
+  formatTelefonoDisplay,
+  resolveWhatsAppNumero,
+} from '@/lib/negocio'
 import { buildWhatsAppUrl, mensajeConsultaWhatsApp } from '@/lib/whatsapp'
 
 type Props = {
@@ -36,7 +41,7 @@ function FooterHeading({ children }: { children: React.ReactNode }) {
 
 export default function Footer({
   nombreNegocio,
-  whatsapp = '573185867702',
+  whatsapp,
   catalogType = 'detal',
 }: Props) {
   const navLinks = [
@@ -44,16 +49,17 @@ export default function Footer({
     { href: catalogPath(catalogType, '/productos'), label: 'Catálogo' },
     { href: catalogPath(catalogType, '/carrito'), label: 'Carrito' },
   ] as const
+  const wa = resolveWhatsAppNumero(whatsapp)
   const whatsappUrl = buildWhatsAppUrl(
-    whatsapp,
+    wa,
     mensajeConsultaWhatsApp('footer', catalogType),
   )
 
   return (
-    <footer className="catalog-footer mt-16 border-t border-[var(--border)] bg-[var(--bg-footer)]">
+    <footer className="catalog-footer border-t border-[var(--border)] bg-[var(--bg-muted)]">
       <div className="mx-auto max-w-7xl px-5 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-10 py-12 sm:grid-cols-2 lg:grid-cols-3 lg:gap-12 lg:py-14">
-          <div>
+        <div className="grid grid-cols-1 gap-10 py-12 sm:grid-cols-2 lg:grid-cols-12 lg:gap-10 lg:py-14">
+          <div className="lg:col-span-3">
             <Link
               href={catalogPath(catalogType, '/')}
               className="inline-flex items-center gap-2 transition-opacity hover:opacity-80"
@@ -66,11 +72,20 @@ export default function Footer({
               </p>
             </Link>
             <p className="mt-4 max-w-xs text-[14px] font-medium leading-relaxed text-[var(--text-secondary)]">
-              Belleza fresca y accesible en Armenia, Quindío. Envíos a toda Colombia ✨
+              Belleza fresca en Armenia y Quimbaya, Quindío. Envíos a toda Colombia ✨
             </p>
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-5 inline-flex items-center gap-2 rounded-full bg-[var(--bg-muted)] px-3.5 py-2 text-[13px] font-bold text-[var(--accent-deep)] transition-colors hover:bg-[var(--accent-primary)] hover:text-white"
+            >
+              <WhatsAppIcon size={14} />
+              WhatsApp {WHATSAPP_DISPLAY}
+            </a>
           </div>
 
-          <div>
+          <div className="lg:col-span-2">
             <FooterHeading>Navegación</FooterHeading>
             <nav className="flex flex-col gap-2.5">
               {navLinks.map(({ href, label }) => (
@@ -85,26 +100,35 @@ export default function Footer({
             </nav>
           </div>
 
-          <div className="sm:col-span-2 lg:col-span-1">
-            <FooterHeading>Contacto</FooterHeading>
-            <ul className="space-y-3">
-              <li>
-                <a
-                  href={whatsappUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-start gap-2.5 text-[14px] font-semibold text-[var(--text-secondary)] transition-colors hover:text-[var(--accent-deep)]"
+          <div className="sm:col-span-2 lg:col-span-7">
+            <FooterHeading>Nuestras tiendas</FooterHeading>
+            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {SUCURSALES.map(s => (
+                <li
+                  key={`${s.direccion}-${s.telefono}`}
+                  className="rounded-[18px] border border-[var(--border)] bg-[var(--bg-surface)] p-3.5 shadow-[var(--shadow-soft)]"
                 >
-                  <WhatsAppIcon size={15} className="mt-0.5 shrink-0 text-[var(--accent-primary)]" />
-                  <span>WhatsApp</span>
-                </a>
-              </li>
-              <li>
-                <div className="flex items-start gap-2.5 text-[14px] font-medium text-[var(--text-secondary)]">
-                  <MapPin size={15} className="mt-0.5 shrink-0 text-[var(--accent-secondary)]" />
-                  <span>{DIRECCION_COMPLETA}</span>
-                </div>
-              </li>
+                  <p className="flex items-start gap-2 text-[13px] font-bold text-[var(--text-primary)]">
+                    <MapPin size={14} className="mt-0.5 shrink-0 text-[var(--accent-primary)]" />
+                    <span>{s.direccion}</span>
+                  </p>
+                  {s.nota ? (
+                    <p className="mt-1.5 pl-5 text-[12px] font-medium text-[var(--text-muted)]">
+                      {s.nota}
+                    </p>
+                  ) : null}
+                  <p className="mt-1.5 pl-5 text-[12px] font-bold text-[var(--accent-deep)]">
+                    {s.ciudad}
+                  </p>
+                  <a
+                    href={`tel:+57${s.telefono.replace(/\D/g, '')}`}
+                    className="mt-2.5 inline-flex items-center gap-1.5 pl-5 text-[12px] font-bold text-[var(--text-secondary)] transition-colors hover:text-[var(--accent-primary)]"
+                  >
+                    <Phone size={12} />
+                    {formatTelefonoDisplay(s.telefono)}
+                  </a>
+                </li>
+              ))}
             </ul>
           </div>
         </div>

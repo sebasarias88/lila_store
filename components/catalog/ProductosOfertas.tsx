@@ -15,17 +15,17 @@ export default function ProductosOfertas({
     <ProductosCarousel
       productos={productos}
       catalogType={catalogType}
-      eyebrow="Ahorra"
+      eyebrow="Ofertas cute 🎀"
       title={
         <>
           Ofertas <span className="catalog-section-accent">del momento</span>
         </>
       }
-      description="Descuentos activos para consentirte 🎀"
+      description="Descuentos preciosos para consentirte ✨"
       verMasHref={catalogPath(catalogType, '/productos')}
-      verMasLabel="Ver más"
+      verMasLabel="Ver ofertas"
       sectionId="ofertas"
-      muted
+      layout="carousel"
     />
   )
 }

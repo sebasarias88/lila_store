@@ -7,6 +7,7 @@ import NavigationProgress from '@/components/catalog/NavigationProgress'
 import FloatingWhatsApp from '@/components/catalog/FloatingWhatsApp'
 import JsonLd from '@/components/seo/JsonLd'
 import { organizationJsonLd, websiteJsonLd } from '@/lib/seo'
+import { resolveWhatsAppNumero } from '@/lib/negocio'
 
 export default async function CatalogLayout({
   children,
@@ -52,10 +53,10 @@ export default async function CatalogLayout({
       </main>
       <Footer
         nombreNegocio="lila-store"
-        whatsapp={config['whatsapp_numero'] || '573185867702'}
+        whatsapp={resolveWhatsAppNumero(config['whatsapp_numero'])}
       />
       <FloatingWhatsApp
-        whatsapp={config['whatsapp_numero'] || '573185867702'}
+        whatsapp={resolveWhatsAppNumero(config['whatsapp_numero'])}
       />
     </div>
   )

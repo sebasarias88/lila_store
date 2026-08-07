@@ -25,7 +25,7 @@ export default function MobileStatCard({
   destacadosLink,
 }: MobileStatCardProps) {
   return (
-    <div className="mobile-admin-stat flex min-h-[5.5rem] flex-col justify-between rounded-xl border border-[rgba(232,136,181,0.16)] bg-[var(--bg-card)] p-3.5 shadow-[var(--shadow-soft)]">
+    <div className="mobile-admin-stat flex min-h-[5.5rem] flex-col justify-between rounded-xl border border-[rgba(169,137,224,0.16)] bg-[var(--bg-card)] p-3.5 shadow-[var(--shadow-soft)]">
       <div className="flex items-start justify-between gap-2">
         <div
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"

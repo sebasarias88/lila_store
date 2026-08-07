@@ -16,7 +16,7 @@ export default function AdminFormLayout({ children, footer }: AdminFormLayoutPro
       >
         {children}
       </div>
-      <div className="mobile-admin-form-footer mt-4 shrink-0 border-t border-[rgba(232,136,181,0.18)] bg-[var(--bg-card)] px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] md:sticky md:-mx-6 md:mt-0 md:px-6 md:py-4 md:pb-4">
+      <div className="mobile-admin-form-footer mt-4 shrink-0 border-t border-[rgba(169,137,224,0.18)] bg-[var(--bg-card)] px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] md:sticky md:-mx-6 md:mt-0 md:px-6 md:py-4 md:pb-4">
         {footer}
       </div>
     </div>

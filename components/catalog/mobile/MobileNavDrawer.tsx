@@ -3,11 +3,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ChevronRight, Sparkles } from 'lucide-react'
+import { ChevronRight, MessageCircle, Sparkles, Store } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Categoria } from '@/types'
 import { catalogPath, type CatalogType } from '@/lib/catalog'
 import { useGuardedRouter } from '@/lib/useGuardedRouter'
+import { resolveWhatsAppNumero } from '@/lib/negocio'
+import { buildWhatsAppUrl, mensajeConsultaWhatsApp } from '@/lib/whatsapp'
+import { normalizeNavCategorias } from '@/components/catalog/CatalogMegaMenu'
 import MobileDrawer from '@/components/catalog/mobile/MobileDrawer'
 import {
   signalCatalogCategoria,
@@ -28,35 +31,6 @@ function getActiveSubs(cat: Categoria): Categoria[] {
     .sort((a, b) => a.orden - b.orden)
 }
 
-/** Si llega lista plana (con padre_id), arma el árbol de raíces. */
-function normalizeCategorias(categorias: Categoria[]): Categoria[] {
-  const hasNested = categorias.some(c => (c.subcategorias?.length ?? 0) > 0)
-  if (hasNested) {
-    return categorias
-      .filter(c => !c.padre_id)
-      .map(c => ({
-        ...c,
-        subcategorias: getActiveSubs(c),
-      }))
-      .sort((a, b) => a.orden - b.orden)
-  }
-
-  const roots = categorias
-    .filter(c => !c.padre_id)
-    .sort((a, b) => a.orden - b.orden)
-
-  if (roots.length === 0) {
-    return [...categorias].sort((a, b) => a.orden - b.orden)
-  }
-
-  return roots.map(root => ({
-    ...root,
-    subcategorias: categorias
-      .filter(c => c.padre_id === root.id && c.activa !== false)
-      .sort((a, b) => a.orden - b.orden),
-  }))
-}
-
 export default function MobileNavDrawer({
   open,
   onClose,
@@ -69,18 +43,32 @@ export default function MobileNavDrawer({
   const [expandedSlug, setExpandedSlug] = useState<string | null>(null)
   const [activeCategoria, setActiveCategoria] = useState('')
 
+  const isMayoreo = catalogType === 'mayoreo'
   const homeHref = catalogPath(catalogType, '/')
   const productosHref = catalogPath(catalogType, '/productos')
-  const roots = useMemo(() => normalizeCategorias(categorias), [categorias])
+  const roots = useMemo(() => normalizeNavCategorias(categorias), [categorias])
   const onProductos =
     pathname === productosHref || pathname.startsWith(`${productosHref}/`)
+  const isHome =
+    pathname === homeHref ||
+    pathname === `${homeHref}/` ||
+    pathname === '/' ||
+    (isMayoreo &&
+      (pathname === '/mayorista' ||
+        pathname === '/mayorista/' ||
+        pathname === '/mayoreo' ||
+        pathname === '/mayoreo/'))
+
+  const whatsappUrl = buildWhatsAppUrl(
+    resolveWhatsAppNumero(),
+    mensajeConsultaWhatsApp('flotante', catalogType),
+  )
 
   const goToCategoria = (slug: string) => {
     onClose()
     signalCatalogNavigating()
     setActiveCategoria(slug)
     if (onProductos) {
-      // Mismo listado: actualiza el filtro al instante + URL
       signalCatalogCategoria(slug)
       const href = slug
         ? `${productosHref}?categoria=${encodeURIComponent(slug)}`
@@ -97,7 +85,9 @@ export default function MobileNavDrawer({
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    setActiveCategoria(new URLSearchParams(window.location.search).get('categoria') || '')
+    setActiveCategoria(
+      new URLSearchParams(window.location.search).get('categoria') || '',
+    )
   }, [pathname, open])
 
   const isNavActive = (href: string) => {
@@ -122,11 +112,6 @@ export default function MobileNavDrawer({
       }
     }
   }, [open, activeCategoria, roots])
-
-  const navLinks = [
-    { href: homeHref, label: 'Inicio' },
-    { href: productosHref, label: 'Catálogo' },
-  ]
 
   const toggleExpand = (slug: string) => {
     setExpandedSlug(prev => (prev === slug ? null : slug))
@@ -162,40 +147,54 @@ export default function MobileNavDrawer({
     >
       <div className="flex h-full flex-col">
         <nav className="flex-1 overflow-y-auto px-3 py-4">
-          {navLinks.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              onClick={onClose}
-              className={`mb-1 flex min-h-[48px] items-center rounded-full px-4 text-[13px] font-bold transition-colors ${
-                isNavActive(href) && !activeCategoria
-                  ? 'bg-[var(--bg-muted)] text-[var(--accent-deep)]'
-                  : 'text-[var(--text-secondary)] active:bg-[var(--bg-muted)]'
-              }`}
-            >
-              {label}
-            </Link>
-          ))}
-
+          {/* Bloque 1 — navegación */}
+          <p className="mb-2 px-3 text-[11px] font-bold uppercase tracking-[1px] text-[var(--text-faint)]">
+            Navegar
+          </p>
           <Link
-            href={isNavActive(homeHref) ? '#ofertas' : `${homeHref}#ofertas`}
+            href={homeHref}
             onClick={onClose}
-            className="mb-1 flex min-h-[48px] items-center rounded-full px-4 text-[13px] font-bold text-[var(--text-secondary)] active:bg-[var(--bg-muted)]"
+            className={linkClass(isNavActive(homeHref) && !activeCategoria && !onProductos)}
+          >
+            Inicio
+          </Link>
+          <Link
+            href={productosHref}
+            onClick={onClose}
+            className={linkClass(onProductos && !activeCategoria)}
+          >
+            Catálogo
+          </Link>
+          <Link
+            href={isHome ? '#ofertas' : `${homeHref}#ofertas`}
+            onClick={onClose}
+            className={linkClass(false)}
           >
             Ofertas
           </Link>
           <Link
-            href={isNavActive(homeHref) ? '#novedades' : `${homeHref}#novedades`}
+            href={isHome ? '#novedades' : `${homeHref}#novedades`}
             onClick={onClose}
-            className="mb-1 flex min-h-[48px] items-center rounded-full px-4 text-[13px] font-bold text-[var(--text-secondary)] active:bg-[var(--bg-muted)]"
+            className={linkClass(false)}
           >
             Novedades
           </Link>
+
+          {/* Bloque 2 — categorías */}
           {roots.length > 0 && (
             <>
-              <p className="mb-2 mt-6 px-3 text-[11px] font-bold uppercase tracking-[1px] text-[var(--text-faint)]">
-                Categorías
-              </p>
+              <div className="mb-2 mt-6 flex items-center justify-between gap-2 px-3">
+                <p className="text-[11px] font-bold uppercase tracking-[1px] text-[var(--text-faint)]">
+                  Categorías
+                </p>
+                <button
+                  type="button"
+                  onClick={() => goToCategoria('')}
+                  className="text-[11px] font-bold text-[var(--accent-primary)]"
+                >
+                  Ver todo
+                </button>
+              </div>
               {roots.map(cat => {
                 const subcats = getActiveSubs(cat)
                 const hasSubs = subcats.length > 0
@@ -211,7 +210,24 @@ export default function MobileNavDrawer({
                       onClick={() => goToCategoria(cat.slug)}
                       className={linkClass(rootActive)}
                     >
-                      {cat.nombre}
+                      <span className="flex min-w-0 items-center gap-2.5">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--bg-muted)]">
+                          {cat.imagen_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={cat.imagen_url}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <Sparkles
+                              size={12}
+                              className="text-[var(--accent-primary)]"
+                            />
+                          )}
+                        </span>
+                        <span className="truncate">{cat.nombre}</span>
+                      </span>
                     </button>
                   )
                 }
@@ -228,12 +244,31 @@ export default function MobileNavDrawer({
                           : 'text-[var(--text-secondary)] active:bg-[var(--bg-muted)]'
                       }`}
                     >
-                      <span className="truncate">{cat.nombre}</span>
+                      <span className="flex min-w-0 items-center gap-2.5">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/80 ring-1 ring-[var(--border)]">
+                          {cat.imagen_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={cat.imagen_url}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <Sparkles
+                              size={12}
+                              className="text-[var(--accent-primary)]"
+                            />
+                          )}
+                        </span>
+                        <span className="truncate">{cat.nombre}</span>
+                      </span>
                       <ChevronRight
                         size={16}
                         strokeWidth={1.75}
                         className={`shrink-0 transition-transform duration-200 ${
-                          isExpanded ? 'rotate-90 text-[var(--accent-primary)]' : 'text-[var(--text-subtle)]'
+                          isExpanded
+                            ? 'rotate-90 text-[var(--accent-primary)]'
+                            : 'text-[var(--text-subtle)]'
                         }`}
                       />
                     </button>
@@ -273,6 +308,30 @@ export default function MobileNavDrawer({
             </>
           )}
         </nav>
+
+        {/* Footer CTAs */}
+        <div className="shrink-0 space-y-2 border-t border-[var(--border)] px-4 py-4">
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={onClose}
+            className="flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-[#25D366] px-4 text-[13px] font-bold text-white"
+          >
+            <MessageCircle size={16} />
+            WhatsApp
+          </a>
+          {isMayoreo ? (
+            <Link
+              href="/"
+              onClick={onClose}
+              className="flex min-h-[44px] items-center justify-center gap-2 rounded-full border border-[var(--border)] bg-[var(--bg-muted)] px-4 text-[12px] font-bold text-[var(--accent-deep)]"
+            >
+              <Store size={14} />
+              Ir a tienda detal
+            </Link>
+          ) : null}
+        </div>
       </div>
     </MobileDrawer>
   )

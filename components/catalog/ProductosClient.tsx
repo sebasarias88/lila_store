@@ -13,7 +13,7 @@ import MobileFiltersDrawer from '@/components/catalog/mobile/MobileFiltersDrawer
 import { ProductCardSkeleton } from '@/components/ui/Skeleton'
 import { getPrecioOrden, type CatalogType } from '@/lib/catalog'
 import { getPaginationChunk } from '@/lib/pagination'
-import { Search, X, Package, ChevronLeft, ChevronRight, Tag, Loader2, Sparkles } from 'lucide-react'
+import { Search, X, ChevronLeft, ChevronRight, Tag, Loader2, Sparkles, Heart } from 'lucide-react'
 import PageGoldAccent from '@/components/catalog/PageGoldAccent'
 import CatalogCategoryMenu from '@/components/catalog/CatalogCategoryMenu'
 import CatalogFilterSelect, {
@@ -291,27 +291,11 @@ export default function ProductosClient({
     return undefined
   }, [categorias, categoriaActiva])
 
-  const raizSeleccionada = useMemo(() => {
-    const raizDirecta = categorias.find(r => r.slug === categoriaActiva)
-    if (raizDirecta) return raizDirecta
-    for (const r of categorias) {
-      if (r.subcategorias?.some(s => s.slug === categoriaActiva)) return r
-    }
-    return null
-  }, [categorias, categoriaActiva])
-
-  const subcategoriasVisibles = useMemo(() => {
-    if (!raizSeleccionada?.subcategorias?.length) return []
-    return [...raizSeleccionada.subcategorias]
-      .filter(s => s.activa)
-      .sort((a, b) => a.orden - b.orden)
-  }, [raizSeleccionada])
-
   const ordenLabels: Record<Orden, string> = {
-    relevancia: 'Destacados',
-    'precio-asc': 'Menor precio',
-    'precio-desc': 'Mayor precio',
-    nombre: 'Nombre A-Z',
+    relevancia: 'Recomendados ✨',
+    'precio-asc': 'Precio bajito',
+    'precio-desc': 'Precio alto',
+    nombre: 'A → Z',
   }
 
   const activeFiltersCount =
@@ -325,10 +309,21 @@ export default function ProductosClient({
     query || categoriaActiva || marcasActivas.length > 0 || orden !== 'relevancia',
   )
 
+  const tituloPagina = categoriaNombre || 'Todo lo cute'
+  const subtituloPagina = categoriaNombre
+    ? `Tu selección favorita de ${categoriaNombre.toLowerCase()} 💕`
+    : 'Belleza, skincare y cuidados para consentirte ✨'
+
+  const contadorLabel =
+    productosFiltrados.length === 1
+      ? '1 tesoro'
+      : `${productosFiltrados.length} tesoros`
+
   return (
-    <div className="mobile-catalog-page relative min-h-screen max-md:pb-20 max-md:pt-[6.5rem] pt-28 sm:pt-32">
+    <div className="mobile-catalog-page relative min-h-screen bg-[var(--bg-base)] max-md:pb-20 max-md:pt-[6.5rem] pt-28 sm:pt-32">
       <PageGoldAccent />
-      <div className="relative z-10 max-w-7xl mx-auto px-4 max-md:px-4 sm:px-6 lg:px-8">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-[rgba(169,137,224,0.08)] to-transparent" />
+      <div className="relative z-10 mx-auto max-w-7xl px-4 max-md:px-4 sm:px-6 lg:px-8">
 
         {/* ── Mobile: toolbar + filtros drawer ── */}
         <motion.section
@@ -337,13 +332,16 @@ export default function ProductosClient({
           className="relative mb-6 md:hidden"
         >
           <div className="mb-5">
-            <div className="mb-2 flex items-center gap-2">
+            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-[var(--bg-muted)] px-3 py-1.5">
               <Sparkles size={13} className="text-[var(--accent-primary)]" />
-              <span className="text-[12px] font-bold text-[var(--accent-deep)]">Explorar</span>
+              <span className="text-[12px] font-bold text-[var(--accent-deep)]">Explorar ✨</span>
             </div>
             <h1 className="text-[1.75rem] font-bold leading-tight text-[var(--text-primary)]">
-              {categoriaNombre || 'Catálogo'}
+              {tituloPagina}
             </h1>
+            <p className="mt-1.5 text-[13px] font-medium text-[var(--text-secondary)]">
+              {subtituloPagina}
+            </p>
           </div>
 
           <MobileCatalogToolbar
@@ -413,33 +411,32 @@ export default function ProductosClient({
           animate={{ opacity: 1, y: 0 }}
           className="relative mb-8 hidden overflow-visible md:block"
         >
-          <div className="pointer-events-none absolute -right-8 -top-8 h-48 w-48 rounded-full bg-[rgba(232,136,181,0.12)] blur-3xl" />
+          <div className="pointer-events-none absolute -right-8 -top-8 h-48 w-48 rounded-full bg-[rgba(169,137,224,0.14)] blur-3xl" />
+          <div className="pointer-events-none absolute -left-10 top-16 h-36 w-36 rounded-full bg-[rgba(232,160,200,0.1)] blur-3xl" />
 
           {/* Título */}
           <div className="relative pb-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <div className="mb-3 flex items-center gap-2">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[var(--bg-muted)] px-3.5 py-1.5">
                   <Sparkles size={14} className="text-[var(--accent-primary)]" />
                   <span className="text-[12px] font-bold text-[var(--accent-deep)]">
-                    Explorar
+                    Explorar ✨
                   </span>
                 </div>
                 <h1 className="text-[2rem] font-bold leading-tight text-[var(--text-primary)] sm:text-[2.5rem]">
-                  {categoriaNombre || 'Catálogo'}
+                  {tituloPagina}
                 </h1>
                 <p className="mt-2 max-w-lg text-[14px] font-medium leading-relaxed text-[var(--text-secondary)]">
-                  {categoriaNombre
-                    ? `Explora nuestra selección de ${categoriaNombre.toLowerCase()}`
-                    : 'Encuentra productos de belleza y cuidado personal'}
+                  {subtituloPagina}
                 </p>
               </div>
 
               {mounted && (
-                <div className="flex shrink-0 items-center gap-2 self-start rounded-full bg-[var(--bg-muted)] px-3.5 py-2 sm:self-auto">
-                  <Package size={14} className="text-[var(--accent-primary)]" />
+                <div className="flex shrink-0 items-center gap-2 self-start rounded-full border border-[var(--border)] bg-white px-4 py-2 shadow-[var(--shadow-soft)] sm:self-auto">
+                  <Heart size={14} className="fill-[var(--accent-primary)] text-[var(--accent-primary)]" />
                   <span className="text-[12px] font-bold text-[var(--accent-deep)]">
-                    {productosFiltrados.length} producto{productosFiltrados.length !== 1 ? 's' : ''}
+                    {contadorLabel}
                   </span>
                 </div>
               )}
@@ -447,18 +444,18 @@ export default function ProductosClient({
           </div>
 
           {/* Búsqueda + filtros en panel redondeado */}
-          <div className="relative z-30 mb-2 overflow-visible rounded-[24px] border border-[var(--border)] bg-[var(--bg-surface)] p-4 shadow-[var(--shadow-soft)] sm:p-5">
+          <div className="relative z-30 mb-2 overflow-visible rounded-[28px] border border-[var(--border)] bg-white/90 p-4 shadow-[var(--shadow-soft)] backdrop-blur-sm sm:p-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-4">
               <form onSubmit={handleSearch} className="relative min-w-0 flex-1">
                 <Search
                   size={16}
-                  className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-subtle)]"
+                  className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--accent-primary)]"
                 />
                 <input
                   type="text"
                   value={inputValue}
                   onChange={e => setInputValue(e.target.value)}
-                  placeholder="Buscar por nombre, SKU o categoría…"
+                  placeholder="Busca tu favorito… ✨"
                   className="h-11 w-full rounded-full border border-[var(--border)] bg-[var(--bg-muted)] py-2.5 pl-10 pr-24 text-sm font-medium text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--placeholder)] focus:border-[var(--accent-primary)] focus:bg-white"
                 />
                 <div className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center gap-1">
@@ -494,7 +491,7 @@ export default function ProductosClient({
                 {marcasDisponibles.length > 0 && (
                   <CatalogFilterSelect
                     label="Marca"
-                    valueLabel={marcaValueLabel}
+                    valueLabel={marcaValueLabel === 'Marcas' ? 'Marcas 💕' : marcaValueLabel}
                     open={marcaOpen}
                     onOpenChange={setMarcaOpen}
                     active={marcasActivas.length > 0}
@@ -556,7 +553,7 @@ export default function ProductosClient({
             {(categoriaActiva || marcasActivas.length > 0 || mostrarCarga) && (
               <div className="mb-4 hidden items-center gap-2.5 md:flex">
                 <span className="text-[11px] font-bold text-[var(--text-subtle)]">
-                  {mostrarCarga ? 'Actualizando catálogo' : 'Filtrado por'}
+                  {mostrarCarga ? 'Actualizando… ✨' : 'Filtrado por'}
                 </span>
                 {mostrarCarga && (
                   <Loader2 size={14} className="animate-spin text-[var(--accent-primary)]" />
@@ -589,10 +586,10 @@ export default function ProductosClient({
             {/* Contador + estado de carga */}
             {mounted && (
               <div className="mb-3 flex items-center justify-between gap-3 md:hidden">
-                <p className="text-[11px] font-light uppercase tracking-[1.5px] text-[var(--text-subtle)]">
+                <p className="text-[12px] font-bold text-[var(--accent-deep)]">
                   {mostrarCarga && filtroPendiente
-                    ? 'Actualizando…'
-                    : `${productosFiltrados.length} producto${productosFiltrados.length !== 1 ? 's' : ''}`}
+                    ? 'Actualizando… ✨'
+                    : contadorLabel}
                 </p>
                 {mostrarCarga && (
                   <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[var(--accent-primary)]">
@@ -616,22 +613,29 @@ export default function ProductosClient({
                 animate={{ opacity: 1 }}
                 className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center md:hidden"
               >
-                {catalogoVacio && !hayFiltros ? (
-                  <Package size={36} className="text-[var(--text-faint)]" />
-                ) : (
-                  <Search size={36} className="text-[var(--text-faint)]" />
-                )}
-                <p className="text-center text-[12px] font-light uppercase tracking-[1px] text-[var(--text-secondary)]">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-[#EEE8FC] to-[#F8EAF4] shadow-[var(--shadow-soft)]">
+                  {catalogoVacio && !hayFiltros ? (
+                    <Heart size={32} className="fill-[var(--accent-primary)] text-[var(--accent-primary)]" />
+                  ) : (
+                    <Sparkles size={32} className="text-[var(--accent-primary)]" />
+                  )}
+                </div>
+                <p className="text-[15px] font-bold text-[var(--text-primary)]">
                   {catalogoVacio && !hayFiltros
-                    ? 'Aún no hay productos disponibles'
-                    : 'No se encontraron productos'}
+                    ? 'Aún no hay tesoros por aquí 💕'
+                    : 'No encontramos nada cute… ✨'}
+                </p>
+                <p className="max-w-xs text-[13px] font-medium text-[var(--text-secondary)]">
+                  {catalogoVacio && !hayFiltros
+                    ? 'Vuelve pronto, estamos preparando el catálogo con mucho amor.'
+                    : 'Prueba otra búsqueda o limpia los filtros para ver más.'}
                 </p>
                 {hayFiltros && (
                   <button
                     onClick={limpiarFiltros}
-                    className="catalog-gold-cta min-h-[44px] rounded-xl px-5 text-[11px] font-medium uppercase tracking-[1.5px]"
+                    className="catalog-gold-cta min-h-[44px] rounded-full px-5 text-[12px] font-bold"
                   >
-                    Limpiar filtros
+                    Limpiar filtros ✨
                   </button>
                 )}
               </motion.div>
@@ -660,9 +664,9 @@ export default function ProductosClient({
               </motion.div>
             )}
 
-            {/* Grid productos — desktop (más columnas sin sidebar) */}
+            {/* Grid productos — desktop */}
             {mostrarCarga ? (
-              <div className="mb-10 mt-3 hidden grid-cols-2 gap-px sm:grid-cols-3 md:grid lg:grid-cols-4">
+              <div className="mb-10 mt-3 hidden grid-cols-2 gap-4 sm:grid-cols-3 md:grid lg:grid-cols-4 lg:gap-5">
                 {Array.from({ length: 8 }).map((_, i) => (
                   <ProductCardSkeleton key={i} />
                 ))}
@@ -671,28 +675,33 @@ export default function ProductosClient({
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="hidden flex-col items-center justify-center gap-4 px-6 py-20 text-center md:flex"
+                className="hidden flex-col items-center justify-center gap-5 rounded-[28px] border border-[var(--border)] bg-gradient-to-br from-[#F9F6FF] to-[#F8EAF4] px-6 py-20 text-center shadow-[var(--shadow-soft)] md:flex"
               >
-                {catalogoVacio && !hayFiltros ? (
-                  <Package size={40} className="text-[var(--text-faint)]" />
-                ) : (
-                  <Search size={40} className="text-[var(--text-faint)]" />
-                )}
-                <p className="text-sm font-light uppercase tracking-[0.5px] text-[var(--text-secondary)]">
-                  {catalogoVacio && !hayFiltros
-                    ? 'Aún no hay productos disponibles'
-                    : 'No se encontraron productos'}
-                </p>
-                {catalogoVacio && !hayFiltros ? (
-                  <p className="max-w-sm text-[12px] font-light text-[var(--text-subtle)]">
-                    Vuelve pronto, estamos preparando el catálogo.
+                <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white shadow-[var(--shadow-soft)]">
+                  {catalogoVacio && !hayFiltros ? (
+                    <Heart size={36} className="fill-[var(--accent-primary)] text-[var(--accent-primary)]" />
+                  ) : (
+                    <Sparkles size={36} className="text-[var(--accent-primary)]" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-[1.25rem] font-bold text-[var(--text-primary)]">
+                    {catalogoVacio && !hayFiltros
+                      ? 'Aún no hay tesoros por aquí 💕'
+                      : 'No encontramos nada cute… ✨'}
                   </p>
-                ) : (
+                  <p className="mx-auto mt-2 max-w-sm text-[14px] font-medium text-[var(--text-secondary)]">
+                    {catalogoVacio && !hayFiltros
+                      ? 'Vuelve pronto, estamos preparando el catálogo con mucho amor.'
+                      : 'Prueba otra búsqueda o limpia los filtros para ver más favoritos.'}
+                  </p>
+                </div>
+                {catalogoVacio && !hayFiltros ? null : (
                   <button
                     onClick={limpiarFiltros}
-                    className="catalog-gold-cta rounded-full px-5 py-2.5 text-[12px] font-bold"
+                    className="catalog-gold-cta rounded-full px-6 py-3 text-[13px] font-bold"
                   >
-                    Limpiar filtros
+                    Limpiar filtros ✨
                   </button>
                 )}
               </motion.div>

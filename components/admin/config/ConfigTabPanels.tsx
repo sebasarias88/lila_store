@@ -50,7 +50,7 @@ function ZoneCard({
       className={`admin-form-panel mobile-admin-field transition-colors ${mobile ? 'p-4' : 'p-5'}`}
     >
       <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[rgba(232,136,181,0.2)] bg-[rgba(232,136,181,0.1)] md:rounded-xl">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[rgba(169,137,224,0.2)] bg-[rgba(169,137,224,0.1)] md:rounded-xl">
           <Icon size={16} className="text-[var(--accent-secondary)]" />
         </div>
         <div>
@@ -114,7 +114,7 @@ function MobilePaymentGroup({
               type="button"
               onClick={controls.agregar}
               disabled={!controls.nuevo.trim()}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[rgba(232,136,181,0.35)] bg-[var(--accent-secondary)] text-[var(--bg-base)] transition-opacity disabled:opacity-35"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[rgba(169,137,224,0.35)] bg-[var(--accent-secondary)] text-[var(--bg-base)] transition-opacity disabled:opacity-35"
               aria-label="Agregar método"
             >
               <Plus size={17} strokeWidth={2} />
@@ -148,13 +148,13 @@ export default function ConfigTabPanels({
               label="Nombre del negocio"
               value={config['nombre_negocio'] || ''}
               onChange={e => updateConfig('nombre_negocio', e.target.value)}
-              placeholder="Tienda lila-store"
+              placeholder="lila-store"
             />
             <Input
               label="Número de WhatsApp *"
               value={config['whatsapp_numero'] || ''}
               onChange={e => updateConfig('whatsapp_numero', e.target.value)}
-              placeholder="573185867702"
+              placeholder="573104244912"
               hint="Con código de país, sin espacios"
             />
           </div>
@@ -190,7 +190,7 @@ export default function ConfigTabPanels({
             label="Texto descriptivo"
             value={config['texto_nosotros'] || ''}
             onChange={e => updateConfig('texto_nosotros', e.target.value)}
-            placeholder="Somos Tienda lila-store, tu aliado de belleza en Carrera 15 #19-25 Local 8, Armenia, Quindío."
+            placeholder="Somos lila-store, tu aliada de belleza en Armenia y Quimbaya, Quindío."
             rows={mobile ? 6 : 5}
           />
         </FormSection>
@@ -263,7 +263,7 @@ export default function ConfigTabPanels({
         <FormSection title="Promoción de envío">
           <div className={`admin-form-panel mobile-admin-field ${mobile ? 'p-4' : 'p-5'}`}>
             <div className="mb-4 flex items-center gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[rgba(232,136,181,0.25)] bg-[rgba(232,136,181,0.12)] md:rounded-xl">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[rgba(169,137,224,0.25)] bg-[rgba(169,137,224,0.12)] md:rounded-xl">
                 <Gift size={16} className="text-[var(--accent-secondary)]" />
               </div>
               <div>

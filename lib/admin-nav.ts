@@ -5,6 +5,7 @@ import {
   Settings,
   ImageIcon,
   Tag,
+  Sparkles,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -18,6 +19,7 @@ export const ADMIN_NAV_LINKS: AdminNavLink[] = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/admin/banners', label: 'Banners', icon: ImageIcon },
   { href: '/admin/promociones', label: 'Promociones', icon: Tag },
+  { href: '/admin/anuncio', label: 'Anuncio destacado', icon: Sparkles },
   { href: '/admin/productos', label: 'Productos', icon: Package },
   { href: '/admin/categorias', label: 'Categorías', icon: Layers },
   { href: '/admin/configuracion', label: 'Configuración', icon: Settings },
@@ -26,6 +28,7 @@ export const ADMIN_NAV_LINKS: AdminNavLink[] = [
 export function adminPageTitle(pathname: string): string {
   if (pathname.startsWith('/admin/banners')) return 'Banners'
   if (pathname.startsWith('/admin/promociones')) return 'Promociones'
+  if (pathname.startsWith('/admin/anuncio')) return 'Anuncio destacado'
   if (pathname.startsWith('/admin/productos')) return 'Productos'
   if (pathname.startsWith('/admin/categorias')) return 'Categorías'
   if (pathname.startsWith('/admin/configuracion')) return 'Configuración'
