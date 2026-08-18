@@ -13,19 +13,27 @@ import {
   Phone,
   Sparkles,
   Store,
+  Paperclip,
 } from 'lucide-react'
 import { ItemCarrito, DatosCliente } from '@/types'
 import { type CatalogType } from '@/lib/catalog'
 import type { MetodoPagoOpcion } from '@/lib/payment-methods'
-import { metodosPagoParaCheckout } from '@/lib/payment-methods'
+import type { DatosTransferencia } from '@/lib/transferencia'
+import { esMetodoTransferencia } from '@/lib/transferencia'
 import EntregaPicker from '@/components/catalog/cart/EntregaPicker'
 import MetodoPagoPicker from '@/components/catalog/cart/MetodoPagoPicker'
+import TransferenciaCheckout from '@/components/catalog/cart/TransferenciaCheckout'
 import MobileCartSteps, { type Step } from '@/components/catalog/mobile/cart/MobileCartSteps'
 import MobileCartItem, { formatPrecio } from '@/components/catalog/mobile/cart/MobileCartItem'
 import MobileCartSummary from '@/components/catalog/mobile/cart/MobileCartSummary'
 import MobileCartStickyBar from '@/components/catalog/mobile/cart/MobileCartStickyBar'
 import MobileCartReviewItem from '@/components/catalog/mobile/cart/MobileCartReviewItem'
 import { itemLineKey } from '@/lib/cart'
+import {
+  mensajeStockRestante,
+  stockRestanteParaProducto,
+} from '@/lib/stock'
+import toast from 'react-hot-toast'
 
 function WhatsAppIcon({ size = 16 }: { size?: number }) {
   return (
@@ -50,24 +58,36 @@ type CarritoMobileProps = {
   stepIndex: number
   items: ItemCarrito[]
   quitar: (key: string) => void
-  actualizarCantidad: (key: string, cantidad: number) => void
+  actualizarCantidad: (
+    key: string,
+    cantidad: number,
+    catalogType?: CatalogType,
+  ) => { ok: true } | { ok: false; message: string }
   subtotal: number
   minimoMayoreo: number
+  recompraSugerida: number
   cumpleMinimo: boolean
   faltaParaMinimo: number
+  mensajeMinimoMayoreo: string
   datos: DatosCliente
   setDatos: React.Dispatch<React.SetStateAction<DatosCliente>>
   errores: Partial<DatosCliente>
   setErrores: React.Dispatch<React.SetStateAction<Partial<DatosCliente>>>
   metodosPago: MetodoPagoOpcion[]
+  transferencia: DatosTransferencia
+  esTransferencia: boolean
+  comprobantePago: File | null
+  onComprobanteChange: (file: File | null) => void
   enviando: boolean
   costoEnvio: number
   envioGratis: boolean
   tiempoEntrega: string
   totalFinal: number
+  recargoLabel?: string | null
+  recargoMonto?: number
   handleContinuar: () => void
   handleConfirmar: () => void
-  handleEnviarWhatsApp: () => void
+  handleEnviarWhatsApp: () => void | Promise<void>
   inputClass: (campo: keyof DatosCliente) => string
 }
 
@@ -109,18 +129,26 @@ export default function CarritoMobile({
   actualizarCantidad,
   subtotal,
   minimoMayoreo,
+  recompraSugerida,
   cumpleMinimo,
   faltaParaMinimo,
+  mensajeMinimoMayoreo,
   datos,
   setDatos,
   errores,
   setErrores,
   metodosPago,
+  transferencia,
+  esTransferencia,
+  comprobantePago,
+  onComprobanteChange,
   enviando,
   costoEnvio,
   envioGratis,
   tiempoEntrega,
   totalFinal,
+  recargoLabel = null,
+  recargoMonto = 0,
   handleContinuar,
   handleConfirmar,
   handleEnviarWhatsApp,
@@ -205,14 +233,43 @@ export default function CarritoMobile({
                     <AnimatePresence initial={false}>
                       {items.map(item => {
                         const key = itemLineKey(item)
+                        const maxQty =
+                          stockRestanteParaProducto(
+                            item.producto,
+                            items,
+                            catalogType,
+                            key,
+                          ) + item.cantidad
+                        const atMax = item.cantidad >= maxQty
                         return (
                           <MobileCartItem
                             key={key}
                             item={item}
                             catalogType={catalogType}
-                            onDecrease={() => actualizarCantidad(key, item.cantidad - 1)}
-                            onIncrease={() => actualizarCantidad(key, item.cantidad + 1)}
+                            onDecrease={() =>
+                              actualizarCantidad(key, item.cantidad - 1, catalogType)
+                            }
+                            onIncrease={() => {
+                              const result = actualizarCantidad(
+                                key,
+                                item.cantidad + 1,
+                                catalogType,
+                              )
+                              if (!result.ok) toast.error(result.message)
+                            }}
                             onRemove={() => quitar(key)}
+                            maxCantidad={maxQty}
+                            stockHint={
+                              atMax
+                                ? mensajeStockRestante(
+                                    stockRestanteParaProducto(
+                                      item.producto,
+                                      items,
+                                      catalogType,
+                                    ),
+                                  )
+                                : null
+                            }
                           />
                         )
                       })}
@@ -228,16 +285,11 @@ export default function CarritoMobile({
                       sucursalRecogida={datos.sucursalRecogida}
                       error={errores.sucursalRecogida}
                       onTipoChange={tipo => {
-                        setDatos(d => {
-                          const nextMetodos = metodosPagoParaCheckout(tipo)
-                          const pagoOk = nextMetodos.some(m => m.label === d.metodoPago)
-                          return {
-                            ...d,
-                            tipoEntrega: tipo,
-                            sucursalRecogida: tipo === 'envio' ? '' : d.sucursalRecogida,
-                            metodoPago: pagoOk ? d.metodoPago : '',
-                          }
-                        })
+                        setDatos(d => ({
+                          ...d,
+                          tipoEntrega: tipo,
+                          sucursalRecogida: tipo === 'envio' ? '' : d.sucursalRecogida,
+                        }))
                         if (errores.sucursalRecogida) {
                           setErrores(er => ({ ...er, sucursalRecogida: '' }))
                         }
@@ -263,18 +315,22 @@ export default function CarritoMobile({
                     esRecogida={esRecogida}
                     compact
                   />
-                  {catalogType === 'mayoreo' && !cumpleMinimo && (
+                  {catalogType === 'mayoreo' && (
                     <div className="rounded-xl border border-[rgba(169,137,224,0.4)] bg-[rgba(169,137,224,0.08)] p-4 md:rounded-xl">
-                      <p className="text-[11px] font-medium text-[var(--accent-deep)]">
-                        Compra mínima mayorista
+                      <p className="text-[13px] font-medium text-[var(--accent-deep)]">
+                        Pedido mínimo: {formatPrecio(minimoMayoreo)}
                       </p>
-                      <p className="mt-1.5 text-[12px] font-light leading-relaxed text-[var(--text-secondary)]">
-                        El pedido mínimo es {formatPrecio(minimoMayoreo)}. Te faltan{' '}
-                        <span className="font-medium text-[var(--accent-deep)]">
-                          {formatPrecio(faltaParaMinimo)}
-                        </span>
-                        .
-                      </p>
+                      {recompraSugerida > 0 ? (
+                        <p className="mt-1 text-[11px] font-light text-[var(--text-muted)]">
+                          Pedidos posteriores: mínimo sugerido{' '}
+                          {formatPrecio(recompraSugerida)}
+                        </p>
+                      ) : null}
+                      {!cumpleMinimo ? (
+                        <p className="mt-2 text-[12px] font-light leading-relaxed text-[var(--text-secondary)]">
+                          {mensajeMinimoMayoreo}
+                        </p>
+                      ) : null}
                     </div>
                   )}
                   <p className="text-center text-[11px] font-light leading-relaxed text-[var(--text-subtle)]">
@@ -302,7 +358,7 @@ export default function CarritoMobile({
                   primaryDisabled={catalogType === 'mayoreo' && !cumpleMinimo}
                   hint={
                     catalogType === 'mayoreo' && !cumpleMinimo
-                      ? `Mínimo ${formatPrecio(minimoMayoreo)} — faltan ${formatPrecio(faltaParaMinimo)}`
+                      ? `Faltan ${formatPrecio(faltaParaMinimo)} para el mínimo`
                       : `${items.length} tesoro${items.length !== 1 ? 's' : ''} en tu bolsita`
                   }
                 />
@@ -458,8 +514,20 @@ export default function CarritoMobile({
                 onSelect={label => {
                   setDatos(d => ({ ...d, metodoPago: label }))
                   if (errores.metodoPago) setErrores(er => ({ ...er, metodoPago: '' }))
+                  if (!esMetodoTransferencia(label)) onComprobanteChange(null)
                 }}
               />
+              {esTransferencia && transferencia.activo ? (
+                <div className="px-3 pb-3">
+                  <TransferenciaCheckout
+                    compact
+                    datos={transferencia}
+                    totalLabel={formatPrecio(totalFinal)}
+                    comprobante={comprobantePago}
+                    onComprobanteChange={onComprobanteChange}
+                  />
+                </div>
+              ) : null}
 
               <div className="mobile-cart-checkout-notes">
                 <label htmlFor="cart-notas" className="mobile-cart-checkout-notes__label">
@@ -565,6 +633,9 @@ export default function CarritoMobile({
                         { label: 'Dirección', value: datos.direccion, icon: Truck },
                       ]),
                   { label: 'Pago', value: datos.metodoPago, icon: CreditCard },
+                  ...(esTransferencia && comprobantePago
+                    ? [{ label: 'Comprobante', value: comprobantePago.name, icon: Paperclip }]
+                    : []),
                   ...(datos.notas ? [{ label: 'Notas', value: datos.notas, icon: FileText }] : []),
                 ].map(({ label, value, icon: Icon }) => (
                   <div key={label} className="mobile-cart-data-row">
@@ -592,13 +663,17 @@ export default function CarritoMobile({
               envioGratis={envioGratis}
               showEnvio
               esRecogida={esRecogida}
+              recargoLabel={recargoLabel}
+              recargoMonto={recargoMonto}
               compact
             />
 
             <p className="text-center text-[11px] leading-relaxed text-[var(--text-subtle)]">
-              {catalogType === 'mayoreo'
-                ? 'Al confirmar se abrirá WhatsApp con tu pedido listo.'
-                : 'Por ahora confirmamos por WhatsApp con tu medio de pago elegido 💕'}
+              {catalogType === 'mayoreo' && !cumpleMinimo
+                ? mensajeMinimoMayoreo
+                : catalogType === 'mayoreo'
+                  ? 'Al confirmar se abrirá WhatsApp con tu pedido listo.'
+                  : 'Por ahora confirmamos por WhatsApp con tu medio de pago elegido 💕'}
             </p>
 
             <div className={stickySpacer} aria-hidden />
@@ -610,7 +685,9 @@ export default function CarritoMobile({
                 catalogType === 'mayoreo' ? 'Enviar por WhatsApp' : 'Confirmar pedido ✨'
               }
               onPrimary={handleEnviarWhatsApp}
-              primaryDisabled={enviando}
+              primaryDisabled={
+                enviando || (catalogType === 'mayoreo' && !cumpleMinimo)
+              }
               primaryLoading={enviando}
               primaryIcon={
                 !enviando

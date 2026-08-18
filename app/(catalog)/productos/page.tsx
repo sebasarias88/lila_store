@@ -10,7 +10,7 @@ import { rethrowIfNextControlFlowError } from '@/lib/next-errors'
 export async function generateMetadata({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; categoria?: string; marca?: string }>
+  searchParams: Promise<{ q?: string; categoria?: string }>
 }): Promise<Metadata> {
   const { q, categoria } = await searchParams
   const config = await getSiteConfig()
@@ -45,9 +45,9 @@ export async function generateMetadata({
 export default async function ProductosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; categoria?: string; marca?: string }>
+  searchParams: Promise<{ q?: string; categoria?: string }>
 }) {
-  const { q, categoria, marca } = await searchParams
+  const { q, categoria } = await searchParams
 
   let categorias: Categoria[] = []
   let productos: (Producto & { producto_categorias?: { categoria_id?: string; categoria?: Categoria | null }[] })[] = []
@@ -89,7 +89,6 @@ export default async function ProductosPage({
       categorias={categorias}
       initialQ={q || ''}
       initialCategoria={categoria || ''}
-      initialMarca={marca || ''}
     />
   )
 }

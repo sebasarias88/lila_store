@@ -29,6 +29,7 @@ export type VariacionOpcion = {
   tipo_id: string
   nombre: string
   valor_color: string | null
+  imagen_url: string | null
   disponible: boolean
   orden: number
 }
@@ -77,8 +78,10 @@ export type Producto = {
   precio_antes: number | null
   precio_mayoreo: number | null
   precio_antes_mayoreo: number | null
-  /** Unidades disponibles (inventario). Independiente de los toggles de visibilidad. */
-  stock: number
+  /** Inventario catálogo detal. */
+  stock_detal: number
+  /** Inventario catálogo mayorista. */
+  stock_mayoreo: number
   disponible: boolean
   disponible_detal: boolean
   disponible_mayoreo: boolean
@@ -104,6 +107,17 @@ export type Configuracion = {
   clave: string
   valor: string
   descripcion: string | null
+}
+
+/** Método de pago configurable (recargos por catálogo). */
+export type MetodoPago = {
+  id: string
+  nombre: string
+  activo: boolean
+  recargo_detal_porcentaje: number
+  recargo_mayoreo_porcentaje: number
+  orden: number
+  created_at?: string
 }
 
 export type ItemCarrito = {
@@ -153,5 +167,6 @@ export type Promocion = {
   activa: boolean
   orden: number
   enlace: string | null
+  catalogo: 'detal' | 'mayoreo'
   created_at: string
 }

@@ -53,7 +53,8 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
     precio_antes: '',
     precio_mayoreo: '',
     precio_antes_mayoreo: '',
-    stock: 0,
+    stock_detal: '0',
+    stock_mayoreo: '0',
     disponible_detal: true,
     disponible_mayoreo: true,
     destacado: false,
@@ -61,7 +62,6 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
     video_url: '',
     video_tipo: '' as '' | VideoTipo,
     sku: '',
-    marca: '',
     orden: 0,
   })
   const [categorias_ids, setCategorias_ids] = useState<string[]>([])
@@ -84,7 +84,8 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
         precio_mayoreo: producto.precio_mayoreo != null ? formatCopInput(producto.precio_mayoreo) : '',
         precio_antes_mayoreo:
           producto.precio_antes_mayoreo != null ? formatCopInput(producto.precio_antes_mayoreo) : '',
-        stock: Math.max(0, Math.floor(producto.stock ?? 0)),
+        stock_detal: String(Math.max(0, Math.floor(producto.stock_detal ?? 0))),
+        stock_mayoreo: String(Math.max(0, Math.floor(producto.stock_mayoreo ?? 0))),
         disponible_detal: producto.disponible_detal ?? producto.disponible,
         disponible_mayoreo: producto.disponible_mayoreo ?? producto.disponible,
         destacado: producto.destacado,
@@ -92,7 +93,6 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
         video_url: producto.video_url || '',
         video_tipo: (producto.video_tipo as VideoTipo | null) || '',
         sku: producto.sku || '',
-        marca: producto.marca || '',
         orden: producto.orden,
       })
 
@@ -188,7 +188,8 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
       precio_antes: parseCopInput(form.precio_antes),
       precio_mayoreo: parseCopInput(form.precio_mayoreo),
       precio_antes_mayoreo: parseCopInput(form.precio_antes_mayoreo),
-      stock: Math.max(0, Math.floor(Number(form.stock) || 0)),
+      stock_detal: Math.max(0, Math.floor(Number(form.stock_detal) || 0)),
+      stock_mayoreo: Math.max(0, Math.floor(Number(form.stock_mayoreo) || 0)),
       disponible_detal: form.disponible_detal,
       disponible_mayoreo: form.disponible_mayoreo,
       disponible: form.disponible_detal || form.disponible_mayoreo,
@@ -198,7 +199,7 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
       video_url: videoUrl || null,
       video_tipo: videoUrl && form.video_tipo ? form.video_tipo : null,
       sku: form.sku.trim() || null,
-      marca: form.marca.trim() || null,
+      marca: null,
       orden: form.orden,
     }
 
@@ -328,13 +329,6 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
             hint="Generado automáticamente al escribir el nombre"
           />
         </div>
-        <Input
-          label="Marca"
-          value={form.marca}
-          onChange={e => setForm(f => ({ ...f, marca: e.target.value }))}
-          placeholder="Ej: L'Oréal, Revlon, Maybelline, Genérico..."
-          hint="Opcional — permite filtrar por marca en el catálogo"
-        />
         <Textarea
           label="Descripción"
           value={form.descripcion}
@@ -382,7 +376,7 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
       </FormSection>
 
       <FormSection title="Clasificación">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="space-y-1.5">
             <label className="admin-form-label">Categorías *</label>
             <AdminMultiSelect
@@ -391,6 +385,8 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
               groups={categoriaGrupos}
               placeholder="+ Agregar categoría"
               emptyLabel="No hay más categorías"
+              searchable
+              searchPlaceholder="Buscar categoría…"
             />
             <p className="admin-form-hint">
               Puedes agregar el producto a múltiples categorías
@@ -403,41 +399,61 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
             placeholder="Ej: SH-KER-001"
             hint="Código interno opcional"
           />
+          <Input
+            label="Orden de aparición"
+            type="number"
+            value={form.orden}
+            onChange={e => setForm(f => ({ ...f, orden: Number(e.target.value) }))}
+            hint="Menor número = aparece primero en el catálogo"
+          />
         </div>
-        <Input
-          label="Orden de aparición"
-          type="number"
-          value={form.orden}
-          onChange={e => setForm(f => ({ ...f, orden: Number(e.target.value) }))}
-          hint="Menor número = aparece primero en el catálogo"
-        />
       </FormSection>
 
       <FormSection title="Visibilidad">
-        <div className="admin-form-panel px-4 py-3.5">
-          <Input
-            label="Stock disponible"
-            type="number"
-            min={0}
-            step={1}
-            value={form.stock}
-            onChange={e => {
-              const raw = e.target.value
-              if (raw === '') {
-                setForm(f => ({ ...f, stock: 0 }))
-                return
-              }
-              const n = Math.floor(Number(raw))
-              setForm(f => ({
-                ...f,
-                stock: Number.isFinite(n) && n > 0 ? n : 0,
-              }))
-            }}
-            hint="Unidades en inventario. Si es 0, el catálogo lo muestra como agotado aunque el toggle esté activo."
-          />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="admin-form-panel px-4 py-3.5">
+            <Input
+              label="Stock detal"
+              type="number"
+              min={0}
+              step={1}
+              inputMode="numeric"
+              value={form.stock_detal}
+              onChange={e => {
+                const raw = e.target.value
+                if (raw === '') {
+                  setForm(f => ({ ...f, stock_detal: '' }))
+                  return
+                }
+                if (!/^\d+$/.test(raw)) return
+                setForm(f => ({ ...f, stock_detal: raw }))
+              }}
+              hint="Inventario del catálogo detal. 0 = agotado en detal."
+            />
+          </div>
+          <div className="admin-form-panel px-4 py-3.5">
+            <Input
+              label="Stock mayorista"
+              type="number"
+              min={0}
+              step={1}
+              inputMode="numeric"
+              value={form.stock_mayoreo}
+              onChange={e => {
+                const raw = e.target.value
+                if (raw === '') {
+                  setForm(f => ({ ...f, stock_mayoreo: '' }))
+                  return
+                }
+                if (!/^\d+$/.test(raw)) return
+                setForm(f => ({ ...f, stock_mayoreo: raw }))
+              }}
+              hint="Inventario del catálogo mayorista. 0 = agotado en mayoreo."
+            />
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="mt-3 grid grid-cols-2 gap-3">
           {[
             {
               key: 'disponible_detal' as const,

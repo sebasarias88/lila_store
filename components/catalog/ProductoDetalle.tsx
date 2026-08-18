@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCarrito } from '@/lib/store'
 import { Producto, ProductoSeccion, VariacionTipo } from '@/types'
 import { getLineKey } from '@/lib/cart'
-import { buildVariacionesSeleccionadas } from '@/lib/variaciones'
+import { buildVariacionesSeleccionadas, imagenUrlVariacionActiva } from '@/lib/variaciones'
 import {
   ShoppingBag,
   Plus,
@@ -37,6 +37,12 @@ import MobileQuickAddSheet from '@/components/catalog/mobile/MobileQuickAddSheet
 import ProductVideoThumb from '@/components/catalog/ProductVideoThumb'
 import ProductVideoModal from '@/components/catalog/ProductVideoModal'
 import { productoTieneVideo } from '@/lib/video-url'
+import {
+  getStockCatalogo,
+  mensajeStockRestante,
+  productoComprableEnCatalogo,
+  stockRestanteParaProducto,
+} from '@/lib/stock'
 
 const NUEVO_DIAS = 21
 
@@ -136,12 +142,26 @@ export default function ProductoDetalle({
   const [selectedVariaciones, setSelectedVariaciones] = useState<Record<string, string[]>>({})
 
   const tieneVariaciones = variaciones.length > 0
-  const imagenes = producto.imagenes?.length ? producto.imagenes : []
+  const imagenVariacion = imagenUrlVariacionActiva(variaciones, selectedVariaciones)
+  const imagenes = useMemo(() => {
+    const base = producto.imagenes?.length ? producto.imagenes : []
+    if (!imagenVariacion) return base
+    return [imagenVariacion, ...base.filter(url => url !== imagenVariacion)]
+  }, [producto.imagenes, imagenVariacion])
+
+  useEffect(() => {
+    setImagenActiva(0)
+  }, [imagenVariacion])
+
   const tieneVideo = productoTieneVideo(producto)
   const totalSlides = imagenes.length + (tieneVideo ? 1 : 0)
   const videoSlideIndex = tieneVideo ? imagenes.length : -1
   const enSlideVideo = tieneVideo && imagenActiva === videoSlideIndex
   const posterVideo = imagenes[0] || null
+  const comprable = productoComprableEnCatalogo(producto, catalogType)
+  const stockCatalogo = getStockCatalogo(producto, catalogType)
+  const stockRestante = stockRestanteParaProducto(producto, items, catalogType)
+  const maxCantidadSeleccionable = Math.max(0, stockRestante)
 
   const toggleOpcion = (tipoId: string, opcionId: string) => {
     setSelectedVariaciones(prev => {
@@ -177,7 +197,7 @@ export default function ProductoDetalle({
   }
 
   const handleAgregar = () => {
-    if (!producto.disponible) return
+    if (!comprable) return
 
     if (tieneVariaciones) {
       const faltantes = variaciones.filter(
@@ -189,16 +209,26 @@ export default function ProductoDetalle({
       }
     }
 
-    for (let i = 0; i < cantidad; i++) {
-      agregar(producto, variacionesParaCarrito)
+    if (stockRestante <= 0) {
+      toast.error(mensajeStockRestante(0))
+      return
     }
+
+    const qty = Math.min(cantidad, stockRestante)
+    const result = agregar(producto, variacionesParaCarrito, catalogType, qty)
+    if (!result.ok) {
+      toast.error(result.message)
+      if (qty <= 0) return
+    }
+
     setAgregado(true)
+    setCantidad(1)
     const isMobile =
       typeof window !== 'undefined' &&
       window.matchMedia('(max-width: 767px)').matches
     if (isMobile) {
       setQuickAddOpen(true)
-    } else {
+    } else if (result.ok) {
       toast.success(`${producto.nombre} al carrito 💕`)
     }
     setTimeout(() => setAgregado(false), 2500)
@@ -355,18 +385,18 @@ export default function ProductoDetalle({
               )}
 
               <div className="absolute left-4 top-4 flex flex-col gap-2">
-                {!producto.disponible && (
+                {!comprable && (
                   <span className="rounded-full bg-[var(--accent-deep)] px-3 py-1 text-[11px] font-bold text-white shadow-sm">
                     Agotado
                   </span>
                 )}
-                {nuevo && producto.disponible && (
+                {nuevo && comprable && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent-secondary)] px-3 py-1 text-[11px] font-bold text-white shadow-sm">
                     <Sparkles size={11} />
                     Nuevo
                   </span>
                 )}
-                {descuento && producto.disponible && (
+                {descuento && comprable && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent-primary)] px-3 py-1 text-[11px] font-bold text-white shadow-sm">
                     <Sparkles size={11} />
                     -{descuento}%
@@ -431,18 +461,7 @@ export default function ProductoDetalle({
                   <Sparkles size={12} />
                   {producto.categoria.nombre}
                 </Link>
-                {producto.marca && (
-                  <span className="rounded-full border border-[var(--border)] px-3 py-1 text-[11px] font-bold text-[var(--text-secondary)]">
-                    {producto.marca}
-                  </span>
-                )}
               </div>
-            )}
-
-            {!producto.categoria && producto.marca && (
-              <span className="mb-3 inline-flex rounded-full border border-[var(--border)] px-3 py-1 text-[11px] font-bold text-[var(--text-secondary)]">
-                {producto.marca}
-              </span>
             )}
 
             <h1 className="text-[1.7rem] font-bold leading-tight text-[var(--text-primary)] sm:text-[2rem] lg:text-[2.15rem]">
@@ -516,7 +535,7 @@ export default function ProductoDetalle({
                             type="button"
                             disabled={unavailable}
                             onClick={() => toggleOpcion(tipo.id, opcion.id)}
-                            className={`min-h-[42px] rounded-full border px-4 py-2.5 text-[13px] font-bold transition-all duration-200 ${
+                            className={`inline-flex min-h-[42px] items-center gap-2 rounded-full border px-4 py-2.5 text-[13px] font-bold transition-all duration-200 ${
                               unavailable
                                 ? 'cursor-not-allowed border-[var(--border-subtle)] text-[var(--text-faint)] line-through opacity-50'
                                 : selected
@@ -524,6 +543,14 @@ export default function ProductoDetalle({
                                   : 'border-[var(--border)] bg-white text-[var(--text-secondary)] hover:border-[var(--accent-primary)] hover:text-[var(--accent-deep)]'
                             }`}
                           >
+                            {opcion.imagen_url ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={opcion.imagen_url}
+                                alt=""
+                                className="h-7 w-7 shrink-0 rounded-full object-cover"
+                              />
+                            ) : null}
                             {opcion.nombre}
                           </button>
                         )
@@ -536,7 +563,7 @@ export default function ProductoDetalle({
 
             <div className="my-7 h-px bg-[var(--border)]" />
 
-            {producto.disponible ? (
+            {comprable ? (
               <div className="space-y-4">
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="text-[12px] font-bold text-[var(--text-muted)]">
@@ -556,8 +583,11 @@ export default function ProductoDetalle({
                     </span>
                     <button
                       type="button"
-                      onClick={() => setCantidad(c => c + 1)}
-                      className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--accent-deep)] transition-colors hover:bg-white"
+                      onClick={() =>
+                        setCantidad(c => Math.min(maxCantidadSeleccionable, c + 1))
+                      }
+                      disabled={cantidad >= maxCantidadSeleccionable}
+                      className="flex h-9 w-9 items-center justify-center rounded-full text-[var(--accent-deep)] transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
                       aria-label="Aumentar cantidad"
                     >
                       <Plus size={14} />
@@ -569,12 +599,22 @@ export default function ProductoDetalle({
                     </span>
                   )}
                 </div>
+                {stockRestante <= 0 ? (
+                  <p className="text-[12px] font-medium text-[var(--accent-deep)]">
+                    {mensajeStockRestante(0)}
+                  </p>
+                ) : stockRestante < stockCatalogo ? (
+                  <p className="text-[12px] font-medium text-[var(--text-muted)]">
+                    {mensajeStockRestante(stockRestante)}
+                  </p>
+                ) : null}
 
                 <motion.button
                   type="button"
                   onClick={handleAgregar}
-                  whileTap={{ scale: 0.98 }}
-                  className={`flex w-full items-center justify-center gap-3 rounded-full py-4 text-[14px] font-bold transition-all duration-300 ${
+                  disabled={stockRestante <= 0}
+                  whileTap={stockRestante > 0 ? { scale: 0.98 } : undefined}
+                  className={`flex w-full items-center justify-center gap-3 rounded-full py-4 text-[14px] font-bold transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50 ${
                     agregado
                       ? 'bg-emerald-500 text-white'
                       : 'catalog-gold-cta'
@@ -601,7 +641,7 @@ export default function ProductoDetalle({
                         className="flex items-center gap-2"
                       >
                         <ShoppingBag size={16} />
-                        Lo quiero ✨
+                        {stockRestante <= 0 ? 'Sin unidades disponibles' : 'Lo quiero ✨'}
                       </motion.span>
                     )}
                   </AnimatePresence>

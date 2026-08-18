@@ -16,6 +16,8 @@ import { categoriaTieneDescuentoActivo } from '@/lib/descuentos'
 import { ShoppingBag, ImageIcon, Play } from 'lucide-react'
 import MobileQuickAddSheet from '@/components/catalog/mobile/MobileQuickAddSheet'
 import { productoTieneVideo } from '@/lib/video-url'
+import { productoComprableEnCatalogo } from '@/lib/stock'
+import toast from 'react-hot-toast'
 
 const MAX_TITULO_CARD = 48
 
@@ -47,11 +49,17 @@ export default function ProductCardMobile({
       ? producto.categoria?.descuento_porcentaje_mayoreo
       : producto.categoria?.descuento_porcentaje
 
+  const comprable = productoComprableEnCatalogo(producto, catalogType)
+
   const handleAgregar = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    if (!producto.disponible) return
-    agregar(producto)
+    if (!comprable) return
+    const result = agregar(producto, undefined, catalogType)
+    if (!result.ok) {
+      toast.error(result.message)
+      return
+    }
     setQuickAddOpen(true)
   }
 
@@ -88,18 +96,18 @@ export default function ProductCardMobile({
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-[rgba(34,34,34,0.4)] to-transparent" />
 
           <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-between gap-1 p-2">
-            {!producto.disponible ? (
+            {!comprable ? (
               <span className="rounded-full bg-[var(--accent-deep)] px-2.5 py-1 text-[10px] font-bold text-white">
                 Agotado
               </span>
             ) : (
               <span />
             )}
-            {descuentoCategoria && producto.disponible && !consultar ? (
+            {descuentoCategoria && comprable && !consultar ? (
               <span className="rounded-full bg-[var(--accent-primary)] px-2.5 py-1 text-[10px] font-bold text-white">
                 -{pctDescuento}%
               </span>
-            ) : precioAntes && producto.disponible && !consultar ? (
+            ) : precioAntes && comprable && !consultar ? (
               <span className="rounded-full bg-[var(--accent-secondary)] px-2.5 py-1 text-[10px] font-bold text-white">
                 Oferta
               </span>
@@ -110,11 +118,11 @@ export default function ProductCardMobile({
             type="button"
             whileTap={{ scale: 0.88 }}
             onClick={handleAgregar}
-            disabled={!producto.disponible}
+            disabled={!comprable}
             className={`mobile-product-card-add absolute bottom-3 right-3 z-[1] ${
-              producto.disponible ? '' : 'mobile-product-card-add--disabled'
+              comprable ? '' : 'mobile-product-card-add--disabled'
             }`}
-            aria-label={producto.disponible ? `Agregar ${producto.nombre}` : 'Agotado'}
+            aria-label={comprable ? `Agregar ${producto.nombre}` : 'Agotado'}
           >
             <ShoppingBag size={18} strokeWidth={1.75} className="mobile-product-card-add__icon" aria-hidden />
           </motion.button>
@@ -125,14 +133,9 @@ export default function ProductCardMobile({
             <p className="mb-1 line-clamp-1 text-[11px] font-bold text-[var(--accent-deep)]">
               {producto.categoria?.nombre || 'Producto'}
             </p>
-            {producto.marca && (
-              <p className="mb-1 line-clamp-1 text-[10px] font-medium text-[var(--text-muted)]">
-                {producto.marca}
-              </p>
-            )}
             <h3
               className={`line-clamp-2 text-[13px] font-bold leading-[1.35] ${
-                producto.disponible ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'
+                comprable ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'
               }`}
               title={producto.nombre.trim()}
             >
@@ -141,18 +144,13 @@ export default function ProductCardMobile({
           </Link>
 
           <div className="mt-auto">
-            {isMayoreo && (
-              <span className="mb-1 inline-flex rounded-full bg-[var(--bg-muted)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-deep)]">
-                Mayorista
-              </span>
-            )}
             {consultar ? (
               <span className="text-[13px] font-bold text-[var(--text-muted)]">Consultar precio</span>
             ) : (
               <div className="flex items-baseline gap-2">
                 <span
                   className={`text-[15px] font-bold leading-none tracking-tight ${
-                    producto.disponible ? 'text-[var(--accent-deep)]' : 'text-[var(--text-faint)]'
+                    comprable ? 'text-[var(--accent-deep)]' : 'text-[var(--text-faint)]'
                   }`}
                 >
                   {formatPrecio(precio!)}

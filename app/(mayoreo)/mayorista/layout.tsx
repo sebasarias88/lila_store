@@ -4,7 +4,14 @@ import Footer from '@/components/catalog/Footer'
 import PageTransition from '@/components/catalog/PageTransition'
 import NavigationProgress from '@/components/catalog/NavigationProgress'
 import FloatingWhatsApp from '@/components/catalog/FloatingWhatsApp'
-import { formatPrecio, MAYOREO_MIN_COMPRA, MAYOREO_RECOMPRA } from '@/lib/catalog'
+import {
+  CONFIG_MAYORISTA_MINIMO,
+  CONFIG_MAYORISTA_RECOMPRA,
+  formatPrecio,
+  MAYOREO_MIN_COMPRA,
+  MAYOREO_RECOMPRA,
+  parseMayoristaConfigMonto,
+} from '@/lib/catalog'
 import { resolveWhatsAppNumero } from '@/lib/negocio'
 
 export default async function MayoreoLayout({
@@ -20,6 +27,15 @@ export default async function MayoreoLayout({
 
   const config: Record<string, string> = {}
   configData?.forEach(row => { config[row.clave] = row.valor })
+
+  const minimoCompra = parseMayoristaConfigMonto(
+    config[CONFIG_MAYORISTA_MINIMO],
+    MAYOREO_MIN_COMPRA,
+  )
+  const recompraSugerida = parseMayoristaConfigMonto(
+    config[CONFIG_MAYORISTA_RECOMPRA],
+    MAYOREO_RECOMPRA,
+  )
 
   const { data: categoriasRaw } = await supabase
     .from('categorias')
@@ -41,16 +57,20 @@ export default async function MayoreoLayout({
       <NavigationProgress />
       <div className="catalog-announcement fixed left-0 right-0 top-0 z-40 flex h-9 items-center justify-center gap-2 px-3 text-[12px] font-bold text-white">
         <span>
-          ✨ Compra mínima{' '}
-          <span className="font-extrabold">{formatPrecio(MAYOREO_MIN_COMPRA)}</span>
+          Pedido mínimo{' '}
+          <span className="font-extrabold">{formatPrecio(minimoCompra)}</span>
         </span>
-        <span className="opacity-80" aria-hidden>
-          ♡
-        </span>
-        <span>
-          Recompra{' '}
-          <span className="font-extrabold">{formatPrecio(MAYOREO_RECOMPRA)}</span>
-        </span>
+        {recompraSugerida > 0 ? (
+          <>
+            <span className="opacity-80" aria-hidden>
+              ·
+            </span>
+            <span className="font-medium opacity-90">
+              Recompra sugerida{' '}
+              <span className="font-extrabold">{formatPrecio(recompraSugerida)}</span>
+            </span>
+          </>
+        ) : null}
       </div>
       <Navbar
         nombreNegocio="lila-store"

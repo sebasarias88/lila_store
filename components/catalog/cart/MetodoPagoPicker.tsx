@@ -18,6 +18,14 @@ export default function MetodoPagoPicker({
   onSelect,
   compact = false,
 }: MetodoPagoPickerProps) {
+  if (metodos.length === 0) {
+    return (
+      <p className="rounded-2xl border border-dashed border-[var(--border)] px-4 py-5 text-center text-[13px] font-medium text-[var(--text-muted)]">
+        No hay métodos de pago activos. Configúralos en el admin.
+      </p>
+    )
+  }
+
   if (compact) {
     return (
       <div>

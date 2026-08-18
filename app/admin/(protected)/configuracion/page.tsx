@@ -115,7 +115,10 @@ export default function ConfiguracionPage() {
 
     const results = await Promise.all([
       ...Object.entries(config).map(([clave, valor]) =>
-        supabase.from('configuracion').update({ valor }).eq('clave', clave),
+        supabase.from('configuracion').upsert(
+          { clave, valor },
+          { onConflict: 'clave' },
+        ),
       ),
       supabase.from('configuracion').upsert(
         { clave: 'metodos_pago_detal', valor: JSON.stringify(metodosPagoDetal) },

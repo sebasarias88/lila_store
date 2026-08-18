@@ -4,6 +4,11 @@ import { getProductoPrecios, type CatalogType } from '@/lib/catalog'
 
 export type WhatsAppConsultaContext = 'flotante' | 'nosotros' | 'footer'
 
+export type WhatsAppRecargoPago = {
+  labelLinea: string
+  monto: number
+}
+
 function formatPrecio(precio: number): string {
   return new Intl.NumberFormat('es-CO', {
     style: 'currency',
@@ -58,6 +63,8 @@ export function generarMensajeWhatsApp(
   costoEnvio: number,
   tiempoEntrega: string,
   catalogType: CatalogType = 'detal',
+  recargoPago: WhatsAppRecargoPago | null = null,
+  comprobanteUrl: string | null = null,
 ): string {
   const subtotal = items.reduce((acc, item) => {
     const unitario = precioUnitarioItem(item, catalogType)
@@ -66,7 +73,9 @@ export function generarMensajeWhatsApp(
   }, 0)
 
   const esRecogida = cliente.tipoEntrega === 'recogida'
-  const total = subtotal + (esRecogida ? 0 : costoEnvio)
+  const envio = esRecogida ? 0 : costoEnvio
+  const recargoMonto = recargoPago?.monto ?? 0
+  const total = subtotal + envio + recargoMonto
 
   const productosLineas = items
     .map((item) => {
@@ -107,6 +116,11 @@ export function generarMensajeWhatsApp(
   const encabezadoMayoreo =
     catalogType === 'mayoreo' ? '📦 *Pedido Mayorista*\n\n' : ''
 
+  const lineaRecargo =
+    recargoPago && recargoPago.monto > 0
+      ? `${recargoPago.labelLinea}: +${formatPrecio(recargoPago.monto)}\n`
+      : ''
+
   const mensaje = `${encabezadoMayoreo}✨ *Nuevo Pedido — lila-store*
 
 👤 *Datos del cliente*
@@ -114,7 +128,7 @@ Nombre: ${cliente.nombre}
 Celular: ${cliente.celular}
 ${bloqueEntrega}
 
-💳 *Método de pago:* ${cliente.metodoPago}${cliente.notas ? `\n📝 *Notas:* ${cliente.notas}` : ''}
+💳 *Método de pago:* ${cliente.metodoPago}${cliente.notas ? `\n📝 *Notas:* ${cliente.notas}` : ''}${comprobanteUrl ? `\n📎 *Comprobante:* ${comprobanteUrl}` : ''}
 
 🛍️ *Productos*
 ${productosLineas}
@@ -122,7 +136,7 @@ ${productosLineas}
 📦 *Resumen*
 Subtotal: ${formatPrecio(subtotal)}
 Envío: ${envioTexto}
-⏱️ Entrega: ${esRecogida ? 'Recoger en tienda' : tiempoEntrega}
+${lineaRecargo}⏱️ Entrega: ${esRecogida ? 'Recoger en tienda' : tiempoEntrega}
 
 *TOTAL: ${formatPrecio(total)}* 💰
 

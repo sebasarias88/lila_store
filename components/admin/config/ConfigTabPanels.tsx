@@ -11,7 +11,22 @@ import {
   Globe,
   Gift,
   Sparkles,
+  Package,
+  Landmark,
 } from 'lucide-react'
+import {
+  CONFIG_MAYORISTA_MINIMO,
+  CONFIG_MAYORISTA_RECOMPRA,
+} from '@/lib/catalog'
+import {
+  CONFIG_TRANSFERENCIA_ACTIVO,
+  CONFIG_TRANSFERENCIA_BANCO,
+  CONFIG_TRANSFERENCIA_NUMERO,
+  CONFIG_TRANSFERENCIA_TIPO,
+  CONFIG_TRANSFERENCIA_TITULAR,
+  CONFIG_TRANSFERENCIA_LLAVE,
+  parseTransferenciaActivo,
+} from '@/lib/transferencia'
 import MobilePaymentMethodCard from '@/components/admin/mobile/MobilePaymentMethodCard'
 import ConfigPaymentMethodsDesktop from '@/components/admin/config/ConfigPaymentMethodsDesktop'
 import { MobileEmptyState } from '@/components/admin/mobile/MobileAdminPrimitives'
@@ -140,7 +155,8 @@ export default function ConfigTabPanels({
     return (
       <>
         <InfoBanner icon={Store} compact={mobile}>
-          Aparecen en el footer, WhatsApp del checkout y mensajes al confirmar pedidos.
+          El WhatsApp de consultas (flotante, footer, nosotros). El resumen del
+          pedido del carrito siempre usa el número de pedidos (310 424 4912).
         </InfoBanner>
         <FormSection title="Datos del negocio">
           <div className={`grid grid-cols-1 gap-4 ${mobile ? '' : 'md:grid-cols-2'}`}>
@@ -151,11 +167,11 @@ export default function ConfigTabPanels({
               placeholder="lila-store"
             />
             <Input
-              label="Número de WhatsApp *"
+              label="WhatsApp de consultas *"
               value={config['whatsapp_numero'] || ''}
               onChange={e => updateConfig('whatsapp_numero', e.target.value)}
-              placeholder="573104244912"
-              hint="Con código de país, sin espacios"
+              placeholder="573178928174"
+              hint="Con código de país, sin espacios. Ej: 573178928174"
             />
           </div>
         </FormSection>
@@ -190,7 +206,7 @@ export default function ConfigTabPanels({
             label="Texto descriptivo"
             value={config['texto_nosotros'] || ''}
             onChange={e => updateConfig('texto_nosotros', e.target.value)}
-            placeholder="Somos lila-store, tu aliada de belleza en Armenia y Quimbaya, Quindío."
+            placeholder="Somos lila-store, tu aliada de belleza en el Quindío. En nuestras tiendas de Armenia y Quimbaya encuentras maquillaje, skincare y cuidados con atención cercana, y también te acompañamos con asesoría y envíos a toda Colombia."
             rows={mobile ? 6 : 5}
           />
         </FormSection>
@@ -284,6 +300,39 @@ export default function ConfigTabPanels({
             />
           </div>
         </FormSection>
+        <FormSection title="Catálogo mayorista — mínimos">
+          <div className={`admin-form-panel mobile-admin-field space-y-4 ${mobile ? 'p-4' : 'p-5'}`}>
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[rgba(169,137,224,0.25)] bg-[rgba(169,137,224,0.12)] md:rounded-xl">
+                <Package size={16} className="text-[var(--accent-secondary)]" />
+              </div>
+              <div>
+                <p className="text-[12px] font-light uppercase tracking-[1px] text-[var(--text-primary)]">
+                  Pedido mínimo
+                </p>
+                <p className="text-[10px] font-light text-[var(--text-subtle)]">
+                  Se valida al confirmar el pedido mayorista
+                </p>
+              </div>
+            </div>
+            <div className={`grid grid-cols-1 gap-4 ${mobile ? '' : 'sm:grid-cols-2'}`}>
+              <CopInput
+                label="Valor mínimo de primera compra (mayorista)"
+                value={config[CONFIG_MAYORISTA_MINIMO] || ''}
+                onChange={value => updateConfig(CONFIG_MAYORISTA_MINIMO, value)}
+                placeholder="200.000"
+                hint="Bloquea el checkout si el subtotal es menor"
+              />
+              <CopInput
+                label="Valor sugerido de recompra (mayorista)"
+                value={config[CONFIG_MAYORISTA_RECOMPRA] || ''}
+                onChange={value => updateConfig(CONFIG_MAYORISTA_RECOMPRA, value)}
+                placeholder="100.000"
+                hint="Solo informativo. 0 = no se muestra"
+              />
+            </div>
+          </div>
+        </FormSection>
       </>
     )
   }
@@ -291,8 +340,8 @@ export default function ConfigTabPanels({
   return (
     <>
       <InfoBanner icon={CreditCard} compact={mobile}>
-        Opciones en el paso de pago del carrito. Configura cada catálogo por
-        separado y agrega al menos uno en cada uno.
+        Opciones del carrito. La transferencia bancaria tiene su propio bloque
+        abajo; si está inactiva no aparece en el checkout.
       </InfoBanner>
 
       {mobile ? (
@@ -310,6 +359,80 @@ export default function ConfigTabPanels({
           </FormSection>
         </div>
       )}
+
+      <FormSection title="Transferencia bancaria">
+        <div className={`admin-form-panel mobile-admin-field space-y-4 ${mobile ? 'p-4' : 'p-5'}`}>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[rgba(169,137,224,0.25)] bg-[rgba(169,137,224,0.12)] md:rounded-xl">
+                <Landmark size={16} className="text-[var(--accent-secondary)]" />
+              </div>
+              <div>
+                <p className="text-[12px] font-light uppercase tracking-[1px] text-[var(--text-primary)]">
+                  Cuenta para consignar
+                </p>
+                <p className="text-[10px] font-light text-[var(--text-subtle)]">
+                  Se muestra en el checkout si está activa
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                updateConfig(
+                  CONFIG_TRANSFERENCIA_ACTIVO,
+                  parseTransferenciaActivo(config[CONFIG_TRANSFERENCIA_ACTIVO])
+                    ? 'false'
+                    : 'true',
+                )
+              }
+              className={`admin-toggle ${
+                parseTransferenciaActivo(config[CONFIG_TRANSFERENCIA_ACTIVO])
+                  ? 'admin-toggle--on'
+                  : 'admin-toggle--off'
+              }`}
+              aria-pressed={parseTransferenciaActivo(config[CONFIG_TRANSFERENCIA_ACTIVO])}
+            >
+              <span className="admin-toggle__thumb" />
+            </button>
+          </div>
+
+          <div className={`grid grid-cols-1 gap-4 ${mobile ? '' : 'sm:grid-cols-2'}`}>
+            <Input
+              label="Banco"
+              value={config[CONFIG_TRANSFERENCIA_BANCO] || ''}
+              onChange={e => updateConfig(CONFIG_TRANSFERENCIA_BANCO, e.target.value)}
+              placeholder="Bancolombia"
+            />
+            <Input
+              label="Tipo de cuenta"
+              value={config[CONFIG_TRANSFERENCIA_TIPO] || ''}
+              onChange={e => updateConfig(CONFIG_TRANSFERENCIA_TIPO, e.target.value)}
+              placeholder="Ahorros"
+            />
+            <Input
+              label="Número de cuenta"
+              value={config[CONFIG_TRANSFERENCIA_NUMERO] || ''}
+              onChange={e => updateConfig(CONFIG_TRANSFERENCIA_NUMERO, e.target.value)}
+              placeholder="12345678901"
+              inputMode="numeric"
+            />
+            <Input
+              label="Titular"
+              value={config[CONFIG_TRANSFERENCIA_TITULAR] || ''}
+              onChange={e => updateConfig(CONFIG_TRANSFERENCIA_TITULAR, e.target.value)}
+              placeholder="Nombre del titular"
+            />
+            <Input
+              label="Llave"
+              value={config[CONFIG_TRANSFERENCIA_LLAVE] || ''}
+              onChange={e => updateConfig(CONFIG_TRANSFERENCIA_LLAVE, e.target.value)}
+              placeholder="Celular, cédula o correo"
+              hint="Opcional. Llave para transferencias entre bancos"
+            />
+          </div>
+        </div>
+      </FormSection>
     </>
   )
 }

@@ -46,9 +46,9 @@ export default function Navbar({
   const ofertasHref = isHome ? '#ofertas' : `${homeHref}#ofertas`
   const novedadesHref = isHome ? '#novedades' : `${homeHref}#novedades`
 
-  const overHero = isHome && !scrolled && heroOverImage
   const solidOverHero =
     isHome && !scrolled && (heroLayout === 'image-only' || heroLayout === 'split')
+  const overHero = isHome && !scrolled && heroOverImage && !solidOverHero
 
   const onProductos =
     pathname === productosHref || pathname.startsWith(`${productosHref}/`)

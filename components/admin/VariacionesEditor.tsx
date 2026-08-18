@@ -1,11 +1,11 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { VariacionTipo } from '@/types'
+import { VariacionOpcion, VariacionTipo } from '@/types'
 import Button from '@/components/ui/Button'
 import toast from 'react-hot-toast'
-import { Plus, Pencil, Trash2, X, Loader2, Check, Tag } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Loader2, Check, Tag, ImagePlus } from 'lucide-react'
 
 type VariacionesEditorProps = {
   productoId: string | null
@@ -15,6 +15,22 @@ type VariacionesEditorProps = {
 type NuevaOpcionState = {
   nombre: string
   valor_color: string
+  imagenFile: File | null
+}
+
+const MAX_IMG_BYTES = 5 * 1024 * 1024
+
+function pathInProductosBucket(url: string): string | null {
+  const marker = '/object/public/productos/'
+  const idx = url.indexOf(marker)
+  if (idx < 0) return null
+  return decodeURIComponent(url.slice(idx + marker.length).split('?')[0])
+}
+
+async function removeFromProductosBucket(url: string | null | undefined) {
+  if (!url) return
+  const path = pathInProductosBucket(url)
+  if (path) await supabase.storage.from('productos').remove([path])
 }
 
 const inputClass = 'admin-input admin-input--compact w-full rounded-xl px-3 py-2 text-[13px] md:rounded-xl'
@@ -33,8 +49,31 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
   const [editingTipoId, setEditingTipoId] = useState<string | null>(null)
   const [editTipoNombre, setEditTipoNombre] = useState('')
   const [newOpcionByTipo, setNewOpcionByTipo] = useState<Record<string, NuevaOpcionState>>({})
+  const [uploadingOpcionId, setUploadingOpcionId] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const uploadTargetIdRef = useRef<string | null>(null)
 
   const notifyChange = () => onChange?.()
+
+  const uploadOpcionFile = async (file: File, opcionId: string): Promise<string | null> => {
+    if (!productoId) return null
+    if (!file.type.startsWith('image/')) {
+      toast.error('Solo se permiten imágenes')
+      return null
+    }
+    if (file.size > MAX_IMG_BYTES) {
+      toast.error('La imagen no puede superar 5MB')
+      return null
+    }
+
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+    const path = `variaciones/${productoId}/${opcionId}-${Date.now()}.${ext}`
+    const { error } = await supabase.storage.from('productos').upload(path, file, { upsert: true })
+    if (error) return null
+
+    const { data } = supabase.storage.from('productos').getPublicUrl(path)
+    return data.publicUrl
+  }
 
   const fetchTipos = useCallback(async () => {
     if (!productoId) return
@@ -64,7 +103,7 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
   }, [productoId, fetchTipos])
 
   const getNewOpcion = (tipoId: string): NuevaOpcionState =>
-    newOpcionByTipo[tipoId] ?? { nombre: '', valor_color: '' }
+    newOpcionByTipo[tipoId] ?? { nombre: '', valor_color: '', imagenFile: null }
 
   const setNewOpcion = (tipoId: string, patch: Partial<NuevaOpcionState>) => {
     setNewOpcionByTipo(prev => ({
@@ -103,6 +142,7 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
   const handleEliminarTipo = async (tipo: VariacionTipo) => {
     if (!confirm(`¿Eliminar el tipo "${tipo.nombre}" y todas sus opciones?`)) return
 
+    const imagenes = (tipo.opciones || []).map(o => o.imagen_url).filter(Boolean) as string[]
     await supabase.from('variacion_opciones').delete().eq('tipo_id', tipo.id)
     const { error } = await supabase.from('variacion_tipos').delete().eq('id', tipo.id)
 
@@ -110,6 +150,8 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
       toast.error('Error al eliminar tipo')
       return
     }
+
+    await Promise.all(imagenes.map(url => removeFromProductosBucket(url)))
 
     toast.success('Tipo eliminado')
     await fetchTipos()
@@ -148,19 +190,39 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
     const orden = tipo?.opciones?.length ?? 0
     const colorTrimmed = valor_color.trim()
 
-    const { error } = await supabase.from('variacion_opciones').insert([
-      {
-        tipo_id: tipoId,
-        nombre: trimmed,
-        valor_color: colorTrimmed || null,
-        disponible: true,
-        orden,
-      },
-    ])
+    const { data, error } = await supabase
+      .from('variacion_opciones')
+      .insert([
+        {
+          tipo_id: tipoId,
+          nombre: trimmed,
+          valor_color: colorTrimmed || null,
+          disponible: true,
+          orden,
+        },
+      ])
+      .select('id')
+      .single()
 
-    if (error) {
+    if (error || !data) {
       toast.error('Error al agregar opción')
       return
+    }
+
+    const imagenFile = getNewOpcion(tipoId).imagenFile
+    if (imagenFile) {
+      setUploadingOpcionId(data.id)
+      const url = await uploadOpcionFile(imagenFile, data.id)
+      if (url) {
+        const { error: imgError } = await supabase
+          .from('variacion_opciones')
+          .update({ imagen_url: url })
+          .eq('id', data.id)
+        if (imgError) toast.error('La opción se creó, pero no se guardó la foto')
+      } else {
+        toast.error('La opción se creó, pero no se subió la foto')
+      }
+      setUploadingOpcionId(null)
     }
 
     toast.success('Opción agregada')
@@ -173,17 +235,85 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
     notifyChange()
   }
 
-  const handleEliminarOpcion = async (opcionId: string) => {
-    const { error } = await supabase.from('variacion_opciones').delete().eq('id', opcionId)
+  const handleEliminarOpcion = async (opcion: VariacionOpcion) => {
+    const { error } = await supabase.from('variacion_opciones').delete().eq('id', opcion.id)
 
     if (error) {
       toast.error('Error al eliminar opción')
       return
     }
 
+    await removeFromProductosBucket(opcion.imagen_url)
     toast.success('Opción eliminada')
     await fetchTipos()
     notifyChange()
+  }
+
+  const handleOpcionImagen = async (opcion: VariacionOpcion, file: File) => {
+    setUploadingOpcionId(opcion.id)
+    const url = await uploadOpcionFile(file, opcion.id)
+    if (!url) {
+      toast.error('Error al subir la foto')
+      setUploadingOpcionId(null)
+      return
+    }
+
+    const { error } = await supabase
+      .from('variacion_opciones')
+      .update({ imagen_url: url })
+      .eq('id', opcion.id)
+
+    if (error) {
+      await removeFromProductosBucket(url)
+      toast.error('Error al guardar la foto')
+      setUploadingOpcionId(null)
+      return
+    }
+
+    if (opcion.imagen_url && opcion.imagen_url !== url) {
+      await removeFromProductosBucket(opcion.imagen_url)
+    }
+
+    toast.success('Foto de la opción actualizada')
+    setUploadingOpcionId(null)
+    await fetchTipos()
+    notifyChange()
+  }
+
+  const handleQuitarImagenOpcion = async (opcion: VariacionOpcion) => {
+    if (!opcion.imagen_url) return
+
+    const { error } = await supabase
+      .from('variacion_opciones')
+      .update({ imagen_url: null })
+      .eq('id', opcion.id)
+
+    if (error) {
+      toast.error('Error al quitar la foto')
+      return
+    }
+
+    await removeFromProductosBucket(opcion.imagen_url)
+    toast.success('Foto quitada')
+    await fetchTipos()
+    notifyChange()
+  }
+
+  const pickOpcionImagen = (opcionId: string) => {
+    uploadTargetIdRef.current = opcionId
+    fileInputRef.current?.click()
+  }
+
+  const onHiddenFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    const opcionId = uploadTargetIdRef.current
+    e.target.value = ''
+    uploadTargetIdRef.current = null
+    if (!file || !opcionId) return
+
+    const opcion = tipos.flatMap(t => t.opciones || []).find(o => o.id === opcionId)
+    if (!opcion) return
+    await handleOpcionImagen(opcion, file)
   }
 
   const handleToggleDisponible = async (opcionId: string, disponible: boolean) => {
@@ -281,20 +411,54 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
                   tipo.opciones.map(opcion => (
                     <div
                       key={opcion.id}
-                      className={`inline-flex items-center gap-2 rounded-lg border px-2.5 py-1.5 ${
+                      className={`inline-flex items-center gap-2 rounded-lg border px-2 py-1.5 ${
                         opcion.disponible
                           ? 'border-[rgba(169,137,224,0.3)] bg-[rgba(169,137,224,0.08)]'
                           : 'border-[var(--border-subtle)] bg-[rgba(248,246,241,0.04)] opacity-60'
                       }`}
                     >
-                      {opcion.valor_color && (
-                        <span
-                          className="h-3.5 w-3.5 shrink-0 rounded-full border border-[rgba(248,246,241,0.2)]"
-                          style={colorSwatchStyle(opcion.valor_color)}
-                          title={opcion.valor_color}
-                        />
-                      )}
+                      <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md border border-[rgba(169,137,224,0.28)] bg-[rgba(248,246,241,0.06)]">
+                        {uploadingOpcionId === opcion.id ? (
+                          <span className="flex h-full w-full items-center justify-center">
+                            <Loader2 size={14} className="animate-spin text-[var(--accent-secondary)]" />
+                          </span>
+                        ) : opcion.imagen_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={opcion.imagen_url}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        ) : opcion.valor_color ? (
+                          <span
+                            className="block h-full w-full"
+                            style={colorSwatchStyle(opcion.valor_color)}
+                          />
+                        ) : (
+                          <span className="flex h-full w-full items-center justify-center text-[var(--text-subtle)]">
+                            <ImagePlus size={14} />
+                          </span>
+                        )}
+                      </div>
                       <span className="text-[12px] text-[var(--text-primary)]">{opcion.nombre}</span>
+                      <button
+                        type="button"
+                        onClick={() => pickOpcionImagen(opcion.id)}
+                        className="rounded px-1.5 py-0.5 text-[9px] uppercase tracking-[0.5px] text-[var(--accent-secondary)] hover:bg-[rgba(169,137,224,0.12)]"
+                        title={opcion.imagen_url ? 'Cambiar foto' : 'Subir foto'}
+                      >
+                        Foto
+                      </button>
+                      {opcion.imagen_url && (
+                        <button
+                          type="button"
+                          onClick={() => handleQuitarImagenOpcion(opcion)}
+                          className="rounded px-1.5 py-0.5 text-[9px] uppercase tracking-[0.5px] text-[var(--text-subtle)] hover:bg-[rgba(248,113,113,0.1)] hover:text-red-400"
+                          title="Quitar foto"
+                        >
+                          Quitar
+                        </button>
+                      )}
                       <button
                         type="button"
                         onClick={() => handleToggleDisponible(opcion.id, opcion.disponible)}
@@ -309,7 +473,7 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleEliminarOpcion(opcion.id)}
+                        onClick={() => handleEliminarOpcion(opcion)}
                         className="text-[var(--text-subtle)] hover:text-red-400"
                         aria-label="Eliminar opción"
                       >
@@ -363,6 +527,27 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
                     />
                   </div>
                 </div>
+                <div className="w-full space-y-1 md:w-40">
+                  <label className="admin-form-label text-[9px] tracking-[0.1em]">
+                    Foto (opcional)
+                  </label>
+                  <label className="admin-input admin-input--compact flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-[12px] text-[var(--text-muted)]">
+                    <ImagePlus size={14} className="shrink-0 text-[var(--accent-secondary)]" />
+                    <span className="min-w-0 truncate">
+                      {getNewOpcion(tipo.id).imagenFile
+                        ? getNewOpcion(tipo.id).imagenFile!.name
+                        : 'Elegir imagen'}
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={e =>
+                        setNewOpcion(tipo.id, { imagenFile: e.target.files?.[0] ?? null })
+                      }
+                    />
+                  </label>
+                </div>
                 <Button
                   type="button"
                   size="sm"
@@ -414,9 +599,18 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
           </Button>
         </div>
         <p className="admin-form-hint mt-3">
-          El color hex es opcional y sirve para mostrar un círculo de muestra en la tienda.
+          El color hex es opcional (círculo de muestra). La foto de cada opción también es
+          opcional: en la tienda se muestra al elegirla.
         </p>
       </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={onHiddenFileChange}
+      />
     </div>
   )
 }

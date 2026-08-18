@@ -42,8 +42,8 @@ export default function HomePageSkeleton({ mayoreo = false }: HomePageSkeletonPr
   return (
     <div className="min-h-screen bg-[var(--bg-base)]">
       {/* Hero — banner limpio, luego destacados */}
-      <section className="relative w-full overflow-hidden bg-[var(--bg-muted)] pt-[calc(2.25rem+3.5rem+env(safe-area-inset-top,0px))] md:pt-[calc(2.25rem+4rem)]">
-        <div className="relative aspect-[16/10] w-full md:aspect-auto md:h-[min(72svh,760px)] md:min-h-[320px]">
+      <section className="relative w-full bg-[var(--bg-muted)] pt-[calc(2.25rem+3.5rem+env(safe-area-inset-top,0px))] md:pt-[calc(2.25rem+4rem)]">
+        <div className="relative aspect-[21/9] w-full min-h-[180px] sm:min-h-[240px]">
           <Skeleton className="absolute inset-0 h-full w-full rounded-none" />
         </div>
       </section>

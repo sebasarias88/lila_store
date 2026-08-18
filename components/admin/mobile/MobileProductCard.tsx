@@ -2,6 +2,22 @@
 
 import { CheckCircle2, ChevronRight, CornerDownRight, Edit2, Star, Tag, Trash2, XCircle } from 'lucide-react'
 import { Producto } from '@/types'
+import { stockBadgeTone } from '@/lib/stock'
+
+function StockChip({ label, stock }: { label: string; stock: number }) {
+  const tone = stockBadgeTone(stock)
+  const toneClass =
+    tone === 'ok'
+      ? 'bg-[rgba(52,211,153,0.12)] text-emerald-400'
+      : tone === 'low'
+        ? 'bg-[rgba(251,191,36,0.14)] text-amber-400'
+        : 'bg-[rgba(248,113,113,0.12)] text-red-400'
+  return (
+    <span className={`inline-flex rounded-full px-2 py-0.5 text-[9px] font-medium ${toneClass}`}>
+      {label}: {stock}
+    </span>
+  )
+}
 
 type MobileProductCardProps = {
   producto: Producto
@@ -41,9 +57,6 @@ export default function MobileProductCard({
               {producto.sku ? (
                 <p className="mt-0.5 truncate text-[10px] text-[var(--text-subtle)]">SKU · {producto.sku}</p>
               ) : null}
-              {producto.marca ? (
-                <p className="mt-0.5 truncate text-[10px] text-[var(--text-muted)]">{producto.marca}</p>
-              ) : null}
             </div>
             {producto.destacado ? (
               <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[rgba(169,137,224,0.3)] bg-[rgba(169,137,224,0.1)] px-2 py-0.5 text-[9px] uppercase tracking-[0.6px] text-[var(--accent-primary)]">
@@ -58,6 +71,16 @@ export default function MobileProductCard({
               Mayorista · {formatPrecio(producto.precio_mayoreo)}
             </p>
           ) : null}
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            <StockChip
+              label="Detal"
+              stock={Math.max(0, Math.floor(producto.stock_detal ?? 0))}
+            />
+            <StockChip
+              label="Mayoreo"
+              stock={Math.max(0, Math.floor(producto.stock_mayoreo ?? 0))}
+            />
+          </div>
           {producto.categoria ? (
             <span
               className={`mt-1.5 inline-flex max-w-full items-center gap-1 rounded-full border py-0.5 pl-1.5 pr-2 text-[10px] ${

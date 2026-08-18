@@ -26,6 +26,8 @@ type MobileCartItemProps = {
   onDecrease: () => void
   onIncrease: () => void
   onRemove: () => void
+  maxCantidad?: number
+  stockHint?: string | null
 }
 
 export default function MobileCartItem({
@@ -34,6 +36,8 @@ export default function MobileCartItem({
   onDecrease,
   onIncrease,
   onRemove,
+  maxCantidad,
+  stockHint = null,
 }: MobileCartItemProps) {
   const { producto, cantidad, variacionesSeleccionadas } = item
   const vars = formatVariacionesResumen(variacionesSeleccionadas)
@@ -93,6 +97,8 @@ export default function MobileCartItem({
                 value={cantidad}
                 onDecrease={onDecrease}
                 onIncrease={onIncrease}
+                max={maxCantidad}
+                hint={stockHint}
               />
               <button
                 type="button"

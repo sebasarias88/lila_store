@@ -13,6 +13,11 @@ import { catalogPath, getProductoPrecios, type CatalogType } from '@/lib/catalog
 import { X, ShoppingBag, Minus, Plus, Trash2, Sparkles, Heart, CreditCard } from 'lucide-react'
 import Link from 'next/link'
 import { useScrollLock } from '@/lib/useScrollLock'
+import {
+  mensajeStockRestante,
+  stockRestanteParaProducto,
+} from '@/lib/stock'
+import toast from 'react-hot-toast'
 
 type CartDrawerProps = {
   open: boolean
@@ -134,6 +139,15 @@ export default function CartDrawer({
                       const vars = formatVariacionesResumen(variacionesSeleccionadas)
                       const { precio, consultar } = getProductoPrecios(producto, catalogType)
                       const line = itemLineTotal(item, catalogType)
+                      const maxQty =
+                        stockRestanteParaProducto(producto, items, catalogType, key) +
+                        cantidad
+                      const atMax = cantidad >= maxQty
+                      const restantesLinea = stockRestanteParaProducto(
+                        producto,
+                        items,
+                        catalogType,
+                      )
 
                       return (
                         <motion.div
@@ -184,26 +198,43 @@ export default function CartDrawer({
                             </p>
 
                             <div className="mt-2.5 flex items-center justify-between gap-2">
-                              <div className="inline-flex items-center gap-0.5 rounded-full border border-[var(--border)] bg-white p-0.5">
-                                <button
-                                  type="button"
-                                  onClick={() => actualizarCantidad(key, cantidad - 1)}
-                                  aria-label="Disminuir cantidad"
-                                  className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--accent-deep)] transition-colors hover:bg-[var(--bg-muted)]"
-                                >
-                                  <Minus size={12} />
-                                </button>
-                                <span className="min-w-[1.5rem] text-center text-[12px] font-bold text-[var(--text-primary)]">
-                                  {cantidad}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => actualizarCantidad(key, cantidad + 1)}
-                                  aria-label="Aumentar cantidad"
-                                  className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--accent-deep)] transition-colors hover:bg-[var(--bg-muted)]"
-                                >
-                                  <Plus size={12} />
-                                </button>
+                              <div>
+                                <div className="inline-flex items-center gap-0.5 rounded-full border border-[var(--border)] bg-white p-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      actualizarCantidad(key, cantidad - 1, catalogType)
+                                    }
+                                    aria-label="Disminuir cantidad"
+                                    className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--accent-deep)] transition-colors hover:bg-[var(--bg-muted)]"
+                                  >
+                                    <Minus size={12} />
+                                  </button>
+                                  <span className="min-w-[1.5rem] text-center text-[12px] font-bold text-[var(--text-primary)]">
+                                    {cantidad}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const result = actualizarCantidad(
+                                        key,
+                                        cantidad + 1,
+                                        catalogType,
+                                      )
+                                      if (!result.ok) toast.error(result.message)
+                                    }}
+                                    disabled={atMax}
+                                    aria-label="Aumentar cantidad"
+                                    className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--accent-deep)] transition-colors hover:bg-[var(--bg-muted)] disabled:cursor-not-allowed disabled:opacity-40"
+                                  >
+                                    <Plus size={12} />
+                                  </button>
+                                </div>
+                                {atMax ? (
+                                  <p className="mt-1 text-[10px] font-medium text-[var(--accent-deep)]">
+                                    {mensajeStockRestante(restantesLinea)}
+                                  </p>
+                                ) : null}
                               </div>
 
                               <p className="text-[12px] font-bold text-[var(--text-secondary)]">

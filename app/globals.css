@@ -2063,6 +2063,23 @@ header nav a {
   padding-top: 0.25rem;
 }
 
+.admin-table-scroll {
+  scrollbar-gutter: stable;
+}
+
+.admin-table-scroll::-webkit-scrollbar {
+  height: 8px;
+}
+
+.admin-table-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.admin-table-scroll::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--accent-primary) 32%, transparent);
+  border-radius: 999px;
+}
+
 /* ── Admin desktop (md+) ── */
 @media (min-width: 768px) {
   .admin-shell {
