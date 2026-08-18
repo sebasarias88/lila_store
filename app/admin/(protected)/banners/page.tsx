@@ -224,7 +224,8 @@ export default function BannersPage() {
             Banners
           </h1>
           <p className="mt-2 text-[14px] font-medium text-[var(--text-secondary)]">
-            Imágenes del hero principal del catálogo
+            Imágenes del hero principal. Se muestran completas a lo ancho, sin recortar.
+            Recomendado: banner horizontal (p. ej. 1920×700).
           </p>
         </div>
         <Button onClick={abrirCrear} size="sm" className="self-start sm:self-auto">
@@ -367,11 +368,11 @@ export default function BannersPage() {
           <div className="space-y-2">
             <label className="admin-form-label">Imagen *</label>
             {form.imagen_url ? (
-              <div className="relative overflow-hidden rounded-xl border border-[rgba(212,175,55,0.15)]">
+              <div className="relative overflow-hidden rounded-xl border border-[rgba(212,175,55,0.15)] bg-[var(--bg-surface)]">
                 <img
                   src={form.imagen_url}
                   alt="Preview"
-                  className="h-40 w-full object-cover"
+                  className="mx-auto max-h-56 w-full object-contain"
                 />
               </div>
             ) : (

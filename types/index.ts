@@ -29,6 +29,7 @@ export type VariacionOpcion = {
   tipo_id: string
   nombre: string
   valor_color: string | null
+  imagen_url: string | null
   disponible: boolean
   orden: number
 }

@@ -64,6 +64,7 @@ export function generarMensajeWhatsApp(
   tiempoEntrega: string,
   catalogType: CatalogType = 'detal',
   recargoPago: WhatsAppRecargoPago | null = null,
+  comprobanteUrl: string | null = null,
 ): string {
   const subtotal = items.reduce((acc, item) => {
     const unitario = precioUnitarioItem(item, catalogType)
@@ -127,7 +128,7 @@ Nombre: ${cliente.nombre}
 Celular: ${cliente.celular}
 ${bloqueEntrega}
 
-💳 *Método de pago:* ${cliente.metodoPago}${cliente.notas ? `\n📝 *Notas:* ${cliente.notas}` : ''}
+💳 *Método de pago:* ${cliente.metodoPago}${cliente.notas ? `\n📝 *Notas:* ${cliente.notas}` : ''}${comprobanteUrl ? `\n📎 *Comprobante:* ${comprobanteUrl}` : ''}
 
 🛍️ *Productos*
 ${productosLineas}

@@ -13,12 +13,16 @@ import {
   Phone,
   Sparkles,
   Store,
+  Paperclip,
 } from 'lucide-react'
 import { ItemCarrito, DatosCliente } from '@/types'
 import { type CatalogType } from '@/lib/catalog'
 import type { MetodoPagoOpcion } from '@/lib/payment-methods'
+import type { DatosTransferencia } from '@/lib/transferencia'
+import { esMetodoTransferencia } from '@/lib/transferencia'
 import EntregaPicker from '@/components/catalog/cart/EntregaPicker'
 import MetodoPagoPicker from '@/components/catalog/cart/MetodoPagoPicker'
+import TransferenciaCheckout from '@/components/catalog/cart/TransferenciaCheckout'
 import MobileCartSteps, { type Step } from '@/components/catalog/mobile/cart/MobileCartSteps'
 import MobileCartItem, { formatPrecio } from '@/components/catalog/mobile/cart/MobileCartItem'
 import MobileCartSummary from '@/components/catalog/mobile/cart/MobileCartSummary'
@@ -70,6 +74,10 @@ type CarritoMobileProps = {
   errores: Partial<DatosCliente>
   setErrores: React.Dispatch<React.SetStateAction<Partial<DatosCliente>>>
   metodosPago: MetodoPagoOpcion[]
+  transferencia: DatosTransferencia
+  esTransferencia: boolean
+  comprobantePago: File | null
+  onComprobanteChange: (file: File | null) => void
   enviando: boolean
   costoEnvio: number
   envioGratis: boolean
@@ -130,6 +138,10 @@ export default function CarritoMobile({
   errores,
   setErrores,
   metodosPago,
+  transferencia,
+  esTransferencia,
+  comprobantePago,
+  onComprobanteChange,
   enviando,
   costoEnvio,
   envioGratis,
@@ -502,8 +514,20 @@ export default function CarritoMobile({
                 onSelect={label => {
                   setDatos(d => ({ ...d, metodoPago: label }))
                   if (errores.metodoPago) setErrores(er => ({ ...er, metodoPago: '' }))
+                  if (!esMetodoTransferencia(label)) onComprobanteChange(null)
                 }}
               />
+              {esTransferencia && transferencia.activo ? (
+                <div className="px-3 pb-3">
+                  <TransferenciaCheckout
+                    compact
+                    datos={transferencia}
+                    totalLabel={formatPrecio(totalFinal)}
+                    comprobante={comprobantePago}
+                    onComprobanteChange={onComprobanteChange}
+                  />
+                </div>
+              ) : null}
 
               <div className="mobile-cart-checkout-notes">
                 <label htmlFor="cart-notas" className="mobile-cart-checkout-notes__label">
@@ -609,6 +633,9 @@ export default function CarritoMobile({
                         { label: 'Dirección', value: datos.direccion, icon: Truck },
                       ]),
                   { label: 'Pago', value: datos.metodoPago, icon: CreditCard },
+                  ...(esTransferencia && comprobantePago
+                    ? [{ label: 'Comprobante', value: comprobantePago.name, icon: Paperclip }]
+                    : []),
                   ...(datos.notas ? [{ label: 'Notas', value: datos.notas, icon: FileText }] : []),
                 ].map(({ label, value, icon: Icon }) => (
                   <div key={label} className="mobile-cart-data-row">

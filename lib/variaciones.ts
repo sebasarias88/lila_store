@@ -35,3 +35,27 @@ export function buildVariacionesSeleccionadas(
 
   return Object.keys(result).length > 0 ? result : undefined
 }
+
+/** Última opción seleccionada (por tipo) que tenga foto. */
+export function imagenUrlVariacionActiva(
+  variaciones: VariacionTipo[],
+  selectedByTipoId: Record<string, string[]>,
+): string | null {
+  let found: string | null = null
+
+  for (const tipo of variaciones) {
+    const opcionIds = selectedByTipoId[tipo.id]
+    if (!opcionIds?.length) continue
+
+    for (let i = opcionIds.length - 1; i >= 0; i--) {
+      const opcion = (tipo.opciones || []).find(o => o.id === opcionIds[i])
+      const url = opcion?.imagen_url?.trim()
+      if (url) {
+        found = url
+        break
+      }
+    }
+  }
+
+  return found
+}

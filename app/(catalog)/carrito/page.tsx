@@ -38,8 +38,14 @@ import {
   validarStockCarrito,
   type StockProductoFresh,
 } from '@/lib/stock'
+import {
+  datosTransferenciaDesdeConfig,
+  esMetodoTransferencia,
+  subirComprobantePago,
+} from '@/lib/transferencia'
 import EntregaPicker from '@/components/catalog/cart/EntregaPicker'
 import MetodoPagoPicker from '@/components/catalog/cart/MetodoPagoPicker'
+import TransferenciaCheckout from '@/components/catalog/cart/TransferenciaCheckout'
 import CarritoMobile from '@/components/catalog/mobile/cart/CarritoMobile'
 import PageGoldAccent from '@/components/catalog/PageGoldAccent'
 import StickySidebar from '@/components/catalog/StickySidebar'
@@ -97,6 +103,12 @@ type Config = {
   tiempo_entrega_nacional: string
   mayorista_valor_minimo_compra: string
   mayorista_valor_recompra: string
+  transferencia_activo: string
+  transferencia_banco: string
+  transferencia_tipo_cuenta: string
+  transferencia_numero_cuenta: string
+  transferencia_titular: string
+  transferencia_llave: string
 }
 
 type Step = 'carrito' | 'datos' | 'resumen'
@@ -274,9 +286,16 @@ export default function CarritoPage() {
     tiempo_entrega_nacional: '2 a 3 días hábiles',
     mayorista_valor_minimo_compra: String(MAYOREO_MIN_COMPRA),
     mayorista_valor_recompra: String(MAYOREO_RECOMPRA),
+    transferencia_activo: 'false',
+    transferencia_banco: '',
+    transferencia_tipo_cuenta: '',
+    transferencia_numero_cuenta: '',
+    transferencia_titular: '',
+    transferencia_llave: '',
   })
   const [enviando, setEnviando] = useState(false)
   const [metodosPagoDb, setMetodosPagoDb] = useState<MetodoPago[]>([])
+  const [comprobantePago, setComprobantePago] = useState<File | null>(null)
 
   const [datos, setDatos] = useState<DatosCliente>({
     nombre: '',
@@ -309,6 +328,12 @@ export default function CarritoPage() {
           map[CONFIG_MAYORISTA_MINIMO] ?? String(MAYOREO_MIN_COMPRA),
         mayorista_valor_recompra:
           map[CONFIG_MAYORISTA_RECOMPRA] ?? String(MAYOREO_RECOMPRA),
+        transferencia_activo: map['transferencia_activo'] || 'false',
+        transferencia_banco: map['transferencia_banco'] || '',
+        transferencia_tipo_cuenta: map['transferencia_tipo_cuenta'] || '',
+        transferencia_numero_cuenta: map['transferencia_numero_cuenta'] || '',
+        transferencia_titular: map['transferencia_titular'] || '',
+        transferencia_llave: map['transferencia_llave'] || '',
       })
     }
   }, [])
@@ -335,10 +360,19 @@ export default function CarritoPage() {
   }, [fetchConfig, fetchMetodosPago])
 
   const esRecogida = datos.tipoEntrega === 'recogida'
-  const metodosPago = useMemo(
-    () => metodosPagoDb.map(m => metodoPagoToOpcion(m, catalogType)),
-    [metodosPagoDb, catalogType],
+  const transferencia = useMemo(
+    () => datosTransferenciaDesdeConfig(config),
+    [config],
   )
+
+  const metodosPago = useMemo(
+    () =>
+      metodosPagoDb
+        .filter(m => transferencia.activo || !esMetodoTransferencia(m.nombre))
+        .map(m => metodoPagoToOpcion(m, catalogType)),
+    [metodosPagoDb, catalogType, transferencia.activo],
+  )
+  const esTransferencia = esMetodoTransferencia(datos.metodoPago)
   const esArmenia = CIUDADES_ARMENIA.includes(datos.ciudad.toLowerCase().trim())
   const subtotal = useMemo(
     () => cartSubtotal(items, catalogType),
@@ -487,6 +521,16 @@ export default function CarritoPage() {
         return
       }
 
+      let comprobanteUrl: string | null = null
+      if (esTransferencia && comprobantePago) {
+        const uploaded = await subirComprobantePago(comprobantePago)
+        if (!uploaded.ok) {
+          toast.error(uploaded.message)
+          return
+        }
+        comprobanteUrl = uploaded.url
+      }
+
       const mensaje = generarMensajeWhatsApp(
         useCarrito.getState().items,
         datos,
@@ -496,9 +540,11 @@ export default function CarritoPage() {
         recargoPago
           ? { labelLinea: recargoPago.labelLinea, monto: recargoPago.monto }
           : null,
+        comprobanteUrl,
       )
       abrirWhatsApp(mensaje, resolveWhatsAppPedidoNumero())
       vaciar()
+      setComprobantePago(null)
       toast.success('¡Pedido listo! Revisa tu WhatsApp ✨')
     } finally {
       setEnviando(false)
@@ -545,6 +591,10 @@ export default function CarritoPage() {
           errores={errores}
           setErrores={setErrores}
           metodosPago={metodosPago}
+          transferencia={transferencia}
+          esTransferencia={esTransferencia}
+          comprobantePago={comprobantePago}
+          onComprobanteChange={setComprobantePago}
           enviando={enviando}
           costoEnvio={costoEnvio}
           envioGratis={envioGratis}
@@ -1034,8 +1084,17 @@ export default function CarritoPage() {
                     onSelect={label => {
                       setDatos(d => ({ ...d, metodoPago: label }))
                       if (errores.metodoPago) setErrores(er => ({ ...er, metodoPago: '' }))
+                      if (!esMetodoTransferencia(label)) setComprobantePago(null)
                     }}
                   />
+                  {esTransferencia && transferencia.activo ? (
+                    <TransferenciaCheckout
+                      datos={transferencia}
+                      totalLabel={formatPrecio(totalFinal)}
+                      comprobante={comprobantePago}
+                      onComprobanteChange={setComprobantePago}
+                    />
+                  ) : null}
                 </section>
 
                 <section className="rounded-[24px] border border-[var(--border)] bg-[var(--bg-surface)] p-5 shadow-[var(--shadow-soft)] sm:p-6">
@@ -1136,6 +1195,9 @@ export default function CarritoPage() {
                             { label: 'Dirección', value: datos.direccion },
                           ]),
                       { label: 'Pago', value: datos.metodoPago },
+                      ...(esTransferencia && comprobantePago
+                        ? [{ label: 'Comprobante', value: comprobantePago.name }]
+                        : []),
                       ...(datos.notas ? [{ label: 'Notas', value: datos.notas }] : []),
                     ].map(({ label, value }) => (
                       <div key={label} className="min-w-0">

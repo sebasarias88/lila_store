@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCarrito } from '@/lib/store'
 import { Producto, ProductoSeccion, VariacionTipo } from '@/types'
 import { getLineKey } from '@/lib/cart'
-import { buildVariacionesSeleccionadas } from '@/lib/variaciones'
+import { buildVariacionesSeleccionadas, imagenUrlVariacionActiva } from '@/lib/variaciones'
 import {
   ShoppingBag,
   Plus,
@@ -142,7 +142,17 @@ export default function ProductoDetalle({
   const [selectedVariaciones, setSelectedVariaciones] = useState<Record<string, string[]>>({})
 
   const tieneVariaciones = variaciones.length > 0
-  const imagenes = producto.imagenes?.length ? producto.imagenes : []
+  const imagenVariacion = imagenUrlVariacionActiva(variaciones, selectedVariaciones)
+  const imagenes = useMemo(() => {
+    const base = producto.imagenes?.length ? producto.imagenes : []
+    if (!imagenVariacion) return base
+    return [imagenVariacion, ...base.filter(url => url !== imagenVariacion)]
+  }, [producto.imagenes, imagenVariacion])
+
+  useEffect(() => {
+    setImagenActiva(0)
+  }, [imagenVariacion])
+
   const tieneVideo = productoTieneVideo(producto)
   const totalSlides = imagenes.length + (tieneVideo ? 1 : 0)
   const videoSlideIndex = tieneVideo ? imagenes.length : -1
@@ -525,7 +535,7 @@ export default function ProductoDetalle({
                             type="button"
                             disabled={unavailable}
                             onClick={() => toggleOpcion(tipo.id, opcion.id)}
-                            className={`min-h-[42px] rounded-full border px-4 py-2.5 text-[13px] font-bold transition-all duration-200 ${
+                            className={`inline-flex min-h-[42px] items-center gap-2 rounded-full border px-4 py-2.5 text-[13px] font-bold transition-all duration-200 ${
                               unavailable
                                 ? 'cursor-not-allowed border-[var(--border-subtle)] text-[var(--text-faint)] line-through opacity-50'
                                 : selected
@@ -533,6 +543,14 @@ export default function ProductoDetalle({
                                   : 'border-[var(--border)] bg-white text-[var(--text-secondary)] hover:border-[var(--accent-primary)] hover:text-[var(--accent-deep)]'
                             }`}
                           >
+                            {opcion.imagen_url ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={opcion.imagen_url}
+                                alt=""
+                                className="h-7 w-7 shrink-0 rounded-full object-cover"
+                              />
+                            ) : null}
                             {opcion.nombre}
                           </button>
                         )

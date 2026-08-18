@@ -82,7 +82,7 @@ export default function CategoriasGrid({
         </motion.div>
 
         {/* Mobile: horizontal scroll */}
-        <div className="-mx-5 flex gap-4 overflow-x-auto px-5 pb-1 scrollbar-hide sm:hidden">
+        <div className="flex gap-4 overflow-x-auto overscroll-x-contain pb-1 scrollbar-hide sm:hidden">
           {visibles.map((cat, i) => (
             <CategoriaCard
               key={cat.id}
