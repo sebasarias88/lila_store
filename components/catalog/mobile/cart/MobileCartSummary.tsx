@@ -25,6 +25,9 @@ type MobileCartSummaryProps = {
   esRecogida?: boolean
   compact?: boolean
   showProducts?: boolean
+  /** Línea de recargo por método de pago (omitir si monto = 0) */
+  recargoLabel?: string | null
+  recargoMonto?: number
 }
 
 export default function MobileCartSummary({
@@ -39,6 +42,8 @@ export default function MobileCartSummary({
   esRecogida = false,
   compact = false,
   showProducts = false,
+  recargoLabel = null,
+  recargoMonto = 0,
 }: MobileCartSummaryProps) {
   const listProducts = showProducts || !compact
 
@@ -91,6 +96,13 @@ export default function MobileCartSummary({
               </div>
             ) : null}
           </>
+        ) : null}
+
+        {recargoLabel && recargoMonto > 0 ? (
+          <div className="mobile-cart-summary__row">
+            <span>{recargoLabel}</span>
+            <span className="tabular-nums">+{formatPrecio(recargoMonto)}</span>
+          </div>
         ) : null}
 
         {total !== undefined ? (

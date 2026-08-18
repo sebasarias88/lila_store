@@ -8,15 +8,34 @@ export type Sucursal = {
   nota?: string
 }
 
-/** WhatsApp principal de lila-store (Colombia). */
-export const WHATSAPP_NUMERO = '573104244912'
-export const WHATSAPP_DISPLAY = '310 424 4912'
+/**
+ * WhatsApp de consultas (flotante, footer, nosotros, menú, etc.).
+ * No usar para el resumen del pedido del carrito.
+ */
+export const WHATSAPP_CONSULTA_NUMERO = '573178928174'
+export const WHATSAPP_CONSULTA_DISPLAY = '317 892 8174'
+
+/**
+ * WhatsApp solo para enviar el resumen del pedido desde el carrito
+ * (con datos del cliente y productos).
+ */
+export const WHATSAPP_PEDIDO_NUMERO = '573104244912'
+export const WHATSAPP_PEDIDO_DISPLAY = '310 424 4912'
+
+/** Alias: WhatsApp de consultas (footer / display). */
+export const WHATSAPP_NUMERO = WHATSAPP_CONSULTA_NUMERO
+export const WHATSAPP_DISPLAY = WHATSAPP_CONSULTA_DISPLAY
 
 /** Números antiguos de otra tienda — no usar. */
 const WHATSAPP_BLOQUEADOS = new Set([
   '573185867702',
   '3185867702',
   '57318586770',
+])
+
+const WHATSAPP_PEDIDO_DIGITOS = new Set([
+  '3104244912',
+  '573104244912',
 ])
 
 export const SUCURSALES: Sucursal[] = [
@@ -43,17 +62,31 @@ export const DIRECCION_NEGOCIO = SUCURSALES[0].direccion
 export const CIUDAD_NEGOCIO = 'Armenia y Quimbaya, Quindío'
 export const DIRECCION_COMPLETA = `${SUCURSALES[0].direccion}, ${SUCURSALES[0].ciudad}`
 
+function normalizeColombiaWhatsApp(digits: string): string | null {
+  if (digits.startsWith('57') && digits.length >= 12) return digits
+  if (digits.length === 10) return `57${digits}`
+  return null
+}
+
 /**
- * Normaliza el número de WhatsApp del sitio.
- * Ignora el número viejo de otra tienda y fuerza el de lila-store.
+ * WhatsApp de consultas del sitio (botones, footer, flotante…).
+ * Si en config está el número de pedidos, se redirige al de consultas.
  */
 export function resolveWhatsAppNumero(fromConfig?: string | null): string {
   const digits = (fromConfig || '').replace(/\D/g, '')
-  if (!digits || WHATSAPP_BLOQUEADOS.has(digits)) return WHATSAPP_NUMERO
-  if (digits === '3104244912') return WHATSAPP_NUMERO
-  if (digits.startsWith('57') && digits.length >= 12) return digits
-  if (digits.length === 10) return `57${digits}`
-  return WHATSAPP_NUMERO
+  if (
+    !digits ||
+    WHATSAPP_BLOQUEADOS.has(digits) ||
+    WHATSAPP_PEDIDO_DIGITOS.has(digits)
+  ) {
+    return WHATSAPP_CONSULTA_NUMERO
+  }
+  return normalizeColombiaWhatsApp(digits) ?? WHATSAPP_CONSULTA_NUMERO
+}
+
+/** WhatsApp exclusivo del resumen de pedido (carrito → confirmar). */
+export function resolveWhatsAppPedidoNumero(): string {
+  return WHATSAPP_PEDIDO_NUMERO
 }
 
 export function formatSucursalLabel(s: Sucursal): string {

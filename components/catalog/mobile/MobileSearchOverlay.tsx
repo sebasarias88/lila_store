@@ -62,7 +62,7 @@ export default function MobileSearchOverlay({
       open={open}
       onClose={onClose}
       title="Buscar"
-      subtitle="Productos, marcas y categorías"
+      subtitle="Productos y categorías"
       height="auto"
       showClose={false}
     >

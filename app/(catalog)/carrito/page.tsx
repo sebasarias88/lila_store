@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { usePathname } from 'next/navigation'
 import { useCarrito } from '@/lib/store'
 import { supabase } from '@/lib/supabase'
-import { DatosCliente, ItemCarrito } from '@/types'
+import { DatosCliente, ItemCarrito, MetodoPago } from '@/types'
 import { generarMensajeWhatsApp, abrirWhatsApp } from '@/lib/whatsapp'
 import {
   cartSubtotal,
@@ -15,9 +15,29 @@ import {
   variacionesCarritoClassName,
 } from '@/lib/cart'
 import { parseCopValue } from '@/lib/currency'
-import { catalogPath, MAYOREO_MIN_COMPRA, type CatalogType } from '@/lib/catalog'
-import { resolveWhatsAppNumero } from '@/lib/negocio'
-import { metodosPagoParaCheckout } from '@/lib/payment-methods'
+import {
+  catalogPath,
+  CONFIG_MAYORISTA_MINIMO,
+  CONFIG_MAYORISTA_RECOMPRA,
+  MAYOREO_MIN_COMPRA,
+  MAYOREO_RECOMPRA,
+  parseMayoristaConfigMonto,
+  type CatalogType,
+} from '@/lib/catalog'
+import {
+  WHATSAPP_CONSULTA_NUMERO,
+  resolveWhatsAppPedidoNumero,
+} from '@/lib/negocio'
+import {
+  buildResumenRecargoPago,
+  metodoPagoToOpcion,
+} from '@/lib/payment-methods'
+import {
+  mensajeStockRestante,
+  stockRestanteParaProducto,
+  validarStockCarrito,
+  type StockProductoFresh,
+} from '@/lib/stock'
 import EntregaPicker from '@/components/catalog/cart/EntregaPicker'
 import MetodoPagoPicker from '@/components/catalog/cart/MetodoPagoPicker'
 import CarritoMobile from '@/components/catalog/mobile/cart/CarritoMobile'
@@ -75,6 +95,8 @@ type Config = {
   envio_gratis_desde: string
   tiempo_entrega_armenia: string
   tiempo_entrega_nacional: string
+  mayorista_valor_minimo_compra: string
+  mayorista_valor_recompra: string
 }
 
 type Step = 'carrito' | 'datos' | 'resumen'
@@ -124,6 +146,8 @@ function OrderSummaryPanel({
   envioGratis,
   showEnvio = false,
   esRecogida = false,
+  recargoLabel = null,
+  recargoMonto = 0,
 }: {
   items: ItemCarrito[]
   subtotal: number
@@ -134,6 +158,8 @@ function OrderSummaryPanel({
   envioGratis?: boolean
   showEnvio?: boolean
   esRecogida?: boolean
+  recargoLabel?: string | null
+  recargoMonto?: number
 }) {
   return (
     <div className="space-y-4 rounded-[24px] border border-[var(--border)] bg-white/90 p-5 shadow-[var(--shadow-soft)] backdrop-blur-sm">
@@ -208,6 +234,14 @@ function OrderSummaryPanel({
             )}
           </>
         )}
+        {recargoLabel && recargoMonto > 0 ? (
+          <div className="flex justify-between text-[13px] font-medium">
+            <span className="text-[var(--text-muted)]">{recargoLabel}</span>
+            <span className="font-bold text-[var(--text-primary)]">
+              +{formatPrecio(recargoMonto)}
+            </span>
+          </div>
+        ) : null}
         {total !== undefined && (
           <div className="flex items-baseline justify-between border-t border-[var(--border)] pt-3">
             <span className="text-[12px] font-bold text-[var(--text-secondary)]">Total</span>
@@ -215,13 +249,6 @@ function OrderSummaryPanel({
           </div>
         )}
       </div>
-
-      {catalogType === 'detal' && (
-        <p className="flex items-center gap-1.5 text-[11px] font-medium text-[var(--text-muted)]">
-          <CreditCard size={12} className="text-[var(--accent-primary)]" />
-          ePayco · Addi · Sistecrédito · Su+ Pay ✨
-        </p>
-      )}
     </div>
   )
 }
@@ -234,18 +261,22 @@ export default function CarritoPage() {
       : 'detal'
   const productosHref = catalogPath(catalogType, '/productos')
 
-  const { items, quitar, actualizarCantidad, vaciar } = useCarrito()
+  const { items, quitar, actualizarCantidad, vaciar, aplicarStockFresco } =
+    useCarrito()
   const [mounted, setMounted] = useState(false)
   const [step, setStep] = useState<Step>('carrito')
   const [config, setConfig] = useState<Config>({
-    whatsapp_numero: '573104244912',
+    whatsapp_numero: WHATSAPP_CONSULTA_NUMERO,
     envio_armenia: '5000',
     envio_nacional: '0',
     envio_gratis_desde: '0',
     tiempo_entrega_armenia: 'El mismo día',
     tiempo_entrega_nacional: '2 a 3 días hábiles',
+    mayorista_valor_minimo_compra: String(MAYOREO_MIN_COMPRA),
+    mayorista_valor_recompra: String(MAYOREO_RECOMPRA),
   })
   const [enviando, setEnviando] = useState(false)
+  const [metodosPagoDb, setMetodosPagoDb] = useState<MetodoPago[]>([])
 
   const [datos, setDatos] = useState<DatosCliente>({
     nombre: '',
@@ -268,23 +299,46 @@ export default function CarritoPage() {
         map[r.clave] = r.valor
       })
       setConfig({
-        whatsapp_numero: map['whatsapp_numero'] || '573104244912',
+        whatsapp_numero: map['whatsapp_numero'] || WHATSAPP_CONSULTA_NUMERO,
         envio_armenia: map['envio_armenia'] || '5000',
         envio_nacional: map['envio_nacional'] || '0',
         envio_gratis_desde: map['envio_gratis_desde'] || '0',
         tiempo_entrega_armenia: map['tiempo_entrega_armenia'] || 'El mismo día',
         tiempo_entrega_nacional: map['tiempo_entrega_nacional'] || '2 a 3 días hábiles',
+        mayorista_valor_minimo_compra:
+          map[CONFIG_MAYORISTA_MINIMO] ?? String(MAYOREO_MIN_COMPRA),
+        mayorista_valor_recompra:
+          map[CONFIG_MAYORISTA_RECOMPRA] ?? String(MAYOREO_RECOMPRA),
       })
     }
+  }, [])
+
+  const fetchMetodosPago = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('metodos_pago')
+      .select('*')
+      .eq('activo', true)
+      .order('orden', { ascending: true })
+
+    if (error) {
+      console.error('[carrito] metodos_pago:', error)
+      setMetodosPagoDb([])
+      return
+    }
+    setMetodosPagoDb((data as MetodoPago[]) || [])
   }, [])
 
   useEffect(() => {
     setMounted(true)
     void fetchConfig()
-  }, [fetchConfig])
+    void fetchMetodosPago()
+  }, [fetchConfig, fetchMetodosPago])
 
   const esRecogida = datos.tipoEntrega === 'recogida'
-  const metodosPago = metodosPagoParaCheckout(datos.tipoEntrega)
+  const metodosPago = useMemo(
+    () => metodosPagoDb.map(m => metodoPagoToOpcion(m, catalogType)),
+    [metodosPagoDb, catalogType],
+  )
   const esArmenia = CIUDADES_ARMENIA.includes(datos.ciudad.toLowerCase().trim())
   const subtotal = useMemo(
     () => cartSubtotal(items, catalogType),
@@ -307,13 +361,45 @@ export default function CarritoPage() {
       ? config.tiempo_entrega_armenia
       : config.tiempo_entrega_nacional
 
-  const totalFinal = subtotal + costoEnvio
+  const recargoPago = useMemo(
+    () =>
+      buildResumenRecargoPago(
+        metodosPagoDb,
+        datos.metodoPago,
+        subtotal,
+        catalogType,
+      ),
+    [metodosPagoDb, datos.metodoPago, subtotal, catalogType],
+  )
+  const recargoMonto = recargoPago?.monto ?? 0
+  const totalFinal = subtotal + costoEnvio + recargoMonto
+
+  // Si el método elegido ya no está activo, limpiarlo
+  useEffect(() => {
+    if (!datos.metodoPago || metodosPago.length === 0) return
+    const ok = metodosPago.some(m => m.label === datos.metodoPago)
+    if (!ok) setDatos(d => ({ ...d, metodoPago: '' }))
+  }, [metodosPago, datos.metodoPago])
   const stepIndex = STEPS.findIndex(s => s.id === step)
   const stickyTop = catalogType === 'mayoreo' ? 100 : 96
 
-  const minimoMayoreo = catalogType === 'mayoreo' ? MAYOREO_MIN_COMPRA : 0
-  const cumpleMinimo = subtotal >= minimoMayoreo
+  const minimoMayoreo =
+    catalogType === 'mayoreo'
+      ? parseMayoristaConfigMonto(
+          config.mayorista_valor_minimo_compra,
+          MAYOREO_MIN_COMPRA,
+        )
+      : 0
+  const recompraSugerida =
+    catalogType === 'mayoreo'
+      ? parseMayoristaConfigMonto(
+          config.mayorista_valor_recompra,
+          MAYOREO_RECOMPRA,
+        )
+      : 0
+  const cumpleMinimo = catalogType !== 'mayoreo' || subtotal >= minimoMayoreo
   const faltaParaMinimo = Math.max(0, minimoMayoreo - subtotal)
+  const mensajeMinimoMayoreo = `Tu pedido debe ser de al menos ${formatPrecio(minimoMayoreo)} para el catálogo mayorista. Te faltan ${formatPrecio(faltaParaMinimo)}`
 
   const validar = () => {
     const e: Partial<DatosCliente> = {}
@@ -337,9 +423,7 @@ export default function CarritoPage() {
       return
     }
     if (catalogType === 'mayoreo' && !cumpleMinimo) {
-      toast.error(
-        `La compra mínima mayorista es ${formatPrecio(minimoMayoreo)}`,
-      )
+      toast.error(mensajeMinimoMayoreo)
       return
     }
     if (esRecogida && !datos.sucursalRecogida.trim()) {
@@ -361,21 +445,64 @@ export default function CarritoPage() {
     scrollTop()
   }
 
-  const handleEnviarWhatsApp = () => {
+  const handleEnviarWhatsApp = async () => {
+    if (catalogType === 'mayoreo' && !cumpleMinimo) {
+      toast.error(mensajeMinimoMayoreo)
+      return
+    }
+    if (items.length === 0) {
+      toast.error('Tu carrito está vacío')
+      return
+    }
+
     setEnviando(true)
-    const mensaje = generarMensajeWhatsApp(
-      items,
-      datos,
-      costoEnvio,
-      tiempoEntrega,
-      catalogType,
-    )
-    setTimeout(() => {
-      abrirWhatsApp(mensaje, resolveWhatsAppNumero(config.whatsapp_numero))
+    try {
+      const ids = [...new Set(items.map(i => i.producto.id))]
+      const { data, error } = await supabase
+        .from('productos')
+        .select(
+          'id, nombre, stock_detal, stock_mayoreo, disponible, disponible_detal, disponible_mayoreo',
+        )
+        .in('id', ids)
+
+      if (error || !data) {
+        console.error('[carrito] stock revalidate:', error)
+        toast.error('No pudimos verificar el stock. Intenta de nuevo.')
+        return
+      }
+
+      const freshById = Object.fromEntries(
+        (data as StockProductoFresh[]).map(p => [p.id, p]),
+      ) as Record<string, StockProductoFresh>
+
+      aplicarStockFresco(freshById)
+
+      const stockOk = validarStockCarrito(
+        useCarrito.getState().items,
+        freshById,
+        catalogType,
+      )
+      if (!stockOk.ok) {
+        toast.error(stockOk.message)
+        return
+      }
+
+      const mensaje = generarMensajeWhatsApp(
+        useCarrito.getState().items,
+        datos,
+        costoEnvio,
+        tiempoEntrega,
+        catalogType,
+        recargoPago
+          ? { labelLinea: recargoPago.labelLinea, monto: recargoPago.monto }
+          : null,
+      )
+      abrirWhatsApp(mensaje, resolveWhatsAppPedidoNumero())
       vaciar()
-      setEnviando(false)
       toast.success('¡Pedido listo! Revisa tu WhatsApp ✨')
-    }, 800)
+    } finally {
+      setEnviando(false)
+    }
   }
 
   const inputClass = (campo: keyof DatosCliente) =>
@@ -409,8 +536,10 @@ export default function CarritoPage() {
           actualizarCantidad={actualizarCantidad}
           subtotal={subtotal}
           minimoMayoreo={minimoMayoreo}
+          recompraSugerida={recompraSugerida}
           cumpleMinimo={cumpleMinimo}
           faltaParaMinimo={faltaParaMinimo}
+          mensajeMinimoMayoreo={mensajeMinimoMayoreo}
           datos={datos}
           setDatos={setDatos}
           errores={errores}
@@ -421,6 +550,8 @@ export default function CarritoPage() {
           envioGratis={envioGratis}
           tiempoEntrega={tiempoEntrega}
           totalFinal={totalFinal}
+          recargoLabel={recargoPago?.labelLinea ?? null}
+          recargoMonto={recargoMonto}
           handleContinuar={handleContinuar}
           handleConfirmar={handleConfirmar}
           handleEnviarWhatsApp={handleEnviarWhatsApp}
@@ -532,6 +663,19 @@ export default function CarritoPage() {
                         const key = itemLineKey(item)
                         const { producto, cantidad, variacionesSeleccionadas } = item
                         const vars = formatVariacionesResumen(variacionesSeleccionadas)
+                        const maxQty =
+                          stockRestanteParaProducto(
+                            producto,
+                            items,
+                            catalogType,
+                            key,
+                          ) + cantidad
+                        const atMax = cantidad >= maxQty
+                        const restantesLinea = stockRestanteParaProducto(
+                          producto,
+                          items,
+                          catalogType,
+                        )
 
                         return (
                           <motion.div
@@ -576,26 +720,43 @@ export default function CarritoPage() {
                               )}
 
                               <div className="flex flex-wrap items-center justify-between gap-3">
-                                <div className="inline-flex items-center gap-0.5 rounded-full border border-[var(--border)] bg-white p-0.5">
-                                  <button
-                                    type="button"
-                                    onClick={() => actualizarCantidad(key, cantidad - 1)}
-                                    className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--accent-deep)] transition-colors hover:bg-[var(--bg-muted)]"
-                                    aria-label="Disminuir cantidad"
-                                  >
-                                    <Minus size={13} />
-                                  </button>
-                                  <span className="min-w-[1.5rem] text-center text-[14px] font-bold text-[var(--text-primary)]">
-                                    {cantidad}
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => actualizarCantidad(key, cantidad + 1)}
-                                    className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--accent-deep)] transition-colors hover:bg-[var(--bg-muted)]"
-                                    aria-label="Aumentar cantidad"
-                                  >
-                                    <Plus size={13} />
-                                  </button>
+                                <div>
+                                  <div className="inline-flex items-center gap-0.5 rounded-full border border-[var(--border)] bg-white p-0.5">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        actualizarCantidad(key, cantidad - 1, catalogType)
+                                      }
+                                      className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--accent-deep)] transition-colors hover:bg-[var(--bg-muted)]"
+                                      aria-label="Disminuir cantidad"
+                                    >
+                                      <Minus size={13} />
+                                    </button>
+                                    <span className="min-w-[1.5rem] text-center text-[14px] font-bold text-[var(--text-primary)]">
+                                      {cantidad}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const result = actualizarCantidad(
+                                          key,
+                                          cantidad + 1,
+                                          catalogType,
+                                        )
+                                        if (!result.ok) toast.error(result.message)
+                                      }}
+                                      disabled={atMax}
+                                      className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--accent-deep)] transition-colors hover:bg-[var(--bg-muted)] disabled:cursor-not-allowed disabled:opacity-40"
+                                      aria-label="Aumentar cantidad"
+                                    >
+                                      <Plus size={13} />
+                                    </button>
+                                  </div>
+                                  {atMax ? (
+                                    <p className="mt-1 text-[11px] font-medium text-[var(--accent-deep)]">
+                                      {mensajeStockRestante(restantesLinea)}
+                                    </p>
+                                  ) : null}
                                 </div>
 
                                 <div className="flex items-center gap-3">
@@ -631,16 +792,11 @@ export default function CarritoPage() {
                         sucursalRecogida={datos.sucursalRecogida}
                         error={errores.sucursalRecogida}
                         onTipoChange={tipo => {
-                          setDatos(d => {
-                            const nextMetodos = metodosPagoParaCheckout(tipo)
-                            const pagoOk = nextMetodos.some(m => m.label === d.metodoPago)
-                            return {
-                              ...d,
-                              tipoEntrega: tipo,
-                              sucursalRecogida: tipo === 'envio' ? '' : d.sucursalRecogida,
-                              metodoPago: pagoOk ? d.metodoPago : '',
-                            }
-                          })
+                          setDatos(d => ({
+                            ...d,
+                            tipoEntrega: tipo,
+                            sucursalRecogida: tipo === 'envio' ? '' : d.sucursalRecogida,
+                          }))
                           if (errores.sucursalRecogida) {
                             setErrores(er => ({ ...er, sucursalRecogida: '' }))
                           }
@@ -669,19 +825,25 @@ export default function CarritoPage() {
                     envioGratis={envioGratis}
                     showEnvio={esRecogida}
                     esRecogida={esRecogida}
+                    recargoLabel={recargoPago?.labelLinea ?? null}
+                    recargoMonto={recargoMonto}
                   />
-                  {catalogType === 'mayoreo' && !cumpleMinimo && (
+                  {catalogType === 'mayoreo' && (
                     <div className="rounded-[20px] border border-[color-mix(in_srgb,var(--accent-primary)_40%,var(--border))] bg-[var(--bg-muted)] p-4">
-                      <p className="text-[12px] font-bold text-[var(--accent-deep)]">
-                        Compra mínima mayorista
+                      <p className="text-[13px] font-bold text-[var(--accent-deep)]">
+                        Pedido mínimo: {formatPrecio(minimoMayoreo)}
                       </p>
-                      <p className="mt-1.5 text-[13px] font-medium leading-relaxed text-[var(--text-secondary)]">
-                        El pedido mínimo es {formatPrecio(minimoMayoreo)}. Te faltan{' '}
-                        <span className="font-bold text-[var(--accent-primary)]">
-                          {formatPrecio(faltaParaMinimo)}
-                        </span>{' '}
-                        para continuar.
-                      </p>
+                      {recompraSugerida > 0 ? (
+                        <p className="mt-1 text-[12px] font-medium text-[var(--text-muted)]">
+                          Pedidos posteriores: mínimo sugerido{' '}
+                          {formatPrecio(recompraSugerida)}
+                        </p>
+                      ) : null}
+                      {!cumpleMinimo ? (
+                        <p className="mt-2 text-[13px] font-medium leading-relaxed text-[var(--text-secondary)]">
+                          {mensajeMinimoMayoreo}
+                        </p>
+                      ) : null}
                     </div>
                   )}
                   <p className="text-[12px] font-medium text-[var(--text-subtle)]">
@@ -924,6 +1086,8 @@ export default function CarritoPage() {
                   envioGratis={envioGratis}
                   showEnvio
                   esRecogida={esRecogida}
+                  recargoLabel={recargoPago?.labelLinea ?? null}
+                  recargoMonto={recargoMonto}
                 />
               </CartSidebar>
             </motion.div>
@@ -1051,6 +1215,16 @@ export default function CarritoPage() {
                       <span className="text-[var(--text-muted)]">Entrega</span>
                       <span className="font-bold text-[var(--text-primary)]">{tiempoEntrega}</span>
                     </div>
+                    {recargoPago && recargoMonto > 0 ? (
+                      <div className="flex justify-between text-[13px] font-medium">
+                        <span className="text-[var(--text-muted)]">
+                          {recargoPago.labelLinea}
+                        </span>
+                        <span className="font-bold text-[var(--text-primary)]">
+                          +{formatPrecio(recargoMonto)}
+                        </span>
+                      </div>
+                    ) : null}
                     <div className="flex items-baseline justify-between border-t border-[var(--border)] pt-3">
                       <span className="text-[13px] font-bold text-[var(--text-secondary)]">
                         Total
@@ -1075,7 +1249,7 @@ export default function CarritoPage() {
                     type="button"
                     whileTap={{ scale: 0.98 }}
                     onClick={handleEnviarWhatsApp}
-                    disabled={enviando}
+                    disabled={enviando || (catalogType === 'mayoreo' && !cumpleMinimo)}
                     className={`flex flex-1 items-center justify-center gap-2 rounded-full py-4 text-[14px] font-bold transition-colors disabled:opacity-60 ${
                       catalogType === 'mayoreo'
                         ? 'bg-[#25D366] text-white hover:bg-[#22c55e]'
@@ -1100,6 +1274,12 @@ export default function CarritoPage() {
                     )}
                   </motion.button>
                 </div>
+
+                  {catalogType === 'mayoreo' && !cumpleMinimo ? (
+                    <p className="text-[12px] font-medium leading-relaxed text-[var(--accent-deep)] lg:hidden">
+                      {mensajeMinimoMayoreo}
+                    </p>
+                  ) : null}
 
                   {catalogType === 'detal' && (
                     <p className="text-[12px] font-medium leading-relaxed text-[var(--text-subtle)] lg:hidden">
@@ -1138,6 +1318,16 @@ export default function CarritoPage() {
                       <span className="text-[var(--text-muted)]">Entrega</span>
                       <span className="font-bold text-[var(--text-primary)]">{tiempoEntrega}</span>
                     </div>
+                    {recargoPago && recargoMonto > 0 ? (
+                      <div className="flex justify-between text-[13px] font-medium">
+                        <span className="text-[var(--text-muted)]">
+                          {recargoPago.labelLinea}
+                        </span>
+                        <span className="font-bold text-[var(--text-primary)]">
+                          +{formatPrecio(recargoMonto)}
+                        </span>
+                      </div>
+                    ) : null}
                     <div className="flex items-baseline justify-between border-t border-[var(--border)] pt-4">
                       <span className="text-[13px] font-bold text-[var(--text-secondary)]">
                         Total
@@ -1157,11 +1347,17 @@ export default function CarritoPage() {
                     Volver a datos
                   </button>
 
+                  {catalogType === 'mayoreo' && !cumpleMinimo ? (
+                    <p className="text-[12px] font-medium leading-relaxed text-[var(--accent-deep)]">
+                      {mensajeMinimoMayoreo}
+                    </p>
+                  ) : null}
+
                   <motion.button
                     type="button"
                     whileTap={{ scale: 0.98 }}
                     onClick={handleEnviarWhatsApp}
-                    disabled={enviando}
+                    disabled={enviando || (catalogType === 'mayoreo' && !cumpleMinimo)}
                     className={`flex w-full items-center justify-center gap-2 rounded-full py-4 text-[14px] font-bold transition-colors disabled:opacity-60 ${
                       catalogType === 'mayoreo'
                         ? 'bg-[#25D366] text-white hover:bg-[#22c55e]'

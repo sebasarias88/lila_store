@@ -51,7 +51,7 @@ export default function MobileFilterDropdown({
       ? (options.find(o => o.value === '')?.label ?? 'Todas')
       : values.length === 1
         ? values[0]
-        : `${values.length} marcas`
+        : `${values.length} seleccionadas`
     : (selected?.label ?? 'Seleccionar')
 
   const filtered = useMemo(() => {

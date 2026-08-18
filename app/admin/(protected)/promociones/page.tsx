@@ -1,9 +1,10 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { Promocion } from '@/types'
+import { type CatalogType } from '@/lib/catalog'
 import Modal from '@/components/ui/Modal'
 import Button from '@/components/ui/Button'
 import { Input, Textarea } from '@/components/ui/Input'
@@ -39,6 +40,7 @@ type PromoForm = {
   enlace: string
   orden: number
   activa: boolean
+  catalogo: CatalogType
 }
 
 const emptyForm = (orden = 1): PromoForm => ({
@@ -52,7 +54,12 @@ const emptyForm = (orden = 1): PromoForm => ({
   enlace: '',
   orden,
   activa: true,
+  catalogo: 'detal',
 })
+
+function catalogoDePromo(promo: Promocion): CatalogType {
+  return promo.catalogo === 'mayoreo' ? 'mayoreo' : 'detal'
+}
 
 function toLocalInput(iso: string | null): string {
   if (!iso) return ''
@@ -98,6 +105,12 @@ export default function PromocionesPage() {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [filtroCatalogo, setFiltroCatalogo] = useState<'todos' | CatalogType>('todos')
+
+  const promocionesVisibles = useMemo(() => {
+    if (filtroCatalogo === 'todos') return promociones
+    return promociones.filter(p => catalogoDePromo(p) === filtroCatalogo)
+  }, [promociones, filtroCatalogo])
 
   const fetchPromociones = useCallback(async () => {
     setLoading(true)
@@ -143,6 +156,7 @@ export default function PromocionesPage() {
       enlace: promo.enlace || '',
       orden: promo.orden,
       activa: promo.activa,
+      catalogo: catalogoDePromo(promo),
     })
     setModalOpen(true)
   }
@@ -184,6 +198,7 @@ export default function PromocionesPage() {
       enlace: form.enlace.trim() || null,
       orden: Number(form.orden) || 1,
       activa: form.activa,
+      catalogo: form.catalogo,
     }
 
     const { error } = selected
@@ -233,10 +248,10 @@ export default function PromocionesPage() {
 
   const moveOrden = async (index: number, direction: -1 | 1) => {
     const target = index + direction
-    if (target < 0 || target >= promociones.length) return
+    if (target < 0 || target >= promocionesVisibles.length) return
 
-    const a = promociones[index]
-    const b = promociones[target]
+    const a = promocionesVisibles[index]
+    const b = promocionesVisibles[target]
     const ordenA = a.orden
     const ordenB = b.orden
 
@@ -276,13 +291,36 @@ export default function PromocionesPage() {
             Promociones
           </h1>
           <p className="mt-2 text-[14px] font-medium text-[var(--text-secondary)]">
-            Franja promocional debajo del hero
+            Franja promocional debajo del hero, por catálogo
           </p>
         </div>
         <Button onClick={abrirCrear} size="sm" className="self-start sm:self-auto">
           <Plus size={13} />
           Nueva promoción
         </Button>
+      </div>
+
+      <div className="mb-6 flex flex-wrap gap-2">
+        {(
+          [
+            { id: 'todos' as const, label: 'Todos' },
+            { id: 'detal' as const, label: 'Detal' },
+            { id: 'mayoreo' as const, label: 'Mayorista' },
+          ]
+        ).map(opt => (
+          <button
+            key={opt.id}
+            type="button"
+            onClick={() => setFiltroCatalogo(opt.id)}
+            className={`rounded-full border px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-[0.08em] transition-colors ${
+              filtroCatalogo === opt.id
+                ? 'border-[var(--accent-primary)] bg-[rgba(169,137,224,0.14)] text-[var(--accent-deep)]'
+                : 'border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--accent-primary)] hover:text-[var(--accent-deep)]'
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
       </div>
 
       {loading ? (
@@ -299,13 +337,15 @@ export default function PromocionesPage() {
           onRetry={fetchPromociones}
           title="No se pudieron cargar las promociones"
         />
-      ) : promociones.length === 0 ? (
+      ) : promocionesVisibles.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--border-card)] bg-[var(--bg-card)] px-6 py-20 text-center">
           <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-[rgba(169,137,224,0.25)] bg-[rgba(169,137,224,0.08)] text-[var(--accent-primary)]">
             <Tag size={22} />
           </span>
           <p className="text-[14px] font-light text-[var(--text-primary)]">
-            Aún no hay promociones
+            {promociones.length === 0
+              ? 'Aún no hay promociones'
+              : 'No hay promociones en este catálogo'}
           </p>
           <Button onClick={abrirCrear} size="sm" className="mt-6">
             <Plus size={13} />
@@ -313,13 +353,14 @@ export default function PromocionesPage() {
           </Button>
         </div>
       ) : (
-        <AdminTable minWidth="920px">
+        <AdminTable minWidth="1080px">
           <AdminTableHead>
             <AdminTableHeaderRow>
               <AdminTableTh className="w-16">#</AdminTableTh>
               <AdminTableTh>Badge</AdminTableTh>
               <AdminTableTh>Título</AdminTableTh>
               <AdminTableTh>Descripción</AdminTableTh>
+              <AdminTableTh className="min-w-[8.5rem]">Catálogo</AdminTableTh>
               <AdminTableTh>Vigencia</AdminTableTh>
               <AdminTableTh>Estado</AdminTableTh>
               <AdminTableTh className="w-28">Acciones</AdminTableTh>
@@ -327,8 +368,9 @@ export default function PromocionesPage() {
           </AdminTableHead>
           <AdminTableBody>
             <AnimatePresence initial={false}>
-              {promociones.map((promo, index) => {
+              {promocionesVisibles.map((promo, index) => {
                 const vigencia = formatVigencia(promo)
+                const catalogo = catalogoDePromo(promo)
                 return (
                   <motion.tr
                     key={promo.id}
@@ -355,7 +397,7 @@ export default function PromocionesPage() {
                         <button
                           type="button"
                           onClick={() => moveOrden(index, 1)}
-                          disabled={index === promociones.length - 1}
+                          disabled={index === promocionesVisibles.length - 1}
                           className="rounded p-0.5 text-[var(--text-faint)] hover:text-[var(--accent-primary)] disabled:opacity-30"
                           aria-label="Bajar"
                         >
@@ -387,6 +429,17 @@ export default function PromocionesPage() {
                     <AdminTableTd>
                       <span className="line-clamp-2 max-w-[220px] text-[12px] text-[var(--text-muted)]">
                         {promo.descripcion || '—'}
+                      </span>
+                    </AdminTableTd>
+                    <AdminTableTd>
+                      <span
+                        className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.06em] ${
+                          catalogo === 'mayoreo'
+                            ? 'border-[rgba(96,165,250,0.35)] bg-[rgba(96,165,250,0.12)] text-blue-500'
+                            : 'border-[rgba(169,137,224,0.35)] bg-[rgba(169,137,224,0.12)] text-[var(--accent-deep)]'
+                        }`}
+                      >
+                        {catalogo === 'mayoreo' ? 'Mayorista' : 'Detal'}
                       </span>
                     </AdminTableTd>
                     <AdminTableTd>
@@ -433,8 +486,9 @@ export default function PromocionesPage() {
       <div className="mt-6 flex gap-3 rounded-xl border border-[rgba(212,175,55,0.15)] bg-[rgba(212,175,55,0.04)] px-4 py-3.5">
         <Info size={14} className="mt-0.5 shrink-0 text-[var(--accent-primary)]" />
         <p className="text-[12px] font-light leading-relaxed text-[var(--text-muted)]">
-          Las promociones aparecen en la franja debajo del banner principal en el
-          catálogo. Solo se muestran las activas y dentro de su rango de fechas.
+          Cada promoción pertenece a un solo catálogo (detal o mayorista), con
+          su propia imagen, texto y enlace. Solo se muestran las activas y
+          dentro de su rango de fechas.
         </p>
       </div>
 
@@ -445,6 +499,36 @@ export default function PromocionesPage() {
         size="lg"
       >
         <form onSubmit={handleGuardar} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="admin-form-label">Catálogo *</label>
+            <div className="flex overflow-hidden rounded-xl border border-[var(--border-input)]">
+              {(
+                [
+                  { id: 'detal' as const, label: 'Detal' },
+                  { id: 'mayoreo' as const, label: 'Mayorista' },
+                ]
+              ).map(opt => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, catalogo: opt.id }))}
+                  className={`flex-1 py-2.5 text-[11px] font-bold uppercase tracking-[0.08em] transition-all ${
+                    form.catalogo === opt.id
+                      ? 'bg-[var(--bg-muted)] text-[var(--accent-primary)]'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="admin-form-hint">
+              {form.catalogo === 'mayoreo'
+                ? 'Se muestra en /mayorista'
+                : 'Se muestra en el catálogo detal'}
+            </p>
+          </div>
+
           <Input
             label="Título *"
             value={form.titulo}
@@ -534,7 +618,11 @@ export default function PromocionesPage() {
             label="Enlace"
             value={form.enlace}
             onChange={e => setForm(f => ({ ...f, enlace: e.target.value }))}
-            placeholder="/productos?categoria=capilar"
+            placeholder={
+              form.catalogo === 'mayoreo'
+                ? '/mayorista/productos'
+                : '/productos?categoria=capilar'
+            }
           />
 
           <div className="grid grid-cols-2 gap-4">

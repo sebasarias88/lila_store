@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { ArrowRight, Heart, MapPin, MessageCircle, Sparkles, Truck } from 'lucide-react'
-import { CIUDAD_NEGOCIO, SUCURSALES, resolveWhatsAppNumero } from '@/lib/negocio'
+import { SUCURSALES, resolveWhatsAppNumero } from '@/lib/negocio'
 import type { CatalogType } from '@/lib/catalog'
 import { buildWhatsAppUrl, mensajeConsultaWhatsApp } from '@/lib/whatsapp'
 
@@ -14,7 +14,7 @@ type Props = {
 }
 
 const DEFAULT_TEXTO =
-  `Somos lila-store, tu aliada de belleza en ${CIUDAD_NEGOCIO}. Tenemos tiendas en Quimbaya y Armenia para que encuentres maquillaje, skincare y cuidados con atención cercana.`
+  'Somos lila-store, tu aliada de belleza en el Quindío. En nuestras tiendas de Armenia y Quimbaya encuentras maquillaje, skincare y cuidados con atención cercana, y también te acompañamos con asesoría y envíos a toda Colombia.'
 
 export default function NosotrosSection({
   texto,

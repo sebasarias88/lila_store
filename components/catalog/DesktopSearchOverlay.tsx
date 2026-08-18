@@ -116,7 +116,7 @@ export default function DesktopSearchOverlay({
                     Buscar
                   </p>
                   <p className="text-[12px] font-medium text-[var(--text-muted)]">
-                    Productos, marcas y categorías
+                    Productos y categorías
                   </p>
                 </div>
               </div>

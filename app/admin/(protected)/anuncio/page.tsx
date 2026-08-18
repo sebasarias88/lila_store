@@ -335,7 +335,7 @@ export default function AnuncioPage() {
   const destinoBloqueadoPorLink = Boolean(form.enlace_manual.trim())
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen space-y-6 bg-[var(--bg-base)] p-6 sm:p-8 lg:p-10">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-[var(--bg-muted)] px-3 py-1.5">

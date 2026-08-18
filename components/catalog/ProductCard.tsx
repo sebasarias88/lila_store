@@ -15,6 +15,7 @@ import { categoriaTieneDescuentoActivo } from '@/lib/descuentos'
 import { ShoppingBag, ImageIcon, Heart, Sparkles, Play } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { productoTieneVideo } from '@/lib/video-url'
+import { productoComprableEnCatalogo } from '@/lib/stock'
 
 const MAX_TITULO_CARD = 52
 const NUEVO_DIAS = 21
@@ -58,12 +59,17 @@ export default function ProductCard({
       ? producto.categoria?.descuento_porcentaje_mayoreo
       : producto.categoria?.descuento_porcentaje
   const nuevo = esNuevo(producto)
+  const comprable = productoComprableEnCatalogo(producto, catalogType)
 
   const handleAgregar = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    if (!producto.disponible) return
-    agregar(producto)
+    if (!comprable) return
+    const result = agregar(producto, undefined, catalogType)
+    if (!result.ok) {
+      toast.error(result.message)
+      return
+    }
     toast.success(`${producto.nombre} al carrito ✨`)
   }
 
@@ -93,23 +99,23 @@ export default function ProductCard({
 
           <div className="absolute top-2.5 left-2.5 right-2.5 flex items-start justify-between gap-2">
             <div className="flex flex-wrap gap-1.5">
-              {!producto.disponible && (
+              {!comprable && (
                 <span className="shrink-0 rounded-full bg-[var(--accent-deep)] px-2.5 py-1 text-[10px] font-bold text-white shadow-sm">
                   Agotado
                 </span>
               )}
-              {nuevo && producto.disponible && (
+              {nuevo && comprable && (
                 <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--accent-secondary)] px-2.5 py-1 text-[10px] font-bold text-white shadow-sm">
                   <Sparkles size={10} />
                   Nuevo
                 </span>
               )}
-              {descuentoCategoria && producto.disponible && !consultar && (
+              {descuentoCategoria && comprable && !consultar && (
                 <span className="shrink-0 rounded-full bg-[var(--accent-primary)] px-2.5 py-1 text-[10px] font-bold text-white shadow-sm">
                   -{pctDescuento}%
                 </span>
               )}
-              {!descuentoCategoria && precioAntes && producto.disponible && !consultar && (
+              {!descuentoCategoria && precioAntes && comprable && !consultar && (
                 <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-[var(--accent-primary)] px-2.5 py-1 text-[10px] font-bold text-white shadow-sm">
                   <Sparkles size={10} />
                   Oferta
@@ -130,19 +136,11 @@ export default function ProductCard({
             <p className="truncate text-[11px] font-bold uppercase tracking-[0.04em] text-[var(--accent-deep)]">
               {producto.categoria?.nombre || 'Producto'}
             </p>
-            {producto.marca ? (
-              <>
-                <span className="text-[var(--border)]" aria-hidden>·</span>
-                <p className="truncate text-[11px] font-medium text-[var(--text-muted)]">
-                  {producto.marca}
-                </p>
-              </>
-            ) : null}
           </div>
 
           <h3
             className={`line-clamp-2 text-[14px] font-bold leading-snug ${
-              producto.disponible ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'
+              comprable ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)]'
             }`}
             title={producto.nombre.trim()}
           >
@@ -163,7 +161,7 @@ export default function ProductCard({
               <div className="flex items-baseline gap-2">
                 <span
                   className={`text-[17px] font-bold leading-none ${
-                    producto.disponible ? 'text-[var(--accent-deep)]' : 'text-[var(--text-faint)]'
+                    comprable ? 'text-[var(--accent-deep)]' : 'text-[var(--text-faint)]'
                   }`}
                 >
                   {formatPrecio(precio!)}
@@ -189,9 +187,9 @@ export default function ProductCard({
               onClick={handleAgregar}
               whileTap={{ scale: 0.98 }}
               className="catalog-gold-cta mt-3.5 flex w-full items-center justify-center gap-2 rounded-full px-4 py-2.5 text-[12px] font-bold disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={!producto.disponible}
+              disabled={!comprable}
             >
-              {producto.disponible ? (
+              {comprable ? (
                 <>
                   <ShoppingBag size={14} />
                   Lo quiero ✨

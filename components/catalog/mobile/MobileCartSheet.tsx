@@ -8,7 +8,12 @@ import {
   itemLineKey,
 } from '@/lib/cart'
 import { catalogPath, type CatalogType } from '@/lib/catalog'
+import {
+  mensajeStockRestante,
+  stockRestanteParaProducto,
+} from '@/lib/stock'
 import { ShoppingBag } from 'lucide-react'
+import toast from 'react-hot-toast'
 import LuxuryCartIcon from '@/components/catalog/LuxuryCartIcon'
 import MobileBottomSheet from '@/components/catalog/mobile/MobileBottomSheet'
 import MobileCartItem from '@/components/catalog/mobile/cart/MobileCartItem'
@@ -96,14 +101,43 @@ export default function MobileCartSheet({
           <AnimatePresence initial={false}>
             {items.map(item => {
               const key = itemLineKey(item)
+              const maxQty =
+                stockRestanteParaProducto(
+                  item.producto,
+                  items,
+                  catalogType,
+                  key,
+                ) + item.cantidad
+              const atMax = item.cantidad >= maxQty
               return (
                 <MobileCartItem
                   key={key}
                   item={item}
                   catalogType={catalogType}
-                  onDecrease={() => actualizarCantidad(key, item.cantidad - 1)}
-                  onIncrease={() => actualizarCantidad(key, item.cantidad + 1)}
+                  onDecrease={() =>
+                    actualizarCantidad(key, item.cantidad - 1, catalogType)
+                  }
+                  onIncrease={() => {
+                    const result = actualizarCantidad(
+                      key,
+                      item.cantidad + 1,
+                      catalogType,
+                    )
+                    if (!result.ok) toast.error(result.message)
+                  }}
                   onRemove={() => quitar(key)}
+                  maxCantidad={maxQty}
+                  stockHint={
+                    atMax
+                      ? mensajeStockRestante(
+                          stockRestanteParaProducto(
+                            item.producto,
+                            items,
+                            catalogType,
+                          ),
+                        )
+                      : null
+                  }
                 />
               )
             })}

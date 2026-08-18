@@ -65,7 +65,12 @@ export default async function MayoreoHomePage() {
     ] = await Promise.all([
       supabase.from('configuracion').select('clave, valor'),
       supabase.from('banners').select('*').eq('activo', true).order('orden'),
-      supabase.from('promociones').select('*').eq('activa', true).order('orden'),
+      supabase
+        .from('promociones')
+        .select('*')
+        .eq('activa', true)
+        .eq('catalogo', 'mayoreo')
+        .order('orden'),
       supabase
         .from('categorias')
         .select('*, subcategorias:categorias!padre_id(*)')

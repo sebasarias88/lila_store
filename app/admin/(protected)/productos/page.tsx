@@ -42,8 +42,26 @@ import MobileAdminToolbar from '@/components/admin/mobile/MobileAdminToolbar'
 import MobileProductCard from '@/components/admin/mobile/MobileProductCard'
 import { MobileEmptyState } from '@/components/admin/mobile/MobileAdminPrimitives'
 import AdminLoadError from '@/components/admin/AdminLoadError'
+import { stockBadgeTone } from '@/lib/stock'
 
 type CategoriaInfo = { nombre: string; padre_id: string | null }
+
+function StockChip({ label, stock }: { label: string; stock: number }) {
+  const tone = stockBadgeTone(stock)
+  const toneClass =
+    tone === 'ok'
+      ? 'bg-[rgba(52,211,153,0.12)] text-emerald-400'
+      : tone === 'low'
+        ? 'bg-[rgba(251,191,36,0.14)] text-amber-400'
+        : 'bg-[rgba(248,113,113,0.12)] text-red-400'
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-medium ${toneClass}`}
+    >
+      {label}: {stock}
+    </span>
+  )
+}
 
 export default function ProductosPage() {
   const [productos, setProductos] = useState<Producto[]>([])
@@ -121,25 +139,69 @@ export default function ProductosPage() {
   const handleEliminar = async () => {
     if (!selected) return
     setDeleting(true)
+    const productoId = selected.id
 
-    if (selected.imagenes?.length) {
-      const paths = selected.imagenes
-        .map(url => {
-          const parts = url.split('/productos/')
-          return parts.length > 1 ? `productos/${parts[1]}` : null
-        })
-        .filter(Boolean) as string[]
-      if (paths.length) await supabase.storage.from('productos').remove(paths)
-    }
+    try {
+      // Quitar relaciones primero (FKs bloquean el DELETE del producto).
+      const { data: tipos, error: tiposErr } = await supabase
+        .from('variacion_tipos')
+        .select('id')
+        .eq('producto_id', productoId)
+      if (tiposErr) throw tiposErr
 
-    const { error } = await supabase.from('productos').delete().eq('id', selected.id)
-    if (error) toast.error('Error al eliminar')
-    else {
+      const tipoIds = ((tipos || []) as { id: string }[]).map(t => t.id)
+      if (tipoIds.length > 0) {
+        const { error } = await supabase
+          .from('variacion_opciones')
+          .delete()
+          .in('tipo_id', tipoIds)
+        if (error) throw error
+      }
+
+      const relatedDeletes = await Promise.all([
+        supabase.from('variacion_tipos').delete().eq('producto_id', productoId),
+        supabase.from('producto_secciones').delete().eq('producto_id', productoId),
+        supabase.from('producto_categorias').delete().eq('producto_id', productoId),
+      ])
+      const relatedError = relatedDeletes.find(r => r.error)?.error
+      if (relatedError) throw relatedError
+
+      // Si el anuncio apunta a este producto, soltar la referencia (no bloquear si falla).
+      await supabase
+        .from('anuncio_modal')
+        .update({ producto_id: null })
+        .eq('producto_id', productoId)
+
+      if (selected.imagenes?.length) {
+        const paths = selected.imagenes
+          .map(url => {
+            const parts = url.split('/productos/')
+            return parts.length > 1 ? `productos/${parts[1]}` : null
+          })
+          .filter(Boolean) as string[]
+        if (paths.length) await supabase.storage.from('productos').remove(paths)
+      }
+
+      const { error } = await supabase.from('productos').delete().eq('id', productoId)
+      if (error) throw error
+
       toast.success('Producto eliminado')
       setDeleteModal(false)
       fetchProductos()
+    } catch (err) {
+      const message =
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as { message: string }).message)
+          : 'Error al eliminar'
+      console.error('[admin] Eliminar producto:', err)
+      toast.error(
+        message.includes('foreign key') || message.includes('violates')
+          ? 'No se pudo eliminar: hay datos relacionados. Intenta de nuevo.'
+          : 'Error al eliminar el producto',
+      )
+    } finally {
+      setDeleting(false)
     }
-    setDeleting(false)
   }
 
   const toggleDisponible = async (p: Producto) => {
@@ -253,8 +315,7 @@ export default function ProductosPage() {
         />
       ) : (
       <AdminTable
-        minWidth="1040px"
-        fixed
+        minWidth="1280px"
         footer={
           <AdminTablePagination
             page={currentPage}
@@ -266,15 +327,15 @@ export default function ProductosPage() {
       >
         <AdminTableHead>
           <AdminTableHeaderRow>
-            <AdminTableTh className="w-[7rem]">Imagen</AdminTableTh>
-            <AdminTableTh className="w-[22%]">Producto</AdminTableTh>
-            <AdminTableTh className="w-[10%]">Marca</AdminTableTh>
-            <AdminTableTh className="w-[18%]">Categoría</AdminTableTh>
-            <AdminTableTh className="w-[7.5rem]">Precio detal</AdminTableTh>
-            <AdminTableTh className="w-[7.5rem]">Precio mayorista</AdminTableTh>
-            <AdminTableTh className="w-[7.5rem]">Estado</AdminTableTh>
-            <AdminTableTh className="w-[7.5rem]">Destacado</AdminTableTh>
-            <AdminTableTh className="w-[5.5rem] text-center">Acciones</AdminTableTh>
+            <AdminTableTh className="min-w-[6.5rem]">Imagen</AdminTableTh>
+            <AdminTableTh className="min-w-[14rem]">Producto</AdminTableTh>
+            <AdminTableTh className="min-w-[12rem]">Categoría</AdminTableTh>
+            <AdminTableTh className="min-w-[8.5rem]">Stock</AdminTableTh>
+            <AdminTableTh className="min-w-[8rem]">Precio detal</AdminTableTh>
+            <AdminTableTh className="min-w-[9rem]">Precio mayorista</AdminTableTh>
+            <AdminTableTh className="min-w-[8rem]">Estado</AdminTableTh>
+            <AdminTableTh className="min-w-[7.5rem]">Destacado</AdminTableTh>
+            <AdminTableTh className="min-w-[5.5rem] text-center">Acciones</AdminTableTh>
           </AdminTableHeaderRow>
         </AdminTableHead>
         <AdminTableBody>
@@ -312,24 +373,14 @@ export default function ProductosPage() {
                   <AdminTableImage src={p.imagenes?.[0]} alt={p.nombre} />
                 </AdminTableTd>
 
-                <AdminTableTd className="max-w-0">
+                <AdminTableTd>
                   <AdminTablePrimary
                     title={p.nombre}
                     subtitle={p.sku ? `SKU · ${p.sku}` : undefined}
                   />
                 </AdminTableTd>
 
-                <AdminTableTd className="max-w-0">
-                  {p.marca ? (
-                    <span className="truncate text-[12px] font-light text-[var(--text-secondary)]">
-                      {p.marca}
-                    </span>
-                  ) : (
-                    <span className="text-[11px] text-[var(--text-faint)]">—</span>
-                  )}
-                </AdminTableTd>
-
-                <AdminTableTd className="max-w-0">
+                <AdminTableTd>
                   {p.categoria ? (
                     <AdminTableCategory
                       name={p.categoria.nombre}
@@ -338,6 +389,16 @@ export default function ProductosPage() {
                   ) : (
                     <AdminTableCategoryEmpty />
                   )}
+                </AdminTableTd>
+
+                <AdminTableTd>
+                  <div className="flex flex-col items-start gap-1">
+                    <StockChip label="Detal" stock={Math.max(0, Math.floor(p.stock_detal ?? 0))} />
+                    <StockChip
+                      label="Mayoreo"
+                      stock={Math.max(0, Math.floor(p.stock_mayoreo ?? 0))}
+                    />
+                  </div>
                 </AdminTableTd>
 
                 <AdminTableTd>

@@ -13,7 +13,7 @@ import MobileFiltersDrawer from '@/components/catalog/mobile/MobileFiltersDrawer
 import { ProductCardSkeleton } from '@/components/ui/Skeleton'
 import { getPrecioOrden, type CatalogType } from '@/lib/catalog'
 import { getPaginationChunk } from '@/lib/pagination'
-import { Search, X, ChevronLeft, ChevronRight, Tag, Loader2, Sparkles, Heart } from 'lucide-react'
+import { Search, X, ChevronLeft, ChevronRight, Loader2, Sparkles, Heart } from 'lucide-react'
 import PageGoldAccent from '@/components/catalog/PageGoldAccent'
 import CatalogCategoryMenu from '@/components/catalog/CatalogCategoryMenu'
 import CatalogFilterSelect, {
@@ -26,7 +26,6 @@ type Props = {
   categorias: Categoria[]
   initialQ: string
   initialCategoria: string
-  initialMarca?: string
   catalogType?: CatalogType
 }
 
@@ -63,7 +62,6 @@ export default function ProductosClient({
   categorias,
   initialQ,
   initialCategoria,
-  initialMarca = '',
   catalogType = 'detal',
 }: Props) {
   const router = useGuardedRouter()
@@ -73,14 +71,8 @@ export default function ProductosClient({
   const [query, setQuery] = useState(initialQ)
   const [inputValue, setInputValue] = useState(initialQ)
   const [categoriaActiva, setCategoriaActiva] = useState(initialCategoria)
-  const [marcasActivas, setMarcasActivas] = useState<string[]>(() =>
-    initialMarca
-      ? initialMarca.split(',').map(m => m.trim()).filter(Boolean)
-      : [],
-  )
   const [orden, setOrden] = useState<Orden>('relevancia')
   const [ordenOpen, setOrdenOpen] = useState(false)
-  const [marcaOpen, setMarcaOpen] = useState(false)
   const [pagina, setPagina] = useState(1)
   const [mounted, setMounted] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -112,15 +104,6 @@ export default function ProductosClient({
     setQuery(initialQ)
     setInputValue(initialQ)
   }, [initialQ])
-
-  useEffect(() => {
-    skipUrlSync.current = true
-    setMarcasActivas(
-      initialMarca
-        ? initialMarca.split(',').map(m => m.trim()).filter(Boolean)
-        : [],
-    )
-  }, [initialMarca])
 
   // Optimistic update desde el menú lateral (misma página /productos)
   useEffect(() => {
@@ -166,7 +149,6 @@ export default function ProductosClient({
     const params = new URLSearchParams()
     if (query) params.set('q', query)
     if (categoriaActiva) params.set('categoria', categoriaActiva)
-    if (marcasActivas.length > 0) params.set('marca', marcasActivas.join(','))
     const search = params.toString()
     const next = search ? `${pathname}?${search}` : pathname
     const current =
@@ -176,16 +158,9 @@ export default function ProductosClient({
     if (current !== next) {
       router.replace(next, { scroll: false })
     }
-  }, [query, categoriaActiva, marcasActivas, pathname, router])
+  }, [query, categoriaActiva, pathname, router])
 
   const mostrarCarga = !mounted || isPending || filtroPendiente
-
-  const marcasDisponibles = useMemo(() => {
-    const marcas = new Set(
-      productos.filter(p => p.marca).map(p => p.marca as string),
-    )
-    return Array.from(marcas).sort((a, b) => a.localeCompare(b, 'es'))
-  }, [productos])
 
   const productosFiltrados = useMemo(() => {
     let result = [...productos]
@@ -197,7 +172,6 @@ export default function ProductosClient({
         p.nombre.toLowerCase().includes(q) ||
         p.descripcion?.toLowerCase().includes(q) ||
         p.sku?.toLowerCase().includes(q) ||
-        p.marca?.toLowerCase().includes(q) ||
         p.categoria?.nombre.toLowerCase().includes(q)
       )
     }
@@ -207,11 +181,6 @@ export default function ProductosClient({
       result = result.filter(p =>
         productoCoincideCategoria(p, categoriaActiva, categorias),
       )
-    }
-
-    if (marcasActivas.length > 0) {
-      const selected = new Set(marcasActivas)
-      result = result.filter(p => p.marca != null && selected.has(p.marca))
     }
 
     // Orden
@@ -228,7 +197,7 @@ export default function ProductosClient({
     }
 
     return result
-  }, [productos, query, categoriaActiva, marcasActivas, orden, catalogType, categorias])
+  }, [productos, query, categoriaActiva, orden, catalogType, categorias])
 
   const totalPaginas = Math.ceil(productosFiltrados.length / ITEMS_POR_PAGINA)
   const paginaActual = Math.min(Math.max(1, pagina), Math.max(1, totalPaginas))
@@ -260,25 +229,10 @@ export default function ProductosClient({
       setQuery('')
       setInputValue('')
       setCategoriaActiva('')
-      setMarcasActivas([])
       setOrden('relevancia')
       setPagina(1)
     })
   }
-
-  const toggleMarca = (marca: string) => {
-    setMarcasActivas(prev =>
-      prev.includes(marca) ? prev.filter(m => m !== marca) : [...prev, marca],
-    )
-    setPagina(1)
-  }
-
-  const marcaValueLabel =
-    marcasActivas.length === 0
-      ? 'Marcas'
-      : marcasActivas.length === 1
-        ? marcasActivas[0]
-        : `${marcasActivas.length} marcas`
 
   const categoriaNombre = useMemo(() => {
     if (!categoriaActiva) return undefined
@@ -300,13 +254,12 @@ export default function ProductosClient({
 
   const activeFiltersCount =
     (categoriaActiva ? 1 : 0) +
-    (marcasActivas.length > 0 ? 1 : 0) +
     (orden !== 'relevancia' ? 1 : 0)
 
   // Distinguir "catálogo vacío" (sin productos en la BD) de "sin resultados" (por filtros/búsqueda)
   const catalogoVacio = productos.length === 0
   const hayFiltros = Boolean(
-    query || categoriaActiva || marcasActivas.length > 0 || orden !== 'relevancia',
+    query || categoriaActiva || orden !== 'relevancia',
   )
 
   const tituloPagina = categoriaNombre || 'Todo lo cute'
@@ -356,33 +309,19 @@ export default function ProductosClient({
             activeFiltersCount={activeFiltersCount}
           />
 
-          {(categoriaActiva || marcasActivas.length > 0) && (
+          {categoriaActiva && categoriaNombre && (
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              {categoriaActiva && categoriaNombre && (
-                <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-[color-mix(in_srgb,var(--accent-primary)_35%,var(--border))] bg-[var(--bg-muted)] px-3.5 py-1.5 text-[12px] font-bold text-[var(--accent-deep)]">
-                  <span className="truncate">{categoriaNombre}</span>
-                  <button
-                    type="button"
-                    onClick={() => aplicarCategoria('')}
-                    aria-label="Quitar categoría"
-                    className="shrink-0 rounded-full p-0.5 hover:bg-white"
-                  >
-                    <X size={12} />
-                  </button>
-                </span>
-              )}
-              {marcasActivas.map(marca => (
+              <span className="inline-flex max-w-full items-center gap-2 rounded-full border border-[color-mix(in_srgb,var(--accent-primary)_35%,var(--border))] bg-[var(--bg-muted)] px-3.5 py-1.5 text-[12px] font-bold text-[var(--accent-deep)]">
+                <span className="truncate">{categoriaNombre}</span>
                 <button
-                  key={marca}
                   type="button"
-                  onClick={() => toggleMarca(marca)}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--accent-primary)_35%,var(--border))] bg-[var(--bg-muted)] px-3.5 py-1.5 text-[12px] font-bold text-[var(--accent-deep)]"
+                  onClick={() => aplicarCategoria('')}
+                  aria-label="Quitar categoría"
+                  className="shrink-0 rounded-full p-0.5 hover:bg-white"
                 >
-                  <Tag size={10} />
-                  {marca}
                   <X size={12} />
                 </button>
-              ))}
+              </span>
             </div>
           )}
 
@@ -392,12 +331,6 @@ export default function ProductosClient({
             categorias={categorias}
             categoriaActiva={categoriaActiva}
             onCategoriaChange={aplicarCategoria}
-            marcas={marcasDisponibles}
-            marcasActivas={marcasActivas}
-            onMarcasChange={next => {
-              setMarcasActivas(next)
-              setPagina(1)
-            }}
             orden={orden}
             onOrdenChange={setOrden}
             onLimpiar={limpiarFiltros}
@@ -488,37 +421,6 @@ export default function ProductosClient({
                   onChange={aplicarCategoria}
                 />
 
-                {marcasDisponibles.length > 0 && (
-                  <CatalogFilterSelect
-                    label="Marca"
-                    valueLabel={marcaValueLabel === 'Marcas' ? 'Marcas 💕' : marcaValueLabel}
-                    open={marcaOpen}
-                    onOpenChange={setMarcaOpen}
-                    active={marcasActivas.length > 0}
-                    align="right"
-                    panelClassName="w-56"
-                  >
-                    <CatalogFilterOption
-                      active={marcasActivas.length === 0}
-                      onClick={() => {
-                        setMarcasActivas([])
-                        setPagina(1)
-                      }}
-                    >
-                      Todas las marcas
-                    </CatalogFilterOption>
-                    {marcasDisponibles.map(marca => (
-                      <CatalogFilterOption
-                        key={marca}
-                        active={marcasActivas.includes(marca)}
-                        onClick={() => toggleMarca(marca)}
-                      >
-                        {marca}
-                      </CatalogFilterOption>
-                    ))}
-                  </CatalogFilterSelect>
-                )}
-
                 <CatalogFilterSelect
                   label="Ordenar"
                   valueLabel={ordenLabels[orden]}
@@ -550,7 +452,7 @@ export default function ProductosClient({
         {/* Contenido a ancho completo — sin sidebar */}
         <div className="mt-2 min-w-0 lg:mt-4">
             {/* Chip de filtro activo (desktop) */}
-            {(categoriaActiva || marcasActivas.length > 0 || mostrarCarga) && (
+            {(categoriaActiva || mostrarCarga) && (
               <div className="mb-4 hidden items-center gap-2.5 md:flex">
                 <span className="text-[11px] font-bold text-[var(--text-subtle)]">
                   {mostrarCarga ? 'Actualizando… ✨' : 'Filtrado por'}
@@ -568,18 +470,6 @@ export default function ProductosClient({
                     <X size={12} />
                   </button>
                 )}
-                {marcasActivas.map(marca => (
-                  <button
-                    key={marca}
-                    type="button"
-                    onClick={() => toggleMarca(marca)}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-[color-mix(in_srgb,var(--accent-primary)_35%,var(--border))] bg-[var(--bg-muted)] px-3.5 py-1.5 text-[12px] font-bold text-[var(--accent-deep)] transition-colors hover:border-[var(--accent-primary)] hover:bg-[var(--accent-primary)] hover:text-white"
-                  >
-                    <Tag size={10} />
-                    {marca}
-                    <X size={12} />
-                  </button>
-                ))}
               </div>
             )}
 

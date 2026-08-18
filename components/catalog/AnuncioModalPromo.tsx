@@ -101,14 +101,14 @@ export default function AnuncioModalPromo({
             </button>
 
             {anuncio.imagen_url ? (
-              <div className="relative aspect-[4/5] max-h-[min(52vh,420px)] overflow-hidden bg-[var(--bg-muted)]">
+              <div className="relative w-full overflow-hidden bg-[var(--bg-muted)]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={anuncio.imagen_url}
                   alt=""
-                  className="h-full w-full object-cover"
+                  className="block h-[min(48vh,360px)] w-full object-cover object-center"
                 />
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[var(--bg-surface)] to-transparent" />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[var(--bg-surface)] to-transparent" />
               </div>
             ) : null}
 

@@ -4,11 +4,12 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { Check, ChevronDown, X } from 'lucide-react'
+import { Check, ChevronDown, Search, X } from 'lucide-react'
 
 export type AdminSelectOption = {
   value: string
@@ -25,7 +26,9 @@ export type AdminSelectGroup = {
 type DropdownCoords = { top: number; left: number; width: number }
 
 const PANEL_CLASS =
-  'max-h-72 overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-1 shadow-[var(--shadow-dropdown)] md:rounded-[2px]'
+  'overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--bg-card)] shadow-[var(--shadow-dropdown)] md:rounded-[2px]'
+
+const LIST_CLASS = 'max-h-60 overflow-y-auto p-1'
 
 const ITEM_BASE =
   'flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-left text-[13px] font-light transition-colors md:rounded-[2px]'
@@ -40,6 +43,13 @@ const EMPTY_CLASS = 'px-3 py-3 text-center text-[12px] font-light text-[var(--te
 const GROUP_HEADER_CLASS =
   'flex items-center gap-2 px-3 pb-1 pt-2.5 text-[10px] font-semibold uppercase tracking-[1.5px] text-[var(--gold)] first:pt-1.5'
 
+function optionMatchesQuery(option: AdminSelectOption, query: string): boolean {
+  const q = query.trim().toLowerCase()
+  if (!q) return true
+  const haystack = `${option.label} ${option.hint ?? ''}`.toLowerCase()
+  return haystack.includes(q)
+}
+
 function OptionLabel({ option }: { option: AdminSelectOption }) {
   return (
     <span className="min-w-0 truncate">
@@ -48,6 +58,40 @@ function OptionLabel({ option }: { option: AdminSelectOption }) {
         <span className="text-[var(--text-subtle)]"> · {option.hint}</span>
       ) : null}
     </span>
+  )
+}
+
+function DropdownSearch({
+  value,
+  onChange,
+  placeholder = 'Buscar…',
+  inputRef,
+}: {
+  value: string
+  onChange: (value: string) => void
+  placeholder?: string
+  inputRef?: React.RefObject<HTMLInputElement | null>
+}) {
+  return (
+    <div className="sticky top-0 z-10 border-b border-[var(--border)] bg-[var(--bg-card)] p-2">
+      <div className="relative">
+        <Search
+          size={13}
+          className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-subtle)]"
+        />
+        <input
+          ref={inputRef}
+          type="search"
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          onClick={e => e.stopPropagation()}
+          onKeyDown={e => e.stopPropagation()}
+          placeholder={placeholder}
+          className="admin-input w-full rounded-lg border py-2 pl-8 pr-3 text-[12px] md:rounded-[2px]"
+          autoComplete="off"
+        />
+      </div>
+    </div>
   )
 }
 
@@ -126,11 +170,12 @@ function useAnchoredDropdown<T extends HTMLElement>() {
 function panelStyle(coords: DropdownCoords | null): React.CSSProperties {
   return {
     position: 'fixed',
-    top: coords?.top ?? -9999,
-    left: coords?.left ?? -9999,
-    width: coords?.width,
-    visibility: coords ? 'visible' : 'hidden',
-    zIndex: 9999,
+    top: coords?.top ?? 0,
+    left: coords?.left ?? 0,
+    width: coords?.width ?? undefined,
+    opacity: coords ? 1 : 0,
+    pointerEvents: coords ? 'auto' : 'none',
+    zIndex: 10050,
   }
 }
 
@@ -142,6 +187,8 @@ export function AdminSelect({
   placeholder = 'Seleccionar',
   disabled = false,
   className = '',
+  searchable = false,
+  searchPlaceholder = 'Buscar…',
 }: {
   value: string
   onChange: (value: string) => void
@@ -150,12 +197,47 @@ export function AdminSelect({
   placeholder?: string
   disabled?: boolean
   className?: string
+  searchable?: boolean
+  searchPlaceholder?: string
 }) {
-  const { open, setOpen, mounted, coords, anchorRef, panelRef, rootRef } =
+  const { open, setOpen, mounted, coords, update, anchorRef, panelRef, rootRef } =
     useAnchoredDropdown<HTMLButtonElement>()
+  const [search, setSearch] = useState('')
+  const searchRef = useRef<HTMLInputElement>(null)
 
   const allOptions = groups ? groups.flatMap(g => g.options) : options
   const selected = allOptions.find(o => o.value === value && o.value !== '')
+
+  useEffect(() => {
+    if (!open) setSearch('')
+  }, [open])
+
+  useLayoutEffect(() => {
+    if (open) update()
+  }, [open, search, update])
+
+  useEffect(() => {
+    if (open && searchable) {
+      const t = window.setTimeout(() => searchRef.current?.focus(), 0)
+      return () => window.clearTimeout(t)
+    }
+  }, [open, searchable])
+
+  const filteredOptions = useMemo(
+    () => options.filter(o => optionMatchesQuery(o, search)),
+    [options, search],
+  )
+
+  const filteredGroups = useMemo(
+    () =>
+      (groups ?? [])
+        .map(g => ({
+          label: g.label,
+          options: g.options.filter(o => optionMatchesQuery(o, search)),
+        }))
+        .filter(g => g.options.length > 0),
+    [groups, search],
+  )
 
   const renderOption = (option: AdminSelectOption) => {
     const active = option.value === value
@@ -175,28 +257,38 @@ export function AdminSelect({
     )
   }
 
-  const groupsWithItems = groups?.filter(g => g.options.length > 0) ?? []
+  const emptyMessage = search.trim() ? 'Sin coincidencias' : 'Sin opciones'
 
   const panel =
     open && mounted
       ? createPortal(
           <div ref={panelRef} style={panelStyle(coords)} className={PANEL_CLASS}>
-            {groups ? (
-              groupsWithItems.length === 0 ? (
-                <p className={EMPTY_CLASS}>Sin opciones</p>
+            {searchable ? (
+              <DropdownSearch
+                value={search}
+                onChange={setSearch}
+                placeholder={searchPlaceholder}
+                inputRef={searchRef}
+              />
+            ) : null}
+            <div className={LIST_CLASS}>
+              {groups ? (
+                filteredGroups.length === 0 ? (
+                  <p className={EMPTY_CLASS}>{emptyMessage}</p>
+                ) : (
+                  filteredGroups.map(group => (
+                    <div key={group.label}>
+                      <p className={GROUP_HEADER_CLASS}>{group.label}</p>
+                      {group.options.map(renderOption)}
+                    </div>
+                  ))
+                )
+              ) : filteredOptions.length === 0 ? (
+                <p className={EMPTY_CLASS}>{emptyMessage}</p>
               ) : (
-                groupsWithItems.map(group => (
-                  <div key={group.label}>
-                    <p className={GROUP_HEADER_CLASS}>{group.label}</p>
-                    {group.options.map(renderOption)}
-                  </div>
-                ))
-              )
-            ) : options.length === 0 ? (
-              <p className={EMPTY_CLASS}>Sin opciones</p>
-            ) : (
-              options.map(renderOption)
-            )}
+                filteredOptions.map(renderOption)
+              )}
+            </div>
           </div>,
           document.body,
         )
@@ -236,6 +328,8 @@ export function AdminMultiSelect({
   placeholder = '+ Agregar',
   emptyLabel = 'No hay más opciones',
   className = '',
+  searchable = true,
+  searchPlaceholder = 'Buscar categoría…',
 }: {
   values: string[]
   onChange: (values: string[]) => void
@@ -244,9 +338,13 @@ export function AdminMultiSelect({
   placeholder?: string
   emptyLabel?: string
   className?: string
+  searchable?: boolean
+  searchPlaceholder?: string
 }) {
   const { open, setOpen, mounted, coords, update, anchorRef, panelRef, rootRef } =
     useAnchoredDropdown<HTMLDivElement>()
+  const [search, setSearch] = useState('')
+  const searchRef = useRef<HTMLInputElement>(null)
 
   const allOptions = groups ? groups.flatMap(g => g.options) : options
   const available = options.filter(o => !values.includes(o.value))
@@ -254,9 +352,40 @@ export function AdminMultiSelect({
     .map(g => ({ label: g.label, options: g.options.filter(o => !values.includes(o.value)) }))
     .filter(g => g.options.length > 0)
 
+  useEffect(() => {
+    if (!open) setSearch('')
+  }, [open])
+
   useLayoutEffect(() => {
-    if (open) update()
-  }, [open, values.length, update])
+    if (!open) return
+    update()
+    // Recalcular tras pintar (el modal/scroll puede mover el ancla).
+    const id = window.requestAnimationFrame(() => update())
+    return () => window.cancelAnimationFrame(id)
+  }, [open, values.length, search, update])
+
+  useEffect(() => {
+    if (open && searchable) {
+      const t = window.setTimeout(() => searchRef.current?.focus(), 10)
+      return () => window.clearTimeout(t)
+    }
+  }, [open, searchable])
+
+  const filteredAvailable = useMemo(
+    () => available.filter(o => optionMatchesQuery(o, search)),
+    [available, search],
+  )
+
+  const filteredGroups = useMemo(
+    () =>
+      availableGroups
+        .map(g => ({
+          label: g.label,
+          options: g.options.filter(o => optionMatchesQuery(o, search)),
+        }))
+        .filter(g => g.options.length > 0),
+    [availableGroups, search],
+  )
 
   const renderOption = (option: AdminSelectOption) => (
     <button
@@ -269,26 +398,30 @@ export function AdminMultiSelect({
     </button>
   )
 
+  const emptyMessage = search.trim() ? 'Sin coincidencias' : emptyLabel
+
   const panel =
     open && mounted
       ? createPortal(
           <div ref={panelRef} style={panelStyle(coords)} className={PANEL_CLASS}>
-            {groups ? (
-              availableGroups.length === 0 ? (
-                <p className={EMPTY_CLASS}>{emptyLabel}</p>
+            <div className={LIST_CLASS}>
+              {groups ? (
+                filteredGroups.length === 0 ? (
+                  <p className={EMPTY_CLASS}>{emptyMessage}</p>
+                ) : (
+                  filteredGroups.map(group => (
+                    <div key={group.label}>
+                      <p className={GROUP_HEADER_CLASS}>{group.label}</p>
+                      {group.options.map(renderOption)}
+                    </div>
+                  ))
+                )
+              ) : filteredAvailable.length === 0 ? (
+                <p className={EMPTY_CLASS}>{emptyMessage}</p>
               ) : (
-                availableGroups.map(group => (
-                  <div key={group.label}>
-                    <p className={GROUP_HEADER_CLASS}>{group.label}</p>
-                    {group.options.map(renderOption)}
-                  </div>
-                ))
-              )
-            ) : available.length === 0 ? (
-              <p className={EMPTY_CLASS}>{emptyLabel}</p>
-            ) : (
-              available.map(renderOption)
-            )}
+                filteredAvailable.map(renderOption)
+              )}
+            </div>
           </div>,
           document.body,
         )
@@ -298,49 +431,85 @@ export function AdminMultiSelect({
     <div ref={rootRef} className="relative">
       <div
         ref={anchorRef}
-        role="button"
-        tabIndex={0}
-        onClick={() => setOpen(v => !v)}
-        onKeyDown={e => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            setOpen(v => !v)
-          }
-        }}
-        className={`admin-input flex min-h-[48px] w-full cursor-pointer flex-wrap items-center gap-2 rounded-xl border px-3 py-2.5 md:rounded-[2px] ${className}`}
+        className={`admin-input w-full rounded-xl border px-3 py-2.5 md:rounded-[2px] ${className}`}
       >
-        {values.length === 0 && (
-          <span className="text-[13px] text-[var(--placeholder)]">{placeholder}</span>
-        )}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => setOpen(v => !v)}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              setOpen(v => !v)
+            }
+          }}
+          className="flex min-h-[32px] w-full cursor-pointer flex-wrap items-center gap-2"
+          aria-haspopup="listbox"
+          aria-expanded={open}
+        >
+          {values.length === 0 && !open && (
+            <span className="text-[13px] text-[var(--placeholder)]">{placeholder}</span>
+          )}
 
-        {values.map(value => {
-          const option = allOptions.find(o => o.value === value)
-          if (!option) return null
-          return (
-            <span
-              key={value}
-              className="inline-flex items-center gap-1.5 rounded-[2px] border border-[rgba(201,168,76,0.3)] bg-[rgba(201,168,76,0.12)] py-0.5 pl-2.5 pr-1.5 text-[11px] font-light text-[var(--gold)]"
-            >
-              {option.label}
+          {values.map(value => {
+            const option = allOptions.find(o => o.value === value)
+            if (!option) return null
+            return (
+              <span
+                key={value}
+                className="inline-flex items-center gap-1.5 rounded-[2px] border border-[rgba(201,168,76,0.3)] bg-[rgba(201,168,76,0.12)] py-0.5 pl-2.5 pr-1.5 text-[11px] font-light text-[var(--gold)]"
+              >
+                {option.label}
+                <button
+                  type="button"
+                  onClick={e => {
+                    e.stopPropagation()
+                    onChange(values.filter(v => v !== value))
+                  }}
+                  aria-label={`Quitar ${option.label}`}
+                  className="inline-flex items-center justify-center rounded-full text-[color-mix(in_srgb,var(--gold)_75%,transparent)] transition-colors hover:bg-[rgba(201,168,76,0.18)] hover:text-[var(--gold)]"
+                >
+                  <X size={11} />
+                </button>
+              </span>
+            )
+          })}
+
+          <ChevronDown
+            size={14}
+            className={`ml-auto shrink-0 text-[var(--gold-subtle)] transition-transform ${open ? 'rotate-180' : ''}`}
+          />
+        </div>
+
+        {/* Buscador siempre visible al abrir (no solo en el portal). */}
+        {open && searchable ? (
+          <div
+            className="mt-2 flex items-center gap-2 border-t border-[var(--border)] pt-2"
+            onMouseDown={e => e.stopPropagation()}
+            onClick={e => e.stopPropagation()}
+          >
+            <Search size={14} className="shrink-0 text-[var(--text-subtle)]" />
+            <input
+              ref={searchRef}
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder={searchPlaceholder}
+              className="w-full bg-transparent text-[13px] text-[var(--text-primary)] outline-none placeholder:text-[var(--placeholder)]"
+              autoComplete="off"
+            />
+            {search ? (
               <button
                 type="button"
-                onClick={e => {
-                  e.stopPropagation()
-                  onChange(values.filter(v => v !== value))
-                }}
-                aria-label={`Quitar ${option.label}`}
-                className="inline-flex items-center justify-center rounded-full text-[color-mix(in_srgb,var(--gold)_75%,transparent)] transition-colors hover:bg-[rgba(201,168,76,0.18)] hover:text-[var(--gold)]"
+                onClick={() => setSearch('')}
+                className="shrink-0 rounded-full p-0.5 text-[var(--text-subtle)] hover:text-[var(--text-primary)]"
+                aria-label="Limpiar búsqueda"
               >
-                <X size={11} />
+                <X size={12} />
               </button>
-            </span>
-          )
-        })}
-
-        <ChevronDown
-          size={14}
-          className={`ml-auto shrink-0 text-[var(--gold-subtle)] transition-transform ${open ? 'rotate-180' : ''}`}
-        />
+            ) : null}
+          </div>
+        ) : null}
       </div>
       {panel}
     </div>

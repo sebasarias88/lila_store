@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Categoria } from '@/types'
 import MobileBottomSheet from '@/components/catalog/mobile/MobileBottomSheet'
 import MobileFilterDropdown, { FilterOption } from '@/components/catalog/mobile/MobileFilterDropdown'
 import MobileCategoryFilter from '@/components/catalog/mobile/MobileCategoryFilter'
 
 type Orden = 'relevancia' | 'precio-asc' | 'precio-desc' | 'nombre'
-type OpenDropdown = 'orden' | 'categoria' | 'marca' | null
+type OpenDropdown = 'orden' | 'categoria' | null
 
 type MobileFiltersDrawerProps = {
   open: boolean
@@ -15,9 +15,6 @@ type MobileFiltersDrawerProps = {
   categorias: Categoria[]
   categoriaActiva: string
   onCategoriaChange: (slug: string) => void
-  marcas?: string[]
-  marcasActivas?: string[]
-  onMarcasChange?: (marcas: string[]) => void
   orden: Orden
   onOrdenChange: (orden: Orden) => void
   onLimpiar: () => void
@@ -37,9 +34,6 @@ export default function MobileFiltersDrawer({
   categorias,
   categoriaActiva,
   onCategoriaChange,
-  marcas = [],
-  marcasActivas = [],
-  onMarcasChange,
   orden,
   onOrdenChange,
   onLimpiar,
@@ -47,15 +41,7 @@ export default function MobileFiltersDrawer({
 }: MobileFiltersDrawerProps) {
   const [openDropdown, setOpenDropdown] = useState<OpenDropdown>(null)
   const tieneFiltros =
-    Boolean(categoriaActiva) || marcasActivas.length > 0 || orden !== 'relevancia'
-
-  const marcaOptions = useMemo<FilterOption[]>(
-    () => [
-      { value: '', label: 'Todas las marcas' },
-      ...marcas.map(m => ({ value: m, label: m })),
-    ],
-    [marcas],
-  )
+    Boolean(categoriaActiva) || orden !== 'relevancia'
 
   useEffect(() => {
     if (!open) setOpenDropdown(null)
@@ -88,14 +74,12 @@ export default function MobileFiltersDrawer({
       onClose={onClose}
       title="Filtros cute"
       subtitle={`${resultCount} tesoro${resultCount !== 1 ? 's' : ''} ✨`}
-      height={
-        openDropdown === 'categoria' || openDropdown === 'marca' ? 'tall' : 'auto'
-      }
+      height={openDropdown === 'categoria' ? 'tall' : 'auto'}
       footer={footer}
     >
       <div
         className={`mobile-filters-compact px-5 pt-2 ${
-          openDropdown === 'categoria' || openDropdown === 'marca'
+          openDropdown === 'categoria'
             ? 'mobile-filters-compact--open pb-6'
             : 'pb-4'
         }`}
@@ -117,21 +101,6 @@ export default function MobileFiltersDrawer({
           open={openDropdown === 'categoria'}
           onOpenChange={next => setOpenDropdown(next ? 'categoria' : null)}
         />
-
-        {marcas.length > 0 && onMarcasChange && (
-          <MobileFilterDropdown
-            label="Marca"
-            multiple
-            values={marcasActivas}
-            onValuesChange={onMarcasChange}
-            options={marcaOptions}
-            open={openDropdown === 'marca'}
-            onOpenChange={next => setOpenDropdown(next ? 'marca' : null)}
-            searchable
-            searchPlaceholder="Buscar marca…"
-            listClassName="max-h-[min(42dvh,260px)]"
-          />
-        )}
       </div>
     </MobileBottomSheet>
   )

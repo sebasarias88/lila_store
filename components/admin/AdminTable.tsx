@@ -43,10 +43,10 @@ export function AdminTable({
 }) {
   return (
     <AdminTableShell>
-      <div className="overflow-x-auto">
+      <div className="admin-table-scroll min-w-0 overflow-x-auto overscroll-x-contain">
         <table
-          className={`w-full ${fixed ? 'table-fixed' : ''}`}
-          style={{ minWidth }}
+          className={fixed ? 'table-fixed' : undefined}
+          style={{ minWidth, width: `max(100%, ${minWidth})` }}
         >
           {children}
         </table>
@@ -160,7 +160,11 @@ export function AdminTableTd({
   children: ReactNode
   className?: string
 }) {
-  return <td className={`px-5 py-4 align-middle ${className}`}>{children}</td>
+  return (
+    <td className={`overflow-hidden px-5 py-4 align-middle ${className}`}>
+      {children}
+    </td>
+  )
 }
 
 /** Toolbar de búsqueda + filtros para listados admin */

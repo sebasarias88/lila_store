@@ -344,6 +344,8 @@ export default function CategoriaForm({
                   },
                 ]}
                 placeholder="Selecciona la categoría principal"
+                searchable
+                searchPlaceholder="Buscar categoría…"
               />
               <p className="admin-form-hint">
                 Esta subcategoría aparecerá agrupada aquí

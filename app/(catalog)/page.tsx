@@ -62,7 +62,12 @@ export default async function HomePage() {
     ] = await Promise.all([
       supabase.from('configuracion').select('clave, valor'),
       supabase.from('banners').select('*').eq('activo', true).order('orden'),
-      supabase.from('promociones').select('*').eq('activa', true).order('orden'),
+      supabase
+        .from('promociones')
+        .select('*')
+        .eq('activa', true)
+        .eq('catalogo', 'detal')
+        .order('orden'),
       supabase.from('categorias').select('*, subcategorias:categorias!padre_id(*)')
         .is('padre_id', null).eq('activa', true).order('orden'),
       supabase.from('productos')

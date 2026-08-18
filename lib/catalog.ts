@@ -3,11 +3,26 @@ import { calcularPrecioConDescuento } from '@/lib/descuentos'
 
 export type CatalogType = 'detal' | 'mayoreo'
 
-/** Monto mínimo de compra para el catálogo mayorista (COP). */
+/** Fallback si no hay valor en `configuracion`. */
 export const MAYOREO_MIN_COMPRA = 200000
 
-/** Monto de recompra mayorista (COP) — informado en la barra superior. */
+/** Fallback informativo de recompra si no hay valor en `configuracion`. */
 export const MAYOREO_RECOMPRA = 100000
+
+export const CONFIG_MAYORISTA_MINIMO = 'mayorista_valor_minimo_compra'
+export const CONFIG_MAYORISTA_RECOMPRA = 'mayorista_valor_recompra'
+
+/** Lee un monto COP desde configuración (texto), con fallback. */
+export function parseMayoristaConfigMonto(
+  valor: string | null | undefined,
+  fallback: number,
+): number {
+  if (valor == null || String(valor).trim() === '') return fallback
+  const digits = String(valor).replace(/[^\d]/g, '')
+  if (!digits) return fallback
+  const n = Number(digits)
+  return Number.isFinite(n) && n >= 0 ? n : fallback
+}
 
 export function catalogBasePath(catalogType: CatalogType = 'detal'): string {
   return catalogType === 'mayoreo' ? '/mayorista' : ''
