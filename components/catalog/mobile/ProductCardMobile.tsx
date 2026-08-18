@@ -144,11 +144,6 @@ export default function ProductCardMobile({
           </Link>
 
           <div className="mt-auto">
-            {isMayoreo && (
-              <span className="mb-1 inline-flex rounded-full bg-[var(--bg-muted)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-deep)]">
-                Mayorista
-              </span>
-            )}
             {consultar ? (
               <span className="text-[13px] font-bold text-[var(--text-muted)]">Consultar precio</span>
             ) : (

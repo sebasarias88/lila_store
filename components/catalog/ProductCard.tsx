@@ -122,12 +122,6 @@ export default function ProductCard({
                 </span>
               )}
             </div>
-            <span
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-[var(--accent-primary)] shadow-sm backdrop-blur-sm transition-colors group-hover:bg-[var(--accent-primary)] group-hover:text-white"
-              aria-hidden
-            >
-              <Heart size={13} className="group-hover:fill-current" />
-            </span>
           </div>
         </div>
 
@@ -148,11 +142,6 @@ export default function ProductCard({
           </h3>
 
           <div className="mt-auto pt-3">
-            {isMayoreo && (
-              <span className="mb-1.5 inline-flex rounded-full bg-[var(--bg-muted)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-deep)]">
-                Mayorista
-              </span>
-            )}
             {consultar ? (
               <span className="text-[15px] font-bold text-[var(--text-muted)]">
                 Consultar precio
