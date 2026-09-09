@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { createSupabaseServer } from '@/lib/supabase-server'
+import { createSupabasePublic } from '@/lib/supabase-public'
 import { notFound } from 'next/navigation'
 import ProductoDetalle from '@/components/catalog/ProductoDetalle'
 import ProductosRelacionados from '@/components/catalog/ProductosRelacionados'
@@ -7,7 +7,15 @@ import ProductPageSeo from '@/components/seo/ProductPageSeo'
 import { normalizarVariacionesProducto } from '@/lib/variaciones'
 import { buildProductMetadata } from '@/lib/seo'
 import { getSiteConfig } from '@/lib/site-config'
-import { ProductoSeccion, VariacionTipo } from '@/types'
+import {
+  PRODUCTO_DETAIL_SELECT,
+  PRODUCTO_SHELF_SELECT,
+  mapShelfProductos,
+} from '@/lib/productQueries'
+import { withProductoCategorias } from '@/lib/producto-categorias'
+import { Producto, ProductoSeccion, VariacionTipo } from '@/types'
+
+export const revalidate = 60
 
 export async function generateMetadata({
   params,
@@ -15,7 +23,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
-  const supabase = await createSupabaseServer()
+  const supabase = createSupabasePublic()
   const config = await getSiteConfig()
 
   const { data } = await supabase
@@ -33,25 +41,30 @@ export async function generateMetadata({
 
 export default async function MayoreoProductoPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const supabase = await createSupabaseServer()
+  const supabase = createSupabasePublic()
   const config = await getSiteConfig()
 
-  const { data: producto, error } = await supabase
+  const { data: productoRaw, error } = await supabase
     .from('productos')
-    .select('*, categoria:categorias(id,nombre,slug,descuento_porcentaje,descuento_activo,descuento_fecha_fin,descuento_porcentaje_mayoreo,descuento_activo_mayoreo,descuento_fecha_fin_mayoreo)')
+    .select(PRODUCTO_DETAIL_SELECT)
     .eq('slug', slug)
     .single()
 
+  const producto = productoRaw as Producto | null
   if (error || !producto) notFound()
   if (producto.disponible_mayoreo === false) notFound()
 
-  const { data: relacionados } = await supabase
+  const productoMapped = withProductoCategorias([producto])[0] || producto
+
+  const { data: relacionadosRaw } = await supabase
     .from('productos')
-    .select('*, categoria:categorias(id,nombre,slug,descuento_porcentaje,descuento_activo,descuento_fecha_fin,descuento_porcentaje_mayoreo,descuento_activo_mayoreo,descuento_fecha_fin_mayoreo)')
+    .select(PRODUCTO_SHELF_SELECT)
     .eq('categoria_id', producto.categoria_id)
-    .eq('disponible', true)
+    .eq('disponible_mayoreo', true)
     .neq('id', producto.id)
     .limit(4)
+
+  const relacionados = mapShelfProductos(relacionadosRaw)
 
   const { data: variacionesRaw } = await supabase
     .from('variacion_tipos')
@@ -71,14 +84,14 @@ export default async function MayoreoProductoPage({ params }: { params: Promise<
 
   return (
     <>
-      <ProductPageSeo config={config} producto={producto} catalogType="mayoreo" />
+      <ProductPageSeo config={config} producto={productoMapped} catalogType="mayoreo" />
       <ProductoDetalle
-        producto={producto}
+        producto={productoMapped}
         catalogType="mayoreo"
         variaciones={variaciones}
         secciones={(secciones || []) as ProductoSeccion[]}
       />
-      {relacionados && relacionados.length > 0 && (
+      {relacionados.length > 0 && (
         <ProductosRelacionados productos={relacionados} catalogType="mayoreo" />
       )}
     </>

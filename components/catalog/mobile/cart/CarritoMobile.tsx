@@ -24,10 +24,12 @@ import EntregaPicker from '@/components/catalog/cart/EntregaPicker'
 import MetodoPagoPicker from '@/components/catalog/cart/MetodoPagoPicker'
 import TransferenciaCheckout from '@/components/catalog/cart/TransferenciaCheckout'
 import MobileCartSteps, { type Step } from '@/components/catalog/mobile/cart/MobileCartSteps'
+import { PAGOS_COPY } from '@/lib/pagos-proximos'
 import MobileCartItem, { formatPrecio } from '@/components/catalog/mobile/cart/MobileCartItem'
 import MobileCartSummary from '@/components/catalog/mobile/cart/MobileCartSummary'
 import MobileCartStickyBar from '@/components/catalog/mobile/cart/MobileCartStickyBar'
 import MobileCartReviewItem from '@/components/catalog/mobile/cart/MobileCartReviewItem'
+import CartCheckoutSuccess from '@/components/catalog/cart/CartCheckoutSuccess'
 import { itemLineKey } from '@/lib/cart'
 import {
   mensajeStockRestante,
@@ -88,6 +90,8 @@ type CarritoMobileProps = {
   handleContinuar: () => void
   handleConfirmar: () => void
   handleEnviarWhatsApp: () => void | Promise<void>
+  handleReabrirWhatsApp: () => void
+  handleConfirmarPedidoEnviado: () => void
   inputClass: (campo: keyof DatosCliente) => string
 }
 
@@ -152,11 +156,15 @@ export default function CarritoMobile({
   handleContinuar,
   handleConfirmar,
   handleEnviarWhatsApp,
+  handleReabrirWhatsApp,
+  handleConfirmarPedidoEnviado,
   inputClass,
 }: CarritoMobileProps) {
   const esRecogida = datos.tipoEntrega === 'recogida'
   const stickySpacer =
-    step === 'resumen'
+    step === 'exito'
+      ? 'h-[calc(2rem+env(safe-area-inset-bottom,0px))]'
+      : step === 'resumen'
       ? 'h-[calc(10.5rem+env(safe-area-inset-bottom,0px))]'
       : step === 'datos'
         ? 'h-[calc(9rem+env(safe-area-inset-bottom,0px))]'
@@ -501,7 +509,7 @@ export default function CarritoMobile({
                     Forma de pago
                   </p>
                   <p className="mt-1 text-[12px] font-light text-[var(--text-muted)]">
-                    ePayco incluye tarjeta, PSE y más
+                    {PAGOS_COPY.checkoutIntro}
                   </p>
                 </div>
               </div>
@@ -577,7 +585,7 @@ export default function CarritoMobile({
                 <p className="mt-1 text-[12px] leading-relaxed text-[var(--text-muted)]">
                   {catalogType === 'mayoreo'
                     ? 'Confirma y te llevamos al chat con tu pedido armado.'
-                    : 'Por ahora confirmamos por WhatsApp · pronto pago en línea'}
+                    : 'Confirmamos por WhatsApp · ePayco, Addi y más llegan pronto a la web'}
                 </p>
               </div>
             </div>
@@ -673,7 +681,7 @@ export default function CarritoMobile({
                 ? mensajeMinimoMayoreo
                 : catalogType === 'mayoreo'
                   ? 'Al confirmar se abrirá WhatsApp con tu pedido listo.'
-                  : 'Por ahora confirmamos por WhatsApp con tu medio de pago elegido 💕'}
+                  : PAGOS_COPY.resumenHint}
             </p>
 
             <div className={stickySpacer} aria-hidden />
@@ -700,6 +708,25 @@ export default function CarritoMobile({
               layout="stack"
               secondaryLabel="Volver a datos"
               onSecondary={() => setStep('datos')}
+            />
+          </motion.div>
+        )}
+
+        {step === 'exito' && (
+          <motion.div
+            key="exito"
+            initial={{ opacity: 0, x: 12 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -12 }}
+            transition={{ duration: 0.2 }}
+            className="pb-[env(safe-area-inset-bottom,0px)]"
+          >
+            <CartCheckoutSuccess
+              compact
+              productosHref={productosHref}
+              onReabrirWhatsApp={handleReabrirWhatsApp}
+              onVolverResumen={() => setStep('resumen')}
+              onConfirmarEnviado={handleConfirmarPedidoEnviado}
             />
           </motion.div>
         )}

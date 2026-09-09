@@ -11,7 +11,9 @@ import { ProductGridMobile } from '@/components/catalog/mobile/ResponsiveProduct
 import MobileCatalogToolbar from '@/components/catalog/mobile/MobileCatalogToolbar'
 import MobileFiltersDrawer from '@/components/catalog/mobile/MobileFiltersDrawer'
 import { ProductCardSkeleton } from '@/components/ui/Skeleton'
-import { getPrecioOrden, type CatalogType } from '@/lib/catalog'
+import type { CatalogType } from '@/lib/catalog'
+import type { CatalogOrden } from '@/lib/catalog-productos'
+import { productosBaseFromPathname } from '@/lib/catalog'
 import { getPaginationChunk } from '@/lib/pagination'
 import { Search, X, ChevronLeft, ChevronRight, Loader2, Sparkles, Heart } from 'lucide-react'
 import PageGoldAccent from '@/components/catalog/PageGoldAccent'
@@ -27,35 +29,14 @@ type Props = {
   initialQ: string
   initialCategoria: string
   catalogType?: CatalogType
+  page: number
+  pageSize: number
+  total: number
+  totalPages: number
+  orden: CatalogOrden
 }
 
-type Orden = 'relevancia' | 'precio-asc' | 'precio-desc' | 'nombre'
-
-const ITEMS_POR_PAGINA = 24
-
-function productoCoincideCategoria(
-  producto: Producto,
-  categoriaActiva: string,
-  categoriasRaiz: Categoria[],
-): boolean {
-  const slugs = new Set<string>()
-  if (producto.categoria?.slug) slugs.add(producto.categoria.slug)
-  producto.categorias?.forEach(c => {
-    if (c.slug) slugs.add(c.slug)
-  })
-  if (slugs.size === 0) return false
-
-  // Match exacto por slug (producto asignado a esa categoría o subcategoría)
-  if (slugs.has(categoriaActiva)) return true
-
-  // Si la activa es una raíz, incluir también productos de sus subcategorías
-  const raiz = categoriasRaiz.find(r => r.slug === categoriaActiva)
-  if (raiz?.subcategorias?.length) {
-    return raiz.subcategorias.some(sub => slugs.has(sub.slug))
-  }
-
-  return false
-}
+type Orden = CatalogOrden
 
 export default function ProductosClient({
   productos,
@@ -63,49 +44,71 @@ export default function ProductosClient({
   initialQ,
   initialCategoria,
   catalogType = 'detal',
+  page,
+  total,
+  totalPages,
+  orden,
 }: Props) {
   const router = useGuardedRouter()
   const pathname = usePathname()
   const [isPending, startTransition] = useTransition()
 
-  const [query, setQuery] = useState(initialQ)
   const [inputValue, setInputValue] = useState(initialQ)
-  const [categoriaActiva, setCategoriaActiva] = useState(initialCategoria)
-  const [orden, setOrden] = useState<Orden>('relevancia')
   const [ordenOpen, setOrdenOpen] = useState(false)
-  const [pagina, setPagina] = useState(1)
   const [mounted, setMounted] = useState(false)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [filtroPendiente, setFiltroPendiente] = useState(false)
-  const skipUrlSync = useRef(false)
 
-  const aplicarCategoria = useCallback(
-    (slug: string, options?: { fromUrl?: boolean }) => {
-      if (!options?.fromUrl) {
-        signalCatalogNavigating()
-        setFiltroPendiente(true)
-      }
+  const query = initialQ
+  const categoriaActiva = initialCategoria
+  const paginaActual = Math.min(Math.max(1, page), Math.max(1, totalPages || 1))
+
+  const pushCatalog = useCallback(
+    (next: {
+      q?: string
+      categoria?: string
+      page?: number
+      orden?: Orden
+    }) => {
+      const params = new URLSearchParams()
+      const q = next.q !== undefined ? next.q : query
+      const cat = next.categoria !== undefined ? next.categoria : categoriaActiva
+      const p = next.page !== undefined ? next.page : paginaActual
+      const o = next.orden !== undefined ? next.orden : orden
+      if (q.trim()) params.set('q', q.trim())
+      if (o && o !== 'relevancia') params.set('orden', o)
+      if (p > 1) params.set('page', String(p))
+
+      const base = productosBaseFromPathname(pathname)
+      const path = cat.trim()
+        ? `${base}/categoria/${encodeURIComponent(cat.trim())}`
+        : base
+      const search = params.toString()
+      const href = search ? `${path}?${search}` : path
+      signalCatalogNavigating()
+      setFiltroPendiente(true)
       startTransition(() => {
-        setCategoriaActiva(slug)
-        setPagina(1)
+        router.push(href, { scroll: false })
       })
     },
-    [],
+    [query, categoriaActiva, paginaActual, orden, pathname, router],
   )
 
-  // Soft nav (Link a ?categoria=…) reutiliza el cliente: sincronizar props → estado
-  useEffect(() => {
-    skipUrlSync.current = true
-    setCategoriaActiva(initialCategoria)
-    setFiltroPendiente(false)
-  }, [initialCategoria])
+  const aplicarCategoria = useCallback(
+    (slug: string) => {
+      pushCatalog({ categoria: slug, page: 1 })
+    },
+    [pushCatalog],
+  )
 
   useEffect(() => {
-    setQuery(initialQ)
     setInputValue(initialQ)
   }, [initialQ])
 
-  // Optimistic update desde el menú lateral (misma página /productos)
+  useEffect(() => {
+    setFiltroPendiente(false)
+  }, [productos, page, initialQ, initialCategoria, orden])
+
   useEffect(() => {
     const onCategoria = (e: Event) => {
       const slug = (e as CustomEvent<{ slug: string }>).detail?.slug
@@ -120,118 +123,46 @@ export default function ProductosClient({
     setTimeout(() => setMounted(true), 100)
   }, [])
 
-  // Quitar overlay si la transición ya aplicó el filtro
   useEffect(() => {
     if (!filtroPendiente || isPending) return
     const t = setTimeout(() => setFiltroPendiente(false), 180)
     return () => clearTimeout(t)
   }, [filtroPendiente, isPending, categoriaActiva, productos])
 
-  // Scroll al inicio al cambiar de página (después del render, para que no
-  // compita con el reflow/animaciones de la grilla). Se omite el primer render.
-  const paginaPrevia = useRef(pagina)
+  const paginaPrevia = useRef(paginaActual)
   useEffect(() => {
-    if (paginaPrevia.current === pagina) return
-    paginaPrevia.current = pagina
-
+    if (paginaPrevia.current === paginaActual) return
+    paginaPrevia.current = paginaActual
     const id = requestAnimationFrame(() => {
       window.scrollTo({ top: 0, behavior: 'smooth' })
     })
     return () => cancelAnimationFrame(id)
-  }, [pagina])
-
-  // Sync URL
-  useEffect(() => {
-    if (skipUrlSync.current) {
-      skipUrlSync.current = false
-      return
-    }
-    const params = new URLSearchParams()
-    if (query) params.set('q', query)
-    if (categoriaActiva) params.set('categoria', categoriaActiva)
-    const search = params.toString()
-    const next = search ? `${pathname}?${search}` : pathname
-    const current =
-      typeof window !== 'undefined'
-        ? `${window.location.pathname}${window.location.search}`
-        : next
-    if (current !== next) {
-      router.replace(next, { scroll: false })
-    }
-  }, [query, categoriaActiva, pathname, router])
+  }, [paginaActual])
 
   const mostrarCarga = !mounted || isPending || filtroPendiente
-
-  const productosFiltrados = useMemo(() => {
-    let result = [...productos]
-
-    // Filtro búsqueda
-    if (query.trim()) {
-      const q = query.toLowerCase()
-      result = result.filter(p =>
-        p.nombre.toLowerCase().includes(q) ||
-        p.descripcion?.toLowerCase().includes(q) ||
-        p.sku?.toLowerCase().includes(q) ||
-        p.categoria?.nombre.toLowerCase().includes(q)
-      )
-    }
-
-    // Filtro categoría: match por slug; si es raíz, incluye sus subcategorías
-    if (categoriaActiva) {
-      result = result.filter(p =>
-        productoCoincideCategoria(p, categoriaActiva, categorias),
-      )
-    }
-
-    // Orden
-    switch (orden) {
-      case 'precio-asc':
-        result.sort((a, b) => getPrecioOrden(a, catalogType) - getPrecioOrden(b, catalogType))
-        break
-      case 'precio-desc':
-        result.sort((a, b) => getPrecioOrden(b, catalogType) - getPrecioOrden(a, catalogType))
-        break
-      case 'nombre':
-        result.sort((a, b) => a.nombre.localeCompare(b.nombre))
-        break
-    }
-
-    return result
-  }, [productos, query, categoriaActiva, orden, catalogType, categorias])
-
-  const totalPaginas = Math.ceil(productosFiltrados.length / ITEMS_POR_PAGINA)
-  const paginaActual = Math.min(Math.max(1, pagina), Math.max(1, totalPaginas))
+  const productosPagina = productos
   const paginasVisibles = useMemo(
-    () => getPaginationChunk(paginaActual, totalPaginas, 5),
-    [paginaActual, totalPaginas],
+    () => getPaginationChunk(paginaActual, totalPages, 5),
+    [paginaActual, totalPages],
   )
-  const productosPagina = productosFiltrados.slice(
-    (paginaActual - 1) * ITEMS_POR_PAGINA,
-    paginaActual * ITEMS_POR_PAGINA
-  )
-
-  // Si el filtro reduce el total de páginas, vuelve a un índice válido
-  useEffect(() => {
-    if (totalPaginas > 0 && pagina > totalPaginas) {
-      setPagina(totalPaginas)
-    }
-  }, [totalPaginas, pagina])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    setQuery(inputValue)
+    pushCatalog({ q: inputValue, page: 1 })
   }
 
   const limpiarFiltros = () => {
-    signalCatalogNavigating()
-    setFiltroPendiente(true)
-    startTransition(() => {
-      setQuery('')
-      setInputValue('')
-      setCategoriaActiva('')
-      setOrden('relevancia')
-      setPagina(1)
-    })
+    setInputValue('')
+    pushCatalog({ q: '', categoria: '', orden: 'relevancia', page: 1 })
+  }
+
+  const setOrden = (value: Orden) => {
+    pushCatalog({ orden: value, page: 1 })
+  }
+
+  const setPagina = (value: number | ((prev: number) => number)) => {
+    const next = typeof value === 'function' ? value(paginaActual) : value
+    pushCatalog({ page: next })
   }
 
   const categoriaNombre = useMemo(() => {
@@ -253,24 +184,17 @@ export default function ProductosClient({
   }
 
   const activeFiltersCount =
-    (categoriaActiva ? 1 : 0) +
-    (orden !== 'relevancia' ? 1 : 0)
+    (categoriaActiva ? 1 : 0) + (orden !== 'relevancia' ? 1 : 0)
 
-  // Distinguir "catálogo vacío" (sin productos en la BD) de "sin resultados" (por filtros/búsqueda)
-  const catalogoVacio = productos.length === 0
-  const hayFiltros = Boolean(
-    query || categoriaActiva || orden !== 'relevancia',
-  )
+  const catalogoVacio = total === 0 && !query && !categoriaActiva
+  const hayFiltros = Boolean(query || categoriaActiva || orden !== 'relevancia')
 
   const tituloPagina = categoriaNombre || 'Todo lo cute'
   const subtituloPagina = categoriaNombre
     ? `Tu selección favorita de ${categoriaNombre.toLowerCase()} 💕`
     : 'Belleza, skincare y cuidados para consentirte ✨'
 
-  const contadorLabel =
-    productosFiltrados.length === 1
-      ? '1 tesoro'
-      : `${productosFiltrados.length} tesoros`
+  const contadorLabel = total === 1 ? '1 tesoro' : `${total} tesoros`
 
   return (
     <div className="mobile-catalog-page relative min-h-screen bg-[var(--bg-base)] max-md:pb-20 max-md:pt-[6.5rem] pt-28 sm:pt-32">
@@ -300,10 +224,10 @@ export default function ProductosClient({
           <MobileCatalogToolbar
             inputValue={inputValue}
             onInputChange={setInputValue}
-            onSearch={() => setQuery(inputValue)}
+            onSearch={() => pushCatalog({ q: inputValue, page: 1 })}
             onClearSearch={() => {
               setInputValue('')
-              setQuery('')
+              pushCatalog({ q: '', page: 1 })
             }}
             onOpenFilters={() => setFiltersOpen(true)}
             activeFiltersCount={activeFiltersCount}
@@ -334,7 +258,7 @@ export default function ProductosClient({
             orden={orden}
             onOrdenChange={setOrden}
             onLimpiar={limpiarFiltros}
-            resultCount={productosFiltrados.length}
+            resultCount={total}
           />
         </motion.section>
 
@@ -347,7 +271,6 @@ export default function ProductosClient({
           <div className="pointer-events-none absolute -right-8 -top-8 h-48 w-48 rounded-full bg-[rgba(169,137,224,0.14)] blur-3xl" />
           <div className="pointer-events-none absolute -left-10 top-16 h-36 w-36 rounded-full bg-[rgba(232,160,200,0.1)] blur-3xl" />
 
-          {/* Título */}
           <div className="relative pb-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
@@ -376,7 +299,6 @@ export default function ProductosClient({
             </div>
           </div>
 
-          {/* Búsqueda + filtros en panel redondeado */}
           <div className="relative z-30 mb-2 overflow-visible rounded-[28px] border border-[var(--border)] bg-white/90 p-4 shadow-[var(--shadow-soft)] backdrop-blur-sm sm:p-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-4">
               <form onSubmit={handleSearch} className="relative min-w-0 flex-1">
@@ -397,7 +319,7 @@ export default function ProductosClient({
                       type="button"
                       onClick={() => {
                         setInputValue('')
-                        setQuery('')
+                        pushCatalog({ q: '', page: 1 })
                       }}
                       className="rounded-full p-1.5 text-[var(--text-muted)] transition-colors hover:bg-white hover:text-[var(--text-primary)]"
                       aria-label="Limpiar búsqueda"
@@ -449,9 +371,7 @@ export default function ProductosClient({
 
         </motion.section>
 
-        {/* Contenido a ancho completo — sin sidebar */}
         <div className="mt-2 min-w-0 lg:mt-4">
-            {/* Chip de filtro activo (desktop) */}
             {(categoriaActiva || mostrarCarga) && (
               <div className="mb-4 hidden items-center gap-2.5 md:flex">
                 <span className="text-[11px] font-bold text-[var(--text-subtle)]">
@@ -473,7 +393,6 @@ export default function ProductosClient({
               </div>
             )}
 
-            {/* Contador + estado de carga */}
             {mounted && (
               <div className="mb-3 flex items-center justify-between gap-3 md:hidden">
                 <p className="text-[12px] font-bold text-[var(--accent-deep)]">
@@ -490,7 +409,6 @@ export default function ProductosClient({
               </div>
             )}
 
-            {/* Grid productos — mobile */}
             {mostrarCarga ? (
               <ProductGridMobile>
                 {Array.from({ length: 6 }).map((_, i) => (
@@ -554,7 +472,6 @@ export default function ProductosClient({
               </motion.div>
             )}
 
-            {/* Grid productos — desktop */}
             {mostrarCarga ? (
               <div className="mb-10 mt-3 hidden grid-cols-2 gap-4 sm:grid-cols-3 md:grid lg:grid-cols-4 lg:gap-5">
                 {Array.from({ length: 8 }).map((_, i) => (
@@ -618,8 +535,7 @@ export default function ProductosClient({
               </motion.div>
             )}
 
-            {/* Paginación — bloques fijos de 5 (1–5, 6–10, …) */}
-            {totalPaginas > 1 && (
+            {totalPages > 1 && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -658,8 +574,8 @@ export default function ProductosClient({
 
                 <button
                   type="button"
-                  onClick={() => setPagina(p => Math.min(totalPaginas, p + 1))}
-                  disabled={paginaActual === totalPaginas}
+                  onClick={() => setPagina(p => Math.min(totalPages, p + 1))}
+                  disabled={paginaActual === totalPages}
                   aria-label="Página siguiente"
                   className="inline-flex h-10 items-center gap-1.5 rounded-full border border-[var(--border)] px-3 text-[12px] font-bold text-[var(--text-secondary)] transition-all hover:border-[var(--accent-primary)] hover:text-[var(--accent-deep)] disabled:cursor-not-allowed disabled:opacity-35 md:px-4"
                 >

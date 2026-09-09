@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
+import { optimizeImage } from '@/lib/optimizeImage'
 import { Categoria } from '@/types'
 import { Input } from '@/components/ui/Input'
 import { AdminSelect } from '@/components/ui/AdminSelect'
@@ -138,10 +139,20 @@ export default function CategoriaForm({
 
   const handleImagenUpload = async (file: File) => {
     setUploadingImg(true)
-    const ext = file.name.split('.').pop()
+    const optimized = await optimizeImage(file)
+    if (!optimized.ok) {
+      toast.error(optimized.message)
+      setUploadingImg(false)
+      return
+    }
+    const toUpload = optimized.file
+    const ext = toUpload.name.split('.').pop() || 'webp'
     const path = `categorias/${Date.now()}.${ext}`
 
-    const { error } = await supabase.storage.from('productos').upload(path, file, { upsert: true })
+    const { error } = await supabase.storage.from('productos').upload(path, toUpload, {
+      upsert: true,
+      contentType: toUpload.type || 'image/webp',
+    })
 
     if (error) {
       toast.error('Error al subir imagen')

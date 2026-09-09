@@ -51,7 +51,7 @@ export default function MobileNavigation({ open, onClose }: MobileNavigationProp
                   </span>
                   <div>
                     <p className="text-[11px] font-semibold text-[var(--accent-deep)]">Admin</p>
-                    <p className="brand-wordmark text-[17px] text-[var(--text-primary)]">lila-store</p>
+                    <p className="brand-wordmark text-[17px] text-[var(--text-primary)]">Lila-store</p>
                   </div>
                 </div>
                 <button

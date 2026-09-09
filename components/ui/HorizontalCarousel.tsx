@@ -82,7 +82,7 @@ export default function HorizontalCarousel({
 
       <div
         ref={scrollRef}
-        className={`flex ${gapClassName} overflow-x-auto overscroll-x-contain touch-pan-x scrollbar-hide pb-1`}
+        className={`flex ${gapClassName} overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x scrollbar-hide pb-1`}
       >
         {items.map((child, i) => (
           <div

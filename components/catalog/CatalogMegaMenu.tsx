@@ -5,12 +5,14 @@ import Link from 'next/link'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronRight, Sparkles } from 'lucide-react'
 import type { Categoria } from '@/types'
+import { catalogCategoriaPath, type CatalogType } from '@/lib/catalog'
 
 type CatalogMegaMenuProps = {
   open: boolean
   onClose: () => void
   categorias: Categoria[]
   productosHref: string
+  catalogType?: CatalogType
   /** Ancla el panel al trigger (padre relative) */
   className?: string
 }
@@ -52,8 +54,8 @@ export function normalizeNavCategorias(categorias: Categoria[]): Categoria[] {
   }))
 }
 
-function catHref(productosHref: string, slug: string) {
-  return `${productosHref}?categoria=${encodeURIComponent(slug)}`
+function catHref(catalogType: CatalogType, slug: string) {
+  return catalogCategoriaPath(catalogType, slug)
 }
 
 export default function CatalogMegaMenu({
@@ -61,6 +63,7 @@ export default function CatalogMegaMenu({
   onClose,
   categorias,
   productosHref,
+  catalogType = 'detal',
   className = '',
 }: CatalogMegaMenuProps) {
   const roots = useMemo(() => normalizeNavCategorias(categorias), [categorias])
@@ -190,7 +193,7 @@ export default function CatalogMegaMenu({
                 {activeCat ? (
                   <>
                     <Link
-                      href={catHref(productosHref, activeCat.slug)}
+                      href={catHref(catalogType, activeCat.slug)}
                       onClick={onClose}
                       className="mb-3 flex items-center gap-3 rounded-[18px] border border-[var(--border)] bg-[var(--bg-muted)]/60 px-3 py-3 transition-colors hover:border-[var(--accent-primary)] hover:bg-[var(--bg-muted)]"
                     >
@@ -222,7 +225,7 @@ export default function CatalogMegaMenu({
                         {activeSubs.map(sub => (
                           <Link
                             key={sub.id}
-                            href={catHref(productosHref, sub.slug)}
+                            href={catHref(catalogType, sub.slug)}
                             onClick={onClose}
                             className="rounded-[14px] px-3 py-2.5 text-[13px] font-bold text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-muted)] hover:text-[var(--accent-deep)]"
                           >

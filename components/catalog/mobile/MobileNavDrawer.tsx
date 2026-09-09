@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import { ChevronRight, MessageCircle, Sparkles, Store } from 'lucide-react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Categoria } from '@/types'
-import { catalogPath, type CatalogType } from '@/lib/catalog'
+import { catalogPath, catalogCategoriaPath, type CatalogType } from '@/lib/catalog'
 import { useGuardedRouter } from '@/lib/useGuardedRouter'
 import { resolveWhatsAppNumero } from '@/lib/negocio'
 import { buildWhatsAppUrl, mensajeConsultaWhatsApp } from '@/lib/whatsapp'
@@ -68,19 +68,15 @@ export default function MobileNavDrawer({
     onClose()
     signalCatalogNavigating()
     setActiveCategoria(slug)
+    const href = slug
+      ? catalogCategoriaPath(catalogType, slug)
+      : productosHref
     if (onProductos) {
       signalCatalogCategoria(slug)
-      const href = slug
-        ? `${productosHref}?categoria=${encodeURIComponent(slug)}`
-        : productosHref
       router.replace(href, { scroll: false })
       return
     }
-    router.push(
-      slug
-        ? `${productosHref}?categoria=${encodeURIComponent(slug)}`
-        : productosHref,
-    )
+    router.push(href)
   }
 
   useEffect(() => {

@@ -2,9 +2,9 @@
 
 import { Check } from 'lucide-react'
 
-type Step = 'carrito' | 'datos' | 'resumen'
+export type Step = 'carrito' | 'datos' | 'resumen' | 'exito'
 
-const STEPS: { id: Step; label: string }[] = [
+const STEPS: { id: Exclude<Step, 'exito'>; label: string }[] = [
   { id: 'carrito', label: 'Bolsita' },
   { id: 'datos', label: 'Datos' },
   { id: 'resumen', label: 'Confirmar' },
@@ -17,6 +17,8 @@ type MobileCartStepsProps = {
 }
 
 export default function MobileCartSteps({ step, stepIndex, onStepClick }: MobileCartStepsProps) {
+  if (step === 'exito') return null
+
   return (
     <nav className="mobile-cart-steps" aria-label="Pasos del pedido">
       <ol className="flex w-full items-start">
@@ -92,5 +94,3 @@ export default function MobileCartSteps({ step, stepIndex, onStepClick }: Mobile
     </nav>
   )
 }
-
-export type { Step }

@@ -1,11 +1,16 @@
 import { cache } from 'react'
-import { createSupabaseServer } from '@/lib/supabase-server'
+import { createSupabasePublic } from '@/lib/supabase-public'
+import {
+  SITE_BRAND_NAME,
+  SEO_HOME_DESCRIPTION,
+  SEO_DEFAULT_KEYWORDS,
+} from '@/lib/seo-brand'
 
 export type SiteConfigMap = Record<string, string>
 
 export const getSiteConfig = cache(async (): Promise<SiteConfigMap> => {
   try {
-    const supabase = await createSupabaseServer()
+    const supabase = createSupabasePublic()
     const { data } = await supabase.from('configuracion').select('clave, valor')
     const config: SiteConfigMap = {}
     data?.forEach(row => {
@@ -17,20 +22,19 @@ export const getSiteConfig = cache(async (): Promise<SiteConfigMap> => {
   }
 })
 
+/** Nombre de marca para UI y SEO. Normaliza variantes "lila-store" / "lila store". */
 export function getSiteName(config: SiteConfigMap): string {
-  void config
-  return 'lila-store'
+  const raw = config.nombre_negocio?.trim()
+  if (!raw) return SITE_BRAND_NAME
+  if (/^lila([-\s]?store)?$/i.test(raw)) return SITE_BRAND_NAME
+  return raw
 }
 
 export function getSiteDescription(config: SiteConfigMap): string {
   const seo = config.seo_descripcion?.trim()
   const hero = config.hero_subtitulo?.trim()
   const clean = (text?: string) => (text && !/ritual/i.test(text) ? text : '')
-  return (
-    clean(seo) ||
-    clean(hero) ||
-    'Catálogo detal de belleza en Armenia y Quimbaya, Quindío. Envíos a toda Colombia.'
-  )
+  return clean(seo) || clean(hero) || SEO_HOME_DESCRIPTION
 }
 
 export function getSiteKeywords(config: SiteConfigMap): string[] {
@@ -38,15 +42,5 @@ export function getSiteKeywords(config: SiteConfigMap): string[] {
   if (raw) {
     return raw.split(',').map(s => s.trim()).filter(Boolean)
   }
-  return [
-    'belleza',
-    'cuidado capilar',
-    'cosmética',
-    'catálogo detal',
-    'lila-store',
-    'Armenia',
-    'Quindío',
-    'Colombia',
-  ]
+  return [...SEO_DEFAULT_KEYWORDS]
 }
-

@@ -1,6 +1,7 @@
 'use client'
 
 import type { MetodoPagoOpcion } from '@/lib/payment-methods'
+import { PAGOS_COPY, PAGOS_EN_DESARROLLO } from '@/lib/pagos-proximos'
 
 type MetodoPagoPickerProps = {
   metodos: MetodoPagoOpcion[]
@@ -9,6 +10,8 @@ type MetodoPagoPickerProps = {
   onSelect: (label: string) => void
   /** Estilo más compacto para mobile */
   compact?: boolean
+  /** Muestra pasarelas próximas como filas deshabilitadas */
+  showProximos?: boolean
 }
 
 export default function MetodoPagoPicker({
@@ -17,6 +20,7 @@ export default function MetodoPagoPicker({
   error,
   onSelect,
   compact = false,
+  showProximos = true,
 }: MetodoPagoPickerProps) {
   if (metodos.length === 0) {
     return (
@@ -61,7 +65,39 @@ export default function MetodoPagoPicker({
               </button>
             )
           })}
+
+          {showProximos
+            ? PAGOS_EN_DESARROLLO.map(pago => (
+                <div
+                  key={pago.id}
+                  aria-disabled="true"
+                  className="mobile-cart-pay-option mobile-cart-pay-option--soon"
+                >
+                  <span className="min-w-0 text-left">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="text-[14px] font-medium text-[var(--text-subtle)]">
+                        {pago.label}
+                      </span>
+                      <span className="rounded-full bg-[var(--bg-muted)] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.04em] text-[var(--accent-deep)]">
+                        Pronto
+                      </span>
+                    </span>
+                    <span className="mt-0.5 block text-[11px] font-light text-[var(--text-faint)]">
+                      {pago.detalle}
+                    </span>
+                  </span>
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--bg-muted)] opacity-50" />
+                </div>
+              ))
+            : null}
         </div>
+
+        {showProximos ? (
+          <p className="px-4 pb-2 pt-1 text-[11px] font-medium leading-relaxed text-[var(--text-muted)]">
+            {PAGOS_COPY.checkoutNota}
+          </p>
+        ) : null}
+
         {error ? (
           <p className="px-4 pb-3 text-[11px] text-red-400">{error}</p>
         ) : null}
@@ -105,7 +141,39 @@ export default function MetodoPagoPicker({
             </button>
           )
         })}
+
+        {showProximos
+          ? PAGOS_EN_DESARROLLO.map(pago => (
+              <div
+                key={pago.id}
+                aria-disabled="true"
+                className="flex w-full cursor-not-allowed items-center justify-between gap-3 rounded-[20px] border border-dashed border-[var(--border)] bg-[var(--bg-base)]/70 px-4 py-3.5 text-left opacity-80"
+              >
+                <span className="min-w-0">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <span className="text-[14px] font-bold text-[var(--text-subtle)]">
+                      {pago.label}
+                    </span>
+                    <span className="rounded-full bg-[var(--bg-muted)] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.04em] text-[var(--accent-deep)]">
+                      Pronto
+                    </span>
+                  </span>
+                  <span className="mt-0.5 block text-[11px] font-medium text-[var(--text-faint)]">
+                    {pago.detalle}
+                  </span>
+                </span>
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-[var(--border)] bg-[var(--bg-muted)] opacity-50" />
+              </div>
+            ))
+          : null}
       </div>
+
+      {showProximos ? (
+        <p className="mt-3 text-[12px] font-medium leading-relaxed text-[var(--text-muted)]">
+          {PAGOS_COPY.checkoutNota}
+        </p>
+      ) : null}
+
       {error ? (
         <p className="mt-2 text-[12px] font-medium text-red-400">{error}</p>
       ) : null}

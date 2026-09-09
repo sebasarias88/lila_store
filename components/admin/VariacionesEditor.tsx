@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { optimizeImage } from '@/lib/optimizeImage'
 import { VariacionOpcion, VariacionTipo } from '@/types'
 import Button from '@/components/ui/Button'
 import toast from 'react-hot-toast'
@@ -66,9 +67,18 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
       return null
     }
 
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
+    const optimized = await optimizeImage(file)
+    if (!optimized.ok) {
+      toast.error(optimized.message)
+      return null
+    }
+    const toUpload = optimized.file
+    const ext = toUpload.name.split('.').pop()?.toLowerCase() || 'webp'
     const path = `variaciones/${productoId}/${opcionId}-${Date.now()}.${ext}`
-    const { error } = await supabase.storage.from('productos').upload(path, file, { upsert: true })
+    const { error } = await supabase.storage.from('productos').upload(path, toUpload, {
+      upsert: true,
+      contentType: toUpload.type || 'image/webp',
+    })
     if (error) return null
 
     const { data } = supabase.storage.from('productos').getPublicUrl(path)

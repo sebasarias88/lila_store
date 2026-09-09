@@ -14,10 +14,6 @@ export default function ConfiguracionPage() {
   const [config, setConfig] = useState<Config>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [metodosPagoDetal, setMetodosPagoDetal] = useState<string[]>([])
-  const [metodosPagoMayoreo, setMetodosPagoMayoreo] = useState<string[]>([])
-  const [nuevoMetodoDetal, setNuevoMetodoDetal] = useState('')
-  const [nuevoMetodoMayoreo, setNuevoMetodoMayoreo] = useState('')
   const [tab, setTab] = useState<TabId>('negocio')
 
   const fetchConfig = useCallback(async () => {
@@ -34,28 +30,6 @@ export default function ConfiguracionPage() {
       map[row.clave] = row.valor
     })
     setConfig(map)
-
-    const parseMetodos = (raw: string | undefined): string[] => {
-      try {
-        const parsed = JSON.parse(raw || '[]')
-        return Array.isArray(parsed) ? parsed : []
-      } catch {
-        return []
-      }
-    }
-
-    // Migración suave desde la clave antigua `metodos_pago`
-    const legacy = parseMetodos(map['metodos_pago'])
-    const detal = map['metodos_pago_detal'] !== undefined
-      ? parseMetodos(map['metodos_pago_detal'])
-      : legacy
-    const mayoreo = map['metodos_pago_mayoreo'] !== undefined
-      ? parseMetodos(map['metodos_pago_mayoreo'])
-      : legacy
-
-    setMetodosPagoDetal(detal)
-    setMetodosPagoMayoreo(mayoreo)
-
     setLoading(false)
   }, [])
 
@@ -67,68 +41,19 @@ export default function ConfiguracionPage() {
     setConfig(prev => ({ ...prev, [clave]: valor }))
   }
 
-  const agregarMetodoDetal = () => {
-    const m = nuevoMetodoDetal.trim()
-    if (!m) return
-    if (metodosPagoDetal.includes(m)) {
-      toast.error('Este método ya existe')
-      return
-    }
-    setMetodosPagoDetal(prev => [...prev, m])
-    setNuevoMetodoDetal('')
-  }
-
-  const quitarMetodoDetal = (metodo: string) => {
-    setMetodosPagoDetal(prev => prev.filter(m => m !== metodo))
-  }
-
-  const agregarMetodoMayoreo = () => {
-    const m = nuevoMetodoMayoreo.trim()
-    if (!m) return
-    if (metodosPagoMayoreo.includes(m)) {
-      toast.error('Este método ya existe')
-      return
-    }
-    setMetodosPagoMayoreo(prev => [...prev, m])
-    setNuevoMetodoMayoreo('')
-  }
-
-  const quitarMetodoMayoreo = (metodo: string) => {
-    setMetodosPagoMayoreo(prev => prev.filter(m => m !== metodo))
-  }
-
   const handleGuardar = async () => {
     if (!config['whatsapp_numero']?.trim()) {
       toast.error('El número de WhatsApp es requerido')
       return
     }
-    if (metodosPagoDetal.length === 0) {
-      toast.error('Agrega al menos un método de pago para Detal')
-      return
-    }
-    if (metodosPagoMayoreo.length === 0) {
-      toast.error('Agrega al menos un método de pago para Mayorista')
-      return
-    }
 
     setSaving(true)
 
-    const results = await Promise.all([
-      ...Object.entries(config).map(([clave, valor]) =>
-        supabase.from('configuracion').upsert(
-          { clave, valor },
-          { onConflict: 'clave' },
-        ),
+    const results = await Promise.all(
+      Object.entries(config).map(([clave, valor]) =>
+        supabase.from('configuracion').upsert({ clave, valor }, { onConflict: 'clave' }),
       ),
-      supabase.from('configuracion').upsert(
-        { clave: 'metodos_pago_detal', valor: JSON.stringify(metodosPagoDetal) },
-        { onConflict: 'clave' },
-      ),
-      supabase.from('configuracion').upsert(
-        { clave: 'metodos_pago_mayoreo', valor: JSON.stringify(metodosPagoMayoreo) },
-        { onConflict: 'clave' },
-      ),
-    ])
+    )
 
     const hasError = results.some(r => r.error)
     if (hasError) toast.error('Error al guardar algunos campos')
@@ -140,20 +65,6 @@ export default function ConfiguracionPage() {
   const panelProps = {
     config,
     updateConfig,
-    pagoDetal: {
-      metodos: metodosPagoDetal,
-      nuevo: nuevoMetodoDetal,
-      setNuevo: setNuevoMetodoDetal,
-      agregar: agregarMetodoDetal,
-      quitar: quitarMetodoDetal,
-    },
-    pagoMayoreo: {
-      metodos: metodosPagoMayoreo,
-      nuevo: nuevoMetodoMayoreo,
-      setNuevo: setNuevoMetodoMayoreo,
-      agregar: agregarMetodoMayoreo,
-      quitar: quitarMetodoMayoreo,
-    },
   }
 
   if (loading) {
@@ -203,7 +114,7 @@ export default function ConfiguracionPage() {
             Configuración
           </h1>
           <p className="mt-2 text-[14px] font-medium text-[var(--text-secondary)]">
-            Ajustes generales de la tienda, envíos y checkout
+            Ajustes generales de la tienda, envíos y cuenta para consignar
           </p>
         </div>
 

@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og'
 
 export const runtime = 'edge'
-export const alt = 'lila-store — Belleza cute en Armenia y Quimbaya'
+export const alt = 'Lila-store — Belleza y cuidado en Armenia y Quimbaya'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -65,7 +65,7 @@ export default function OpenGraphImage() {
             color: '#6E4FA8',
           }}
         >
-          lila-store
+          Lila-store
         </div>
         <p
           style={{
@@ -78,7 +78,7 @@ export default function OpenGraphImage() {
             lineHeight: 1.4,
           }}
         >
-          Belleza cute · Maquillaje, skincare y cuidados ✨
+          Belleza · Maquillaje, skincare y cuidados
         </p>
       </div>
     ),

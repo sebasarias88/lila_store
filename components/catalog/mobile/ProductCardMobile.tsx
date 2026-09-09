@@ -12,12 +12,13 @@ import {
   getProductoPrecios,
   type CatalogType,
 } from '@/lib/catalog'
-import { categoriaTieneDescuentoActivo } from '@/lib/descuentos'
-import { ShoppingBag, ImageIcon, Play } from 'lucide-react'
+import { resolveDescuentoProducto } from '@/lib/descuentos'
+import { ShoppingBag, ImageIcon, Play, Sparkles } from 'lucide-react'
 import MobileQuickAddSheet from '@/components/catalog/mobile/MobileQuickAddSheet'
 import { productoTieneVideo } from '@/lib/video-url'
 import { productoComprableEnCatalogo } from '@/lib/stock'
 import toast from 'react-hot-toast'
+import { useGuardedRouter } from '@/lib/useGuardedRouter'
 
 const MAX_TITULO_CARD = 48
 
@@ -38,23 +39,27 @@ export default function ProductCardMobile({
   catalogType?: 'detal' | 'mayoreo'
 }) {
   const agregar = useCarrito(s => s.agregar)
+  const router = useGuardedRouter()
   const [quickAddOpen, setQuickAddOpen] = useState(false)
   const isMayoreo = catalogType === 'mayoreo'
   const { precio, precioAntes, consultar } = getProductoPrecios(producto, catalogType)
   const precioDetalInfo = isMayoreo ? getPrecioDetalInfo(producto) : null
   const productHref = catalogPath(catalogType, `/productos/${producto.slug}`)
-  const descuentoCategoria = categoriaTieneDescuentoActivo(producto.categoria, catalogType)
-  const pctDescuento =
-    catalogType === 'mayoreo'
-      ? producto.categoria?.descuento_porcentaje_mayoreo
-      : producto.categoria?.descuento_porcentaje
+  const descuentoSnap = resolveDescuentoProducto(producto, catalogType)
+  const descuentoCategoria = descuentoSnap != null
+  const pctDescuento = descuentoSnap?.porcentaje
 
   const comprable = productoComprableEnCatalogo(producto, catalogType)
+  const requiereOpciones = Boolean(producto.tiene_variaciones)
 
   const handleAgregar = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     if (!comprable) return
+    if (requiereOpciones) {
+      router.push(productHref)
+      return
+    }
     const result = agregar(producto, undefined, catalogType)
     if (!result.ok) {
       toast.error(result.message)
@@ -122,9 +127,19 @@ export default function ProductCardMobile({
             className={`mobile-product-card-add absolute bottom-3 right-3 z-[1] ${
               comprable ? '' : 'mobile-product-card-add--disabled'
             }`}
-            aria-label={comprable ? `Agregar ${producto.nombre}` : 'Agotado'}
+            aria-label={
+              !comprable
+                ? 'Agotado'
+                : requiereOpciones
+                  ? `Elegir opciones de ${producto.nombre}`
+                  : `Agregar ${producto.nombre}`
+            }
           >
-            <ShoppingBag size={18} strokeWidth={1.75} className="mobile-product-card-add__icon" aria-hidden />
+            {requiereOpciones && comprable ? (
+              <Sparkles size={18} strokeWidth={1.75} className="mobile-product-card-add__icon" aria-hidden />
+            ) : (
+              <ShoppingBag size={18} strokeWidth={1.75} className="mobile-product-card-add__icon" aria-hidden />
+            )}
           </motion.button>
         </div>
 

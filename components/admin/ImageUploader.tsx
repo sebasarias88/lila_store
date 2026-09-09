@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
+import { optimizeImage } from '@/lib/optimizeImage'
 import { ImageIcon, X, Loader2, GripVertical } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -16,12 +17,21 @@ export default function ImageUploader({ imagenes, onChange }: ImageUploaderProps
   const [dragOver, setDragOver] = useState(false)
 
   const uploadFile = async (file: File): Promise<string | null> => {
-    const ext = file.name.split('.').pop()
+    const optimized = await optimizeImage(file)
+    if (!optimized.ok) {
+      toast.error(optimized.message)
+      return null
+    }
+    const toUpload = optimized.file
+    const ext = toUpload.name.split('.').pop() || 'webp'
     const path = `productos/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
 
     const { error } = await supabase.storage
       .from('productos')
-      .upload(path, file, { upsert: true })
+      .upload(path, toUpload, {
+        upsert: true,
+        contentType: toUpload.type || 'image/webp',
+      })
 
     if (error) return null
 

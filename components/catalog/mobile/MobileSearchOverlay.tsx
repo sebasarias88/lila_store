@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useGuardedRouter } from '@/lib/useGuardedRouter'
 import { Search, X, ArrowRight, TrendingUp, Tag, Sparkles } from 'lucide-react'
-import { catalogPath, type CatalogType } from '@/lib/catalog'
+import { catalogPath, catalogCategoriaPath, type CatalogType } from '@/lib/catalog'
 import MobileBottomSheet from '@/components/catalog/mobile/MobileBottomSheet'
 import { SEARCH_SUGGESTIONS } from '@/lib/search-suggestions'
 import type { Categoria } from '@/types'
@@ -49,7 +49,7 @@ export default function MobileSearchOverlay({
 
   const goCategoria = (slug: string) => {
     onClose()
-    router.push(`${productosPath}?categoria=${encodeURIComponent(slug)}`)
+    router.push(catalogCategoriaPath(catalogType, slug))
   }
 
   const handleSubmit = (e: React.FormEvent) => {

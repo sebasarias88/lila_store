@@ -28,7 +28,7 @@ export default function AdminSidebar() {
               Administración
             </p>
             <p className="brand-wordmark truncate text-[18px] leading-tight text-[var(--text-primary)]">
-              lila-store
+              Lila-store
             </p>
           </div>
         </div>

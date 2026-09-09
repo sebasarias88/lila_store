@@ -12,6 +12,8 @@ export type Categoria = {
   descuento_porcentaje_mayoreo: number
   descuento_activo_mayoreo: boolean
   descuento_fecha_fin_mayoreo: string | null
+  /** Join opcional: categoría padre (herencia de descuentos). */
+  padre?: Categoria | null
   subcategorias?: Categoria[]
   created_at: string
   total_productos?: number
@@ -100,6 +102,8 @@ export type Producto = {
   orden: number
   created_at: string
   updated_at: string
+  /** Presente en listados: el producto tiene al menos un tipo de variación. */
+  tiene_variaciones?: boolean
 }
 
 export type Configuracion = {
@@ -109,11 +113,13 @@ export type Configuracion = {
   descripcion: string | null
 }
 
-/** Método de pago configurable (recargos por catálogo). */
+/** Método de pago configurable (recargos y visibilidad por catálogo). */
 export type MetodoPago = {
   id: string
   nombre: string
   activo: boolean
+  mostrar_detal: boolean
+  mostrar_mayoreo: boolean
   recargo_detal_porcentaje: number
   recargo_mayoreo_porcentaje: number
   orden: number

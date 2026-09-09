@@ -52,8 +52,8 @@ const STEPS_PASARELA: { num: number; label: string; hint?: string; icon: LucideI
   { num: 3, label: 'Completa tus datos', icon: ClipboardList },
   {
     num: 4,
-    label: 'Paga súper fácil',
-    hint: 'ePayco · Addi · Sistecrédito · Su+ Pay ✨',
+    label: 'Confirma tu pago',
+    hint: 'Por WhatsApp ✨',
     icon: CreditCard,
   },
   { num: 5, label: '¡Recibe tu pedido!', icon: Package },
@@ -97,7 +97,7 @@ export default function ProcesoPedido({
           </h2>
           <p className="mx-auto mt-2 max-w-lg text-[14px] font-medium text-[var(--text-secondary)]">
             {isPasarela
-              ? 'Fácil, cute y al instante 💕 ePayco, Addi, Sistecrédito o Su+ Pay'
+              ? 'Armas tu pedido cute y lo confirmamos juntas por WhatsApp 💕'
               : 'Armas tu pedido cute y lo confirmamos juntas por WhatsApp 💬'}
           </p>
         </motion.div>
@@ -150,23 +150,11 @@ export default function ProcesoPedido({
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: 0.2 }}
-          className="mt-10 flex flex-col items-center gap-3"
+          className="mt-10 flex flex-col items-center"
         >
-          {isPasarela ? (
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {['ePayco', 'Addi', 'Sistecrédito', 'Su+ Pay', 'Efectivo'].map(method => (
-                <span
-                  key={method}
-                  className="rounded-full border border-[var(--border)] bg-white px-3.5 py-1.5 text-[11px] font-bold text-[var(--accent-deep)] shadow-[var(--shadow-soft)]"
-                >
-                  {method}
-                </span>
-              ))}
-            </div>
-          ) : null}
           <Link
             href={catalogHref}
-            className="catalog-gold-cta group mt-2 inline-flex items-center gap-2 rounded-full px-6 py-3 text-[13px] font-bold"
+            className="catalog-gold-cta group inline-flex items-center gap-2 rounded-full px-6 py-3 text-[13px] font-bold"
           >
             Empezar a comprar ✨
             <ArrowRight

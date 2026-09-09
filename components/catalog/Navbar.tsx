@@ -204,6 +204,7 @@ export default function Navbar({
                   onClose={closeCats}
                   categorias={categorias}
                   productosHref={productosHref}
+                  catalogType={catalogType}
                 />
               </div>
 

@@ -26,13 +26,16 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import { toastProductoAgregado } from '@/lib/toastCatalog'
 import {
   catalogPath,
+  catalogCategoriaPath,
   getDescuentoPorcentaje,
   getProductoPrecios,
 } from '@/lib/catalog'
 import ProductoPrecio from '@/components/catalog/ProductoPrecio'
 import PageGoldAccent from '@/components/catalog/PageGoldAccent'
+import { CATALOG_STICKY_TOP_CLASS } from '@/lib/catalog-layout'
 import MobileQuickAddSheet from '@/components/catalog/mobile/MobileQuickAddSheet'
 import ProductVideoThumb from '@/components/catalog/ProductVideoThumb'
 import ProductVideoModal from '@/components/catalog/ProductVideoModal'
@@ -43,14 +46,15 @@ import {
   productoComprableEnCatalogo,
   stockRestanteParaProducto,
 } from '@/lib/stock'
+import { PAGOS_COPY } from '@/lib/pagos-proximos'
 
 const NUEVO_DIAS = 21
 
 const ENVIO_INFO = [
   { icon: Package, text: 'Envío en Armenia el mismo día ✨' },
   { icon: Truck, text: 'Envíos a todo el país en 2–3 días 💕' },
-  { icon: CreditCard, text: 'ePayco · tarjeta y PSE' },
-  { icon: Sparkles, text: 'Addi, Sistecrédito o Su+ Pay ✨' },
+  { icon: CreditCard, text: PAGOS_COPY.pdpLineaActivos },
+  { icon: Sparkles, text: PAGOS_COPY.pdpLineaProximos },
 ] as const
 
 function esNuevo(producto: Producto): boolean {
@@ -229,7 +233,7 @@ export default function ProductoDetalle({
     if (isMobile) {
       setQuickAddOpen(true)
     } else if (result.ok) {
-      toast.success(`${producto.nombre} al carrito 💕`)
+      toastProductoAgregado(producto.nombre, '💕')
     }
     setTimeout(() => setAgregado(false), 2500)
   }
@@ -293,7 +297,7 @@ export default function ProductoDetalle({
               <>
                 <span className="text-[var(--border)]">/</span>
                 <Link
-                  href={`${productosHref}?categoria=${producto.categoria.slug}`}
+                  href={catalogCategoriaPath(catalogType, producto.categoria.slug)}
                   className="rounded-full bg-[var(--bg-muted)] px-2.5 py-0.5 font-bold text-[var(--accent-deep)] transition-colors hover:bg-[var(--accent-primary)] hover:text-white"
                 >
                   {producto.categoria.nombre}
@@ -450,12 +454,12 @@ export default function ProductoDetalle({
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.06 }}
-            className="flex flex-col lg:sticky lg:top-28 lg:self-start"
+            className={`flex flex-col lg:sticky lg:self-start ${CATALOG_STICKY_TOP_CLASS}`}
           >
             {producto.categoria && (
               <div className="mb-3 flex flex-wrap items-center gap-2">
                 <Link
-                  href={`${productosHref}?categoria=${producto.categoria.slug}`}
+                  href={catalogCategoriaPath(catalogType, producto.categoria.slug)}
                   className="inline-flex items-center gap-1.5 rounded-full bg-[var(--bg-muted)] px-3 py-1 text-[12px] font-bold text-[var(--accent-deep)] transition-colors hover:bg-[var(--accent-primary)] hover:text-white"
                 >
                   <Sparkles size={12} />

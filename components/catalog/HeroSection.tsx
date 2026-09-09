@@ -6,7 +6,7 @@ import { motion, useScroll, useTransform } from 'framer-motion'
 import { useGuardedRouter } from '@/lib/useGuardedRouter'
 import { Search, ArrowDown, Sparkles, X } from 'lucide-react'
 import { Categoria } from '@/types'
-import { catalogPath, type CatalogType } from '@/lib/catalog'
+import { catalogPath, catalogCategoriaPath, type CatalogType } from '@/lib/catalog'
 import GoldDecorations from '@/components/catalog/GoldDecorations'
 import { DIRECCION_COMPLETA } from '@/lib/negocio'
 
@@ -151,7 +151,7 @@ export default function HeroSection({ titulo, subtitulo, categorias, catalogType
                       <button
                         key={cat.id}
                         type="button"
-                        onClick={() => router.push(`${productosPath}?categoria=${cat.slug}`)}
+                        onClick={() => router.push(catalogCategoriaPath(catalogType, cat.slug))}
                         title={cat.nombre}
                         className="group relative max-w-[9.5rem] shrink-0 truncate px-3 py-3.5 text-[11px] font-light uppercase tracking-[1.2px] text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] sm:max-w-none sm:px-4 sm:py-4"
                       >

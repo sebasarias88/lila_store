@@ -110,11 +110,20 @@ export default function ProductosPage() {
     fetchProductos()
   }, [fetchProductos])
 
-  const productosFiltrados = productos.filter(
-    p =>
-      p.nombre.toLowerCase().includes(search.toLowerCase()) ||
-      p.sku?.toLowerCase().includes(search.toLowerCase()),
-  )
+  const productosFiltrados = productos.filter(p => {
+    const q = search.trim()
+    if (!q) return true
+    const fold = (s: string) =>
+      s
+        .normalize('NFD')
+        .replace(/\p{M}/gu, '')
+        .toLowerCase()
+    const needle = fold(q)
+    return (
+      fold(p.nombre).includes(needle) ||
+      (p.sku ? fold(p.sku).includes(needle) : false)
+    )
+  })
 
   useEffect(() => {
     setPage(1)
