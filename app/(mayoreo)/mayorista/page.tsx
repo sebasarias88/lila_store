@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { createSupabaseServer } from '@/lib/supabase-server'
+import { createSupabasePublic } from '@/lib/supabase-public'
 import HeroBanner from '@/components/catalog/HeroBanner'
 import PromoStrip from '@/components/catalog/PromoStrip'
 import CategoriasGrid from '@/components/catalog/CategoriasGrid'
@@ -14,7 +14,10 @@ import { buildMetadata } from '@/lib/seo'
 import { getSiteConfig, getSiteName } from '@/lib/site-config'
 import { rethrowIfNextControlFlowError } from '@/lib/next-errors'
 import { getAnuncioModalVigente } from '@/lib/anuncio-modal-server'
+import { PRODUCTO_SHELF_SELECT, mapShelfProductos } from '@/lib/productQueries'
 import type { Banner, Categoria, Producto, Promocion } from '@/types'
+
+export const revalidate = 60
 
 export async function generateMetadata(): Promise<Metadata> {
   const config = await getSiteConfig()
@@ -52,7 +55,7 @@ export default async function MayoreoHomePage() {
   let novedades: Producto[] = []
 
   try {
-    const supabase = await createSupabaseServer()
+    const supabase = createSupabasePublic()
 
     const [
       { data: configData },
@@ -64,36 +67,46 @@ export default async function MayoreoHomePage() {
       { data: novedadesData },
     ] = await Promise.all([
       supabase.from('configuracion').select('clave, valor'),
-      supabase.from('banners').select('*').eq('activo', true).order('orden'),
+      supabase
+        .from('banners')
+        .select(
+          'id,imagen_url,titulo,subtitulo,texto_boton,enlace_boton,activo,orden,created_at',
+        )
+        .eq('activo', true)
+        .order('orden'),
       supabase
         .from('promociones')
-        .select('*')
+        .select(
+          'id,titulo,descripcion,imagen_url,badge_texto,badge_color,fecha_inicio,fecha_fin,enlace,orden,activa,catalogo',
+        )
         .eq('activa', true)
         .eq('catalogo', 'mayoreo')
         .order('orden'),
       supabase
         .from('categorias')
-        .select('*, subcategorias:categorias!padre_id(*)')
+        .select(
+          'id,nombre,slug,imagen_url,orden,activa,padre_id,descuento_porcentaje,descuento_activo,descuento_fecha_fin,descuento_porcentaje_mayoreo,descuento_activo_mayoreo,descuento_fecha_fin_mayoreo,subcategorias:categorias!padre_id(id,nombre,slug,imagen_url,orden,activa,padre_id,descuento_porcentaje,descuento_activo,descuento_fecha_fin,descuento_porcentaje_mayoreo,descuento_activo_mayoreo,descuento_fecha_fin_mayoreo)',
+        )
         .is('padre_id', null)
         .eq('activa', true)
         .order('orden'),
       supabase
         .from('productos')
-        .select('*, categoria:categorias(id,nombre,slug,descuento_porcentaje,descuento_activo,descuento_fecha_fin,descuento_porcentaje_mayoreo,descuento_activo_mayoreo,descuento_fecha_fin_mayoreo)')
+        .select(PRODUCTO_SHELF_SELECT)
         .eq('disponible_mayoreo', true)
         .eq('destacado', true)
         .order('orden')
         .limit(10),
       supabase
         .from('productos')
-        .select('*, categoria:categorias(id,nombre,slug,descuento_porcentaje,descuento_activo,descuento_fecha_fin,descuento_porcentaje_mayoreo,descuento_activo_mayoreo,descuento_fecha_fin_mayoreo)')
+        .select(PRODUCTO_SHELF_SELECT)
         .eq('disponible_mayoreo', true)
         .not('precio_antes_mayoreo', 'is', null)
         .order('orden')
         .limit(10),
       supabase
         .from('productos')
-        .select('*, categoria:categorias(id,nombre,slug,descuento_porcentaje,descuento_activo,descuento_fecha_fin,descuento_porcentaje_mayoreo,descuento_activo_mayoreo,descuento_fecha_fin_mayoreo)')
+        .select(PRODUCTO_SHELF_SELECT)
         .eq('disponible_mayoreo', true)
         .order('created_at', { ascending: false })
         .limit(10),
@@ -110,9 +123,9 @@ export default async function MayoreoHomePage() {
         .filter(s => s.activa !== false)
         .sort((a, b) => a.orden - b.orden),
     }))
-    destacados = (destacadosData as Producto[] | null) || []
+    destacados = mapShelfProductos(destacadosData)
     const destacadosIds = new Set(destacados.map(p => p.id))
-    ofertas = ((ofertasData as Producto[] | null) || [])
+    ofertas = mapShelfProductos(ofertasData)
       .filter(p => {
         const antes = p.precio_antes_mayoreo
         const actual = p.precio_mayoreo ?? p.precio
@@ -121,7 +134,7 @@ export default async function MayoreoHomePage() {
       .filter(p => !destacadosIds.has(p.id))
       .slice(0, 10)
     const ofertasIds = new Set(ofertas.map(p => p.id))
-    novedades = uniqueById((novedadesData as Producto[] | null) || [])
+    novedades = uniqueById(mapShelfProductos(novedadesData))
       .filter(p => !destacadosIds.has(p.id) && !ofertasIds.has(p.id))
       .slice(0, 10)
   } catch (error) {
@@ -140,15 +153,12 @@ export default async function MayoreoHomePage() {
       <PromoStrip promociones={promociones} />
       <ProductosNovedades productos={novedades} catalogType="mayoreo" />
       <ProductosOfertas productos={ofertas} catalogType="mayoreo" />
-      <ProcesoPedido
-        catalogHref="/mayorista/productos"
-        variant="whatsapp"
-      />
+      <ProcesoPedido catalogHref="/mayorista/productos" variant="whatsapp" />
       <TestimoniosSection />
       <NosotrosSection
         texto={config['texto_nosotros'] || ''}
         whatsapp={config['whatsapp_numero']}
-        nombreNegocio="lila-store"
+        nombreNegocio={getSiteName(config)}
         catalogType="mayoreo"
       />
     </div>

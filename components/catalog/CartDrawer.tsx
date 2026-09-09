@@ -18,6 +18,7 @@ import {
   stockRestanteParaProducto,
 } from '@/lib/stock'
 import toast from 'react-hot-toast'
+import { PAGOS_COPY } from '@/lib/pagos-proximos'
 
 type CartDrawerProps = {
   open: boolean
@@ -270,7 +271,7 @@ export default function CartDrawer({
                 {catalogType === 'detal' && (
                   <p className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[var(--text-muted)]">
                     <CreditCard size={12} className="text-[var(--accent-primary)]" />
-                    Tarjeta, PSE, Addi, Sistecrédito o Su+ Pay
+                    {PAGOS_COPY.drawerHint}
                   </p>
                 )}
 

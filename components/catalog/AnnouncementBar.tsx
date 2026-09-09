@@ -8,7 +8,7 @@ const DEFAULT_MESSAGES = [
   '🛍️ Pedidos fáciles por WhatsApp',
   '⭐ Novedades cada semana',
   '🎀 Belleza fresca y accesible',
-  '🌸 Catálogo detal',
+  '🌸 Catálogo Lila-store',
 ]
 
 type AnnouncementBarProps = {

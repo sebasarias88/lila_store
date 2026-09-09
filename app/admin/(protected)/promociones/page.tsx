@@ -621,7 +621,7 @@ export default function PromocionesPage() {
             placeholder={
               form.catalogo === 'mayoreo'
                 ? '/mayorista/productos'
-                : '/productos?categoria=capilar'
+                : '/productos/categoria/capilar'
             }
           />
 

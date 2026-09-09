@@ -1,4 +1,4 @@
-import { createSupabaseServer } from '@/lib/supabase-server'
+import { createSupabasePublic } from '@/lib/supabase-public'
 import Navbar from '@/components/catalog/Navbar'
 import Footer from '@/components/catalog/Footer'
 import PageTransition from '@/components/catalog/PageTransition'
@@ -13,20 +13,27 @@ import {
   parseMayoristaConfigMonto,
 } from '@/lib/catalog'
 import { resolveWhatsAppNumero } from '@/lib/negocio'
+import { getSiteName } from '@/lib/site-config'
+import type { Categoria } from '@/types'
+
+export const revalidate = 60
 
 export default async function MayoreoLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createSupabaseServer()
+  const supabase = createSupabasePublic()
 
   const { data: configData } = await supabase
     .from('configuracion')
     .select('clave, valor')
 
   const config: Record<string, string> = {}
-  configData?.forEach(row => { config[row.clave] = row.valor })
+  configData?.forEach(row => {
+    config[row.clave] = row.valor
+  })
+  const nombreNegocio = getSiteName(config)
 
   const minimoCompra = parseMayoristaConfigMonto(
     config[CONFIG_MAYORISTA_MINIMO],
@@ -39,18 +46,20 @@ export default async function MayoreoLayout({
 
   const { data: categoriasRaw } = await supabase
     .from('categorias')
-    .select('*, subcategorias:categorias!padre_id(*)')
+    .select(
+      'id,nombre,slug,imagen_url,orden,activa,padre_id,descuento_porcentaje,descuento_activo,descuento_fecha_fin,descuento_porcentaje_mayoreo,descuento_activo_mayoreo,descuento_fecha_fin_mayoreo,subcategorias:categorias!padre_id(id,nombre,slug,imagen_url,orden,activa,padre_id,descuento_porcentaje,descuento_activo,descuento_fecha_fin,descuento_porcentaje_mayoreo,descuento_activo_mayoreo,descuento_fecha_fin_mayoreo)',
+    )
     .is('padre_id', null)
     .eq('activa', true)
     .order('orden')
     .order('orden', { referencedTable: 'subcategorias' })
 
-  const categorias = (categoriasRaw || []).map(raiz => ({
+  const categorias = ((categoriasRaw || []).map(raiz => ({
     ...raiz,
     subcategorias: [...(raiz.subcategorias || [])]
       .filter((s: { activa?: boolean }) => s.activa !== false)
       .sort((a: { orden: number }, b: { orden: number }) => a.orden - b.orden),
-  }))
+  })) as unknown) as Categoria[]
 
   return (
     <div className="min-h-screen bg-[var(--bg-base)]">
@@ -73,7 +82,7 @@ export default async function MayoreoLayout({
         ) : null}
       </div>
       <Navbar
-        nombreNegocio="lila-store"
+        nombreNegocio={nombreNegocio}
         categorias={categorias}
         catalogType="mayoreo"
       />
@@ -81,7 +90,7 @@ export default async function MayoreoLayout({
         <PageTransition>{children}</PageTransition>
       </main>
       <Footer
-        nombreNegocio="lila-store"
+        nombreNegocio={nombreNegocio}
         whatsapp={resolveWhatsAppNumero(config['whatsapp_numero'])}
         catalogType="mayoreo"
       />

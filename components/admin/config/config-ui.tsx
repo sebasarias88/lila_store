@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import {
   Truck,
-  CreditCard,
+  Landmark,
   Type,
   LucideIcon,
   Store,
@@ -9,21 +9,13 @@ import {
 
 export type Config = Record<string, string>
 
-export type TabId = 'negocio' | 'contenido' | 'envios' | 'pagos'
-
-export type PaymentMethodsControls = {
-  metodos: string[]
-  nuevo: string
-  setNuevo: (value: string) => void
-  agregar: () => void
-  quitar: (metodo: string) => void
-}
+export type TabId = 'negocio' | 'contenido' | 'envios' | 'consignacion'
 
 export const CONFIG_TABS: { id: TabId; label: string; icon: LucideIcon; desc: string }[] = [
   { id: 'negocio', label: 'Negocio', icon: Store, desc: 'Nombre y WhatsApp' },
   { id: 'contenido', label: 'Contenido', icon: Type, desc: 'Textos del inicio' },
   { id: 'envios', label: 'Envíos', icon: Truck, desc: 'Costos y tiempos' },
-  { id: 'pagos', label: 'Pagos', icon: CreditCard, desc: 'Métodos de pago' },
+  { id: 'consignacion', label: 'Consignación', icon: Landmark, desc: 'Cuenta para transferir' },
 ]
 
 export function InfoBanner({

@@ -4,8 +4,6 @@ import { Input, Textarea } from '@/components/ui/Input'
 import { CopInput } from '@/components/ui/CopInput'
 import {
   Truck,
-  CreditCard,
-  Plus,
   Store,
   MapPin,
   Globe,
@@ -27,14 +25,10 @@ import {
   CONFIG_TRANSFERENCIA_LLAVE,
   parseTransferenciaActivo,
 } from '@/lib/transferencia'
-import MobilePaymentMethodCard from '@/components/admin/mobile/MobilePaymentMethodCard'
-import ConfigPaymentMethodsDesktop from '@/components/admin/config/ConfigPaymentMethodsDesktop'
-import { MobileEmptyState } from '@/components/admin/mobile/MobileAdminPrimitives'
 import {
   Config,
   FormSection,
   InfoBanner,
-  PaymentMethodsControls,
   TabId,
 } from '@/components/admin/config/config-ui'
 
@@ -42,8 +36,6 @@ export type ConfigTabPanelsProps = {
   tab: TabId
   config: Config
   updateConfig: (clave: string, valor: string) => void
-  pagoDetal: PaymentMethodsControls
-  pagoMayoreo: PaymentMethodsControls
   variant?: 'desktop' | 'mobile'
 }
 
@@ -80,73 +72,10 @@ function ZoneCard({
   )
 }
 
-function MobilePaymentGroup({
-  label,
-  controls,
-}: {
-  label: string
-  controls: PaymentMethodsControls
-}) {
-  return (
-    <>
-      <FormSection title={`${label} — Métodos activos`}>
-        {controls.metodos.length === 0 ? (
-          <MobileEmptyState
-            icon={CreditCard}
-            title="Sin métodos de pago"
-            description="Agrega al menos uno abajo"
-          />
-        ) : (
-          <div className="space-y-2.5">
-            {controls.metodos.map(metodo => (
-              <MobilePaymentMethodCard
-                key={metodo}
-                metodo={metodo}
-                onRemove={() => controls.quitar(metodo)}
-              />
-            ))}
-          </div>
-        )}
-      </FormSection>
-
-      <FormSection title={`${label} — Agregar método`}>
-        <div className="pb-6">
-          <div className="flex items-center gap-2 rounded-xl border border-[var(--border-input)] bg-[var(--bg-muted)] py-1.5 pl-4 pr-1.5">
-            <input
-              type="text"
-              value={controls.nuevo}
-              onChange={e => controls.setNuevo(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  controls.agregar()
-                }
-              }}
-              placeholder="Ej: Nequi, Bancolombia, Efectivo..."
-              className="mobile-config-add-input min-h-[2.75rem] min-w-0 flex-1 border-0 bg-transparent py-2 text-[13px] font-light text-[var(--text-primary)] placeholder:text-[var(--text-subtle)] focus:outline-none"
-            />
-            <button
-              type="button"
-              onClick={controls.agregar}
-              disabled={!controls.nuevo.trim()}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[rgba(169,137,224,0.35)] bg-[var(--accent-secondary)] text-[var(--bg-base)] transition-opacity disabled:opacity-35"
-              aria-label="Agregar método"
-            >
-              <Plus size={17} strokeWidth={2} />
-            </button>
-          </div>
-        </div>
-      </FormSection>
-    </>
-  )
-}
-
 export default function ConfigTabPanels({
   tab,
   config,
   updateConfig,
-  pagoDetal,
-  pagoMayoreo,
   variant = 'desktop',
 }: ConfigTabPanelsProps) {
   const mobile = variant === 'mobile'
@@ -164,7 +93,7 @@ export default function ConfigTabPanels({
               label="Nombre del negocio"
               value={config['nombre_negocio'] || ''}
               onChange={e => updateConfig('nombre_negocio', e.target.value)}
-              placeholder="lila-store"
+              placeholder="Lila-store"
             />
             <Input
               label="WhatsApp de consultas *"
@@ -206,7 +135,7 @@ export default function ConfigTabPanels({
             label="Texto descriptivo"
             value={config['texto_nosotros'] || ''}
             onChange={e => updateConfig('texto_nosotros', e.target.value)}
-            placeholder="Somos lila-store, tu aliada de belleza en el Quindío. En nuestras tiendas de Armenia y Quimbaya encuentras maquillaje, skincare y cuidados con atención cercana, y también te acompañamos con asesoría y envíos a toda Colombia."
+            placeholder="Maquillaje, skincare y cuidado capilar en Armenia y Quimbaya, Quindío. Compra online con envíos a toda Colombia. Atención cercana en tienda y por WhatsApp."
             rows={mobile ? 6 : 5}
           />
         </FormSection>
@@ -339,28 +268,7 @@ export default function ConfigTabPanels({
 
   return (
     <>
-      <InfoBanner icon={CreditCard} compact={mobile}>
-        Opciones del carrito. La transferencia bancaria tiene su propio bloque
-        abajo; si está inactiva no aparece en el checkout.
-      </InfoBanner>
-
-      {mobile ? (
-        <>
-          <MobilePaymentGroup label="Detal" controls={pagoDetal} />
-          <MobilePaymentGroup label="Mayorista" controls={pagoMayoreo} />
-        </>
-      ) : (
-        <div className="space-y-10">
-          <FormSection title="Métodos de pago — Detal">
-            <ConfigPaymentMethodsDesktop controls={pagoDetal} />
-          </FormSection>
-          <FormSection title="Métodos de pago — Mayorista">
-            <ConfigPaymentMethodsDesktop controls={pagoMayoreo} />
-          </FormSection>
-        </div>
-      )}
-
-      <FormSection title="Transferencia bancaria">
+      <FormSection title="Cuenta para consignar">
         <div className={`admin-form-panel mobile-admin-field space-y-4 ${mobile ? 'p-4' : 'p-5'}`}>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -369,10 +277,10 @@ export default function ConfigTabPanels({
               </div>
               <div>
                 <p className="text-[12px] font-light uppercase tracking-[1px] text-[var(--text-primary)]">
-                  Cuenta para consignar
+                  Transferencia activa
                 </p>
                 <p className="text-[10px] font-light text-[var(--text-subtle)]">
-                  Se muestra en el checkout si está activa
+                  Se muestra en el checkout si el método Transferencia está activo
                 </p>
               </div>
             </div>

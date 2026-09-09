@@ -11,11 +11,15 @@ import {
   getProductoPrecios,
   type CatalogType,
 } from '@/lib/catalog'
-import { categoriaTieneDescuentoActivo } from '@/lib/descuentos'
+import {
+  resolveDescuentoProducto,
+} from '@/lib/descuentos'
 import { ShoppingBag, ImageIcon, Heart, Sparkles, Play } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { toastProductoAgregado } from '@/lib/toastCatalog'
 import { productoTieneVideo } from '@/lib/video-url'
 import { productoComprableEnCatalogo } from '@/lib/stock'
+import { useGuardedRouter } from '@/lib/useGuardedRouter'
 
 const MAX_TITULO_CARD = 52
 const NUEVO_DIAS = 21
@@ -49,28 +53,32 @@ export default function ProductCard({
   catalogType?: 'detal' | 'mayoreo'
 }) {
   const agregar = useCarrito(s => s.agregar)
+  const router = useGuardedRouter()
   const isMayoreo = catalogType === 'mayoreo'
   const { precio, precioAntes, consultar } = getProductoPrecios(producto, catalogType)
   const precioDetalInfo = isMayoreo ? getPrecioDetalInfo(producto) : null
   const productHref = catalogPath(catalogType, `/productos/${producto.slug}`)
-  const descuentoCategoria = categoriaTieneDescuentoActivo(producto.categoria, catalogType)
-  const pctDescuento =
-    catalogType === 'mayoreo'
-      ? producto.categoria?.descuento_porcentaje_mayoreo
-      : producto.categoria?.descuento_porcentaje
+  const descuentoSnap = resolveDescuentoProducto(producto, catalogType)
+  const descuentoCategoria = descuentoSnap != null
+  const pctDescuento = descuentoSnap?.porcentaje
   const nuevo = esNuevo(producto)
   const comprable = productoComprableEnCatalogo(producto, catalogType)
+  const requiereOpciones = Boolean(producto.tiene_variaciones)
 
   const handleAgregar = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     if (!comprable) return
+    if (requiereOpciones) {
+      router.push(productHref)
+      return
+    }
     const result = agregar(producto, undefined, catalogType)
     if (!result.ok) {
       toast.error(result.message)
       return
     }
-    toast.success(`${producto.nombre} al carrito ✨`)
+    toastProductoAgregado(producto.nombre)
   }
 
   return (
@@ -179,10 +187,17 @@ export default function ProductCard({
               disabled={!comprable}
             >
               {comprable ? (
-                <>
-                  <ShoppingBag size={14} />
-                  Lo quiero ✨
-                </>
+                requiereOpciones ? (
+                  <>
+                    <Sparkles size={14} />
+                    Elegir opciones
+                  </>
+                ) : (
+                  <>
+                    <ShoppingBag size={14} />
+                    Lo quiero ✨
+                  </>
+                )
               ) : (
                 <>
                   <Heart size={14} />

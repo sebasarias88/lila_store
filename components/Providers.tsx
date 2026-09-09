@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Lenis from 'lenis'
 import { Toaster, ToastPosition } from 'react-hot-toast'
+import CuteCursor from '@/components/CuteCursor'
 
 function useIsMobileToast() {
   const [isMobile, setIsMobile] = useState(
@@ -119,6 +120,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     <>
       {children}
       <AppToaster />
+      <CuteCursor />
     </>
   )
 }

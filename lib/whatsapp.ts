@@ -26,14 +26,14 @@ export function mensajeConsultaWhatsApp(
 
   if (context === 'nosotros') {
     return esMayorista
-      ? 'Hola, vengo del catálogo mayorista de lila-store y me gustaría hacer una consulta.'
-      : 'Hola, vengo del sitio de lila-store y me gustaría hacer una consulta.'
+      ? 'Hola, vengo del catálogo mayorista de Lila-store y me gustaría hacer una consulta.'
+      : 'Hola, vengo del sitio de Lila-store y me gustaría hacer una consulta.'
   }
 
   if (context === 'footer') {
     return esMayorista
-      ? 'Hola, me comunico desde el catálogo mayorista de lila-store.'
-      : 'Hola, me comunico desde el sitio de lila-store.'
+      ? 'Hola, me comunico desde el catálogo mayorista de Lila-store.'
+      : 'Hola, me comunico desde el sitio de Lila-store.'
   }
 
   // flotante
@@ -121,7 +121,7 @@ export function generarMensajeWhatsApp(
       ? `${recargoPago.labelLinea}: +${formatPrecio(recargoPago.monto)}\n`
       : ''
 
-  const mensaje = `${encabezadoMayoreo}✨ *Nuevo Pedido — lila-store*
+  const mensaje = `${encabezadoMayoreo}✨ *Nuevo Pedido — Lila-store*
 
 👤 *Datos del cliente*
 Nombre: ${cliente.nombre}
@@ -140,11 +140,20 @@ ${lineaRecargo}⏱️ Entrega: ${esRecogida ? 'Recoger en tienda' : tiempoEntreg
 
 *TOTAL: ${formatPrecio(total)}* 💰
 
-_Pedido generado desde el catálogo de lila-store_`
+_Pedido generado desde el catálogo de Lila-store_`
 
   return encodeURIComponent(mensaje)
 }
 
+/** Abre WhatsApp de forma mobile-safe (evita bloqueo de popup en taps async). */
 export function abrirWhatsApp(mensaje: string, numero: string): void {
-  window.open(`https://wa.me/${numero}?text=${mensaje}`, '_blank')
+  const href = `https://wa.me/${numero}?text=${mensaje}`
+  const a = document.createElement('a')
+  a.href = href
+  a.target = '_blank'
+  a.rel = 'noopener noreferrer'
+  a.style.display = 'none'
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
 }

@@ -20,7 +20,6 @@ export function formatPorcentajeRecargo(porcentaje: number): string {
     .replace(/\.?0+$/, '')
 }
 
-/** Porcentaje de recargo según catálogo (detal | mayoreo). */
 export function recargoPorcentajeCatalogo(
   metodo: MetodoPago,
   catalogType: CatalogType,
@@ -64,6 +63,23 @@ export function findMetodoPagoByNombre(
 ): MetodoPago | undefined {
   const needle = nombre.trim().toLowerCase()
   return metodos.find(m => m.nombre.trim().toLowerCase() === needle)
+}
+
+/** Método activo y visible en el catálogo indicado. */
+export function metodoPagoVisibleEnCatalogo(
+  metodo: MetodoPago,
+  catalogType: CatalogType,
+): boolean {
+  if (!metodo.activo) return false
+  if (catalogType === 'mayoreo') return metodo.mostrar_mayoreo ?? true
+  return metodo.mostrar_detal ?? true
+}
+
+export function filtrarMetodosPagoCatalogo(
+  metodos: MetodoPago[],
+  catalogType: CatalogType,
+): MetodoPago[] {
+  return metodos.filter(m => metodoPagoVisibleEnCatalogo(m, catalogType))
 }
 
 export type ResumenRecargoPago = {

@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { Categoria } from '@/types'
-import { catalogPath, type CatalogType } from '@/lib/catalog'
+import { catalogPath, catalogCategoriaPath, type CatalogType } from '@/lib/catalog'
 import { Tag, ArrowRight } from 'lucide-react'
 import HorizontalCarousel from '@/components/ui/HorizontalCarousel'
 
@@ -82,7 +82,7 @@ export default function CategoriasSection({
             className="h-full"
           >
             <Link
-              href={`${productosHref}?categoria=${cat.slug}`}
+              href={catalogCategoriaPath(catalogType, cat.slug)}
               className="mobile-catalog-category-card group relative block aspect-[4/5] overflow-hidden rounded-xl border border-[var(--border-card)] bg-[var(--bg-card)] shadow-[var(--shadow-card)] md:rounded-none"
             >
               {cat.imagen_url ? (

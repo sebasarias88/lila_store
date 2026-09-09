@@ -138,7 +138,7 @@ export default function Footer({
             © {new Date().getFullYear()} {nombreNegocio}. Hecho con ♡
           </p>
           <p className="rounded-full bg-[var(--bg-muted)] px-3 py-1 text-[12px] font-bold text-[var(--accent-deep)]">
-            Pedidos vía WhatsApp 💬
+            Efectivo · Transferencia · más medios pronto
           </p>
         </div>
       </div>

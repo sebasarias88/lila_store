@@ -8,6 +8,11 @@ import { supabase } from '@/lib/supabase'
 import { DatosCliente, ItemCarrito, MetodoPago } from '@/types'
 import { generarMensajeWhatsApp, abrirWhatsApp } from '@/lib/whatsapp'
 import {
+  findItemsSinVariaciones,
+  getProductIdsWithVariaciones,
+} from '@/lib/cartCheckout'
+import CartCheckoutSuccess from '@/components/catalog/cart/CartCheckoutSuccess'
+import {
   cartSubtotal,
   formatVariacionesResumen,
   itemLineKey,
@@ -30,6 +35,7 @@ import {
 } from '@/lib/negocio'
 import {
   buildResumenRecargoPago,
+  filtrarMetodosPagoCatalogo,
   metodoPagoToOpcion,
 } from '@/lib/payment-methods'
 import {
@@ -43,6 +49,7 @@ import {
   esMetodoTransferencia,
   subirComprobantePago,
 } from '@/lib/transferencia'
+import { PAGOS_COPY } from '@/lib/pagos-proximos'
 import EntregaPicker from '@/components/catalog/cart/EntregaPicker'
 import MetodoPagoPicker from '@/components/catalog/cart/MetodoPagoPicker'
 import TransferenciaCheckout from '@/components/catalog/cart/TransferenciaCheckout'
@@ -111,11 +118,11 @@ type Config = {
   transferencia_llave: string
 }
 
-type Step = 'carrito' | 'datos' | 'resumen'
+type Step = 'carrito' | 'datos' | 'resumen' | 'exito'
 
 const CIUDADES_ARMENIA = ['armenia', 'armenia quindío', 'armenia quindio']
 
-const STEPS: { id: Step; label: string }[] = [
+const STEPS: { id: Exclude<Step, 'exito'>; label: string }[] = [
   { id: 'carrito', label: 'Bolsita' },
   { id: 'datos', label: 'Tus datos' },
   { id: 'resumen', label: 'Confirmar' },
@@ -135,14 +142,12 @@ function SectionTitle({ icon: Icon, children }: { icon: typeof User; children: R
 function CartSidebar({
   children,
   className = '',
-  top = 96,
 }: {
   children: React.ReactNode
   className?: string
-  top?: number
 }) {
   return (
-    <StickySidebar className={className} top={top}>
+    <StickySidebar className={className}>
       <aside className="w-full">{children}</aside>
     </StickySidebar>
   )
@@ -296,6 +301,10 @@ export default function CarritoPage() {
   const [enviando, setEnviando] = useState(false)
   const [metodosPagoDb, setMetodosPagoDb] = useState<MetodoPago[]>([])
   const [comprobantePago, setComprobantePago] = useState<File | null>(null)
+  const [ultimoMensajeWa, setUltimoMensajeWa] = useState<string | null>(null)
+  const [idsConVariaciones, setIdsConVariaciones] = useState<Set<string> | null>(
+    null,
+  )
 
   const [datos, setDatos] = useState<DatosCliente>({
     nombre: '',
@@ -367,9 +376,12 @@ export default function CarritoPage() {
 
   const metodosPago = useMemo(
     () =>
-      metodosPagoDb
-        .filter(m => transferencia.activo || !esMetodoTransferencia(m.nombre))
-        .map(m => metodoPagoToOpcion(m, catalogType)),
+      filtrarMetodosPagoCatalogo(
+        metodosPagoDb.filter(
+          m => transferencia.activo || !esMetodoTransferencia(m.nombre),
+        ),
+        catalogType,
+      ).map(m => metodoPagoToOpcion(m, catalogType)),
     [metodosPagoDb, catalogType, transferencia.activo],
   )
   const esTransferencia = esMetodoTransferencia(datos.metodoPago)
@@ -415,7 +427,23 @@ export default function CarritoPage() {
     if (!ok) setDatos(d => ({ ...d, metodoPago: '' }))
   }, [metodosPago, datos.metodoPago])
   const stepIndex = STEPS.findIndex(s => s.id === step)
-  const stickyTop = catalogType === 'mayoreo' ? 100 : 96
+
+  // Precargar IDs con variaciones al entrar al resumen (validación síncrona al enviar)
+  useEffect(() => {
+    if (step !== 'resumen' && step !== 'exito') return
+    const ids = [...new Set(items.map(i => i.producto.id))]
+    if (ids.length === 0) {
+      setIdsConVariaciones(new Set())
+      return
+    }
+    let cancelled = false
+    getProductIdsWithVariaciones(ids).then(set => {
+      if (!cancelled) setIdsConVariaciones(set)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [step, items])
 
   const minimoMayoreo =
     catalogType === 'mayoreo'
@@ -489,6 +517,22 @@ export default function CarritoPage() {
       return
     }
 
+    let idsVariaciones = idsConVariaciones
+    if (!idsVariaciones) {
+      idsVariaciones = await getProductIdsWithVariaciones(
+        items.map(i => i.producto.id),
+      )
+      setIdsConVariaciones(idsVariaciones)
+    }
+    const sinVars = findItemsSinVariaciones(items, idsVariaciones)
+    if (sinVars.length > 0) {
+      const nombre = sinVars[0].producto.nombre
+      toast.error(
+        `Elige las opciones de “${nombre.length > 36 ? `${nombre.slice(0, 36)}…` : nombre}” antes de enviar`,
+      )
+      return
+    }
+
     setEnviando(true)
     try {
       const ids = [...new Set(items.map(i => i.producto.id))]
@@ -542,13 +586,25 @@ export default function CarritoPage() {
           : null,
         comprobanteUrl,
       )
+      setUltimoMensajeWa(mensaje)
       abrirWhatsApp(mensaje, resolveWhatsAppPedidoNumero())
-      vaciar()
-      setComprobantePago(null)
-      toast.success('¡Pedido listo! Revisa tu WhatsApp ✨')
+      setStep('exito')
     } finally {
       setEnviando(false)
     }
+  }
+
+  const handleReabrirWhatsApp = () => {
+    if (!ultimoMensajeWa) return
+    abrirWhatsApp(ultimoMensajeWa, resolveWhatsAppPedidoNumero())
+  }
+
+  const handleConfirmarPedidoEnviado = () => {
+    vaciar()
+    setComprobantePago(null)
+    setUltimoMensajeWa(null)
+    setStep('carrito')
+    toast.success('¡Gracias! Pedido confirmado ✨')
   }
 
   const inputClass = (campo: keyof DatosCliente) =>
@@ -605,6 +661,8 @@ export default function CarritoPage() {
           handleContinuar={handleContinuar}
           handleConfirmar={handleConfirmar}
           handleEnviarWhatsApp={handleEnviarWhatsApp}
+          handleReabrirWhatsApp={handleReabrirWhatsApp}
+          handleConfirmarPedidoEnviado={handleConfirmarPedidoEnviado}
           inputClass={inputClass}
         />
       </div>
@@ -629,6 +687,7 @@ export default function CarritoPage() {
             {step === 'carrito' && 'Carrito cute'}
             {step === 'datos' && 'Tus datos 💕'}
             {step === 'resumen' && 'Revisa y confirma ✨'}
+            {step === 'exito' && '¡Listo para WhatsApp!'}
           </h1>
           <p className="mt-2 text-[14px] font-medium text-[var(--text-secondary)]">
             {step === 'carrito' && 'Tus tesoros listos para consentirte'}
@@ -637,9 +696,11 @@ export default function CarritoPage() {
                 ? 'Solo necesitamos tus datos de contacto'
                 : 'Cuéntanos a dónde enviamos tu pedido')}
             {step === 'resumen' && 'Último pasito antes de confirmar'}
+            {step === 'exito' && 'Envía el mensaje y confirma cuando esté listo'}
           </p>
 
           {/* Steps */}
+          {step !== 'exito' && (
           <div className="mt-7 flex flex-wrap items-center gap-2">
             {STEPS.map((s, i) => (
               <div key={s.id} className="flex items-center gap-2">
@@ -674,6 +735,7 @@ export default function CarritoPage() {
               </div>
             ))}
           </div>
+          )}
         </motion.div>
 
         <AnimatePresence mode="wait">
@@ -864,66 +926,68 @@ export default function CarritoPage() {
               </div>
 
               {items.length > 0 && (
-                <div className="space-y-6">
-                  <OrderSummaryPanel
-                    items={items}
-                    subtotal={subtotal}
-                    catalogType={catalogType}
-                    envio={costoEnvio}
-                    total={esRecogida ? totalFinal : undefined}
-                    tiempoEntrega={esRecogida ? tiempoEntrega : undefined}
-                    envioGratis={envioGratis}
-                    showEnvio={esRecogida}
-                    esRecogida={esRecogida}
-                    recargoLabel={recargoPago?.labelLinea ?? null}
-                    recargoMonto={recargoMonto}
-                  />
-                  {catalogType === 'mayoreo' && (
-                    <div className="rounded-[20px] border border-[color-mix(in_srgb,var(--accent-primary)_40%,var(--border))] bg-[var(--bg-muted)] p-4">
-                      <p className="text-[13px] font-bold text-[var(--accent-deep)]">
-                        Pedido mínimo: {formatPrecio(minimoMayoreo)}
-                      </p>
-                      {recompraSugerida > 0 ? (
-                        <p className="mt-1 text-[12px] font-medium text-[var(--text-muted)]">
-                          Pedidos posteriores: mínimo sugerido{' '}
-                          {formatPrecio(recompraSugerida)}
+                <CartSidebar className="hidden lg:block">
+                  <div className="space-y-6">
+                    <OrderSummaryPanel
+                      items={items}
+                      subtotal={subtotal}
+                      catalogType={catalogType}
+                      envio={costoEnvio}
+                      total={esRecogida ? totalFinal : undefined}
+                      tiempoEntrega={esRecogida ? tiempoEntrega : undefined}
+                      envioGratis={envioGratis}
+                      showEnvio={esRecogida}
+                      esRecogida={esRecogida}
+                      recargoLabel={recargoPago?.labelLinea ?? null}
+                      recargoMonto={recargoMonto}
+                    />
+                    {catalogType === 'mayoreo' && (
+                      <div className="rounded-[20px] border border-[color-mix(in_srgb,var(--accent-primary)_40%,var(--border))] bg-[var(--bg-muted)] p-4">
+                        <p className="text-[13px] font-bold text-[var(--accent-deep)]">
+                          Pedido mínimo: {formatPrecio(minimoMayoreo)}
                         </p>
-                      ) : null}
-                      {!cumpleMinimo ? (
-                        <p className="mt-2 text-[13px] font-medium leading-relaxed text-[var(--text-secondary)]">
-                          {mensajeMinimoMayoreo}
-                        </p>
-                      ) : null}
-                    </div>
-                  )}
-                  <p className="text-[12px] font-medium text-[var(--text-subtle)]">
-                    {esRecogida
-                      ? datos.sucursalRecogida
-                        ? 'Listo: recoges en tienda sin costo de envío 💕'
-                        : 'Elige la tienda donde quieres recoger ✨'
-                      : 'El envío se calcula según tu ciudad 💕'}
-                  </p>
-                  <motion.button
-                    type="button"
-                    whileTap={catalogType === 'mayoreo' && !cumpleMinimo ? undefined : { scale: 0.98 }}
-                    onClick={handleContinuar}
-                    disabled={catalogType === 'mayoreo' && !cumpleMinimo}
-                    className={`catalog-gold-cta flex w-full items-center justify-center gap-2 rounded-full py-4 text-[14px] font-bold ${
-                      catalogType === 'mayoreo' && !cumpleMinimo
-                        ? 'cursor-not-allowed opacity-50'
-                        : ''
-                    }`}
-                  >
-                    Continuar ✨
-                    <ChevronRight size={14} />
-                  </motion.button>
-                  <Link
-                    href={productosHref}
-                    className="block text-center text-[13px] font-bold text-[var(--text-muted)] transition-colors hover:text-[var(--accent-deep)]"
-                  >
-                    ← Seguir explorando 💕
-                  </Link>
-                </div>
+                        {recompraSugerida > 0 ? (
+                          <p className="mt-1 text-[12px] font-medium text-[var(--text-muted)]">
+                            Pedidos posteriores: mínimo sugerido{' '}
+                            {formatPrecio(recompraSugerida)}
+                          </p>
+                        ) : null}
+                        {!cumpleMinimo ? (
+                          <p className="mt-2 text-[13px] font-medium leading-relaxed text-[var(--text-secondary)]">
+                            {mensajeMinimoMayoreo}
+                          </p>
+                        ) : null}
+                      </div>
+                    )}
+                    <p className="text-[12px] font-medium text-[var(--text-subtle)]">
+                      {esRecogida
+                        ? datos.sucursalRecogida
+                          ? 'Listo: recoges en tienda sin costo de envío 💕'
+                          : 'Elige la tienda donde quieres recoger ✨'
+                        : 'El envío se calcula según tu ciudad 💕'}
+                    </p>
+                    <motion.button
+                      type="button"
+                      whileTap={catalogType === 'mayoreo' && !cumpleMinimo ? undefined : { scale: 0.98 }}
+                      onClick={handleContinuar}
+                      disabled={catalogType === 'mayoreo' && !cumpleMinimo}
+                      className={`catalog-gold-cta flex w-full items-center justify-center gap-2 rounded-full py-4 text-[14px] font-bold ${
+                        catalogType === 'mayoreo' && !cumpleMinimo
+                          ? 'cursor-not-allowed opacity-50'
+                          : ''
+                      }`}
+                    >
+                      Continuar ✨
+                      <ChevronRight size={14} />
+                    </motion.button>
+                    <Link
+                      href={productosHref}
+                      className="block text-center text-[13px] font-bold text-[var(--text-muted)] transition-colors hover:text-[var(--accent-deep)]"
+                    >
+                      ← Seguir explorando 💕
+                    </Link>
+                  </div>
+                </CartSidebar>
               )}
             </motion.div>
           )}
@@ -1075,7 +1139,7 @@ export default function CarritoPage() {
                 <section className="rounded-[24px] border border-[var(--border)] bg-[var(--bg-surface)] p-5 shadow-[var(--shadow-soft)] sm:p-6">
                   <SectionTitle icon={CreditCard}>Cómo quieres pagar ✨</SectionTitle>
                   <p className="mb-4 text-[12px] font-medium text-[var(--text-muted)]">
-                    Elige el medio — ePayco incluye tarjeta, PSE y más
+                    {PAGOS_COPY.checkoutIntro}
                   </p>
                   <MetodoPagoPicker
                     metodos={metodosPago}
@@ -1134,7 +1198,7 @@ export default function CarritoPage() {
                 </div>
               </div>
 
-              <CartSidebar className="hidden lg:block" top={stickyTop}>
+              <CartSidebar className="hidden lg:block">
                 <OrderSummaryPanel
                   items={items}
                   subtotal={subtotal}
@@ -1350,7 +1414,7 @@ export default function CarritoPage() {
                   )}
               </div>
 
-              <CartSidebar className="hidden lg:block" top={stickyTop}>
+              <CartSidebar className="hidden lg:block">
                 <div className="space-y-4 rounded-[24px] border border-[var(--border)] bg-white/90 p-5 shadow-[var(--shadow-soft)] backdrop-blur-sm">
                   <div className="flex items-center gap-2">
                     <Sparkles size={13} className="text-[var(--accent-primary)]" />
@@ -1447,10 +1511,27 @@ export default function CarritoPage() {
                   <p className="text-[12px] font-medium leading-relaxed text-[var(--text-subtle)]">
                     {catalogType === 'mayoreo'
                       ? 'Al confirmar se abrirá WhatsApp con tu pedido listo para enviar.'
-                      : 'Por ahora confirmamos por WhatsApp con tu medio de pago elegido 💕'}
+                      : PAGOS_COPY.resumenHint}
                   </p>
                 </div>
               </CartSidebar>
+            </motion.div>
+          )}
+
+          {step === 'exito' && (
+            <motion.div
+              key="exito"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="mx-auto max-w-xl"
+            >
+              <CartCheckoutSuccess
+                productosHref={productosHref}
+                onReabrirWhatsApp={handleReabrirWhatsApp}
+                onVolverResumen={() => setStep('resumen')}
+                onConfirmarEnviado={handleConfirmarPedidoEnviado}
+              />
             </motion.div>
           )}
         </AnimatePresence>

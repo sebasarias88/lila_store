@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { createSupabaseServer } from '@/lib/supabase-server'
+import { createSupabasePublic } from '@/lib/supabase-public'
 import HeroBanner from '@/components/catalog/HeroBanner'
 import PromoStrip from '@/components/catalog/PromoStrip'
 import CategoriasGrid from '@/components/catalog/CategoriasGrid'
@@ -11,22 +11,25 @@ import NosotrosSection from '@/components/catalog/NosotrosSection'
 import ProcesoPedido from '@/components/catalog/ProcesoPedido'
 import AnuncioModalPromo from '@/components/catalog/AnuncioModalPromo'
 import { buildMetadata } from '@/lib/seo'
-import { getSiteConfig, getSiteDescription } from '@/lib/site-config'
+import { getSiteConfig, getSiteName } from '@/lib/site-config'
+import { SEO_HOME_DESCRIPTION, SEO_HOME_TITLE } from '@/lib/seo-brand'
 import { rethrowIfNextControlFlowError } from '@/lib/next-errors'
 import { catalogPath } from '@/lib/catalog'
 import { getAnuncioModalVigente } from '@/lib/anuncio-modal-server'
+import { PRODUCTO_SHELF_SELECT, mapShelfProductos } from '@/lib/productQueries'
 import type { Banner, Categoria, Producto, Promocion } from '@/types'
+
+export const revalidate = 60
 
 export async function generateMetadata(): Promise<Metadata> {
   const config = await getSiteConfig()
 
   return buildMetadata({
     config,
-    title: 'Catálogo detal',
-    description:
-      config.seo_descripcion?.trim() ||
-      getSiteDescription(config),
+    title: SEO_HOME_TITLE,
+    description: config.seo_descripcion?.trim() || SEO_HOME_DESCRIPTION,
     path: '/',
+    absoluteTitle: true,
   })
 }
 
@@ -49,7 +52,7 @@ export default async function HomePage() {
   let novedades: Producto[] = []
 
   try {
-    const supabase = await createSupabaseServer()
+    const supabase = createSupabasePublic()
 
     const [
       { data: configData },
@@ -61,49 +64,73 @@ export default async function HomePage() {
       { data: novedadesData },
     ] = await Promise.all([
       supabase.from('configuracion').select('clave, valor'),
-      supabase.from('banners').select('*').eq('activo', true).order('orden'),
+      supabase
+        .from('banners')
+        .select(
+          'id,imagen_url,titulo,subtitulo,texto_boton,enlace_boton,activo,orden,created_at',
+        )
+        .eq('activo', true)
+        .order('orden'),
       supabase
         .from('promociones')
-        .select('*')
+        .select(
+          'id,titulo,descripcion,imagen_url,badge_texto,badge_color,fecha_inicio,fecha_fin,enlace,orden,activa,catalogo',
+        )
         .eq('activa', true)
         .eq('catalogo', 'detal')
         .order('orden'),
-      supabase.from('categorias').select('*, subcategorias:categorias!padre_id(*)')
-        .is('padre_id', null).eq('activa', true).order('orden'),
-      supabase.from('productos')
-        .select('*, categoria:categorias(id,nombre,slug,descuento_porcentaje,descuento_activo,descuento_fecha_fin,descuento_porcentaje_mayoreo,descuento_activo_mayoreo,descuento_fecha_fin_mayoreo)')
+      supabase
+        .from('categorias')
+        .select(
+          'id,nombre,slug,imagen_url,orden,activa,padre_id,descuento_porcentaje,descuento_activo,descuento_fecha_fin,descuento_porcentaje_mayoreo,descuento_activo_mayoreo,descuento_fecha_fin_mayoreo,subcategorias:categorias!padre_id(id,nombre,slug,imagen_url,orden,activa,padre_id,descuento_porcentaje,descuento_activo,descuento_fecha_fin,descuento_porcentaje_mayoreo,descuento_activo_mayoreo,descuento_fecha_fin_mayoreo)',
+        )
+        .is('padre_id', null)
+        .eq('activa', true)
+        .order('orden'),
+      supabase
+        .from('productos')
+        .select(PRODUCTO_SHELF_SELECT)
         .eq('disponible_detal', true)
         .eq('destacado', true)
         .order('orden')
         .limit(10),
-      supabase.from('productos')
-        .select('*, categoria:categorias(id,nombre,slug,descuento_porcentaje,descuento_activo,descuento_fecha_fin,descuento_porcentaje_mayoreo,descuento_activo_mayoreo,descuento_fecha_fin_mayoreo)')
+      supabase
+        .from('productos')
+        .select(PRODUCTO_SHELF_SELECT)
         .eq('disponible_detal', true)
         .not('precio_antes', 'is', null)
         .order('orden')
         .limit(12),
-      supabase.from('productos')
-        .select('*, categoria:categorias(id,nombre,slug,descuento_porcentaje,descuento_activo,descuento_fecha_fin,descuento_porcentaje_mayoreo,descuento_activo_mayoreo,descuento_fecha_fin_mayoreo)')
+      supabase
+        .from('productos')
+        .select(PRODUCTO_SHELF_SELECT)
         .eq('disponible_detal', true)
         .order('created_at', { ascending: false })
         .limit(16),
     ])
 
-    configData?.forEach(row => { config[row.clave] = row.valor })
+    configData?.forEach(row => {
+      config[row.clave] = row.valor
+    })
     banners = (bannersData as Banner[] | null) || []
     promociones = (promocionesData as Promocion[] | null) || []
-    categorias = (categoriasData as Categoria[] | null) || []
-    destacados = (destacadosData as Producto[] | null) || []
+    categorias = ((categoriasData as Categoria[] | null) || []).map(raiz => ({
+      ...raiz,
+      subcategorias: [...(raiz.subcategorias || [])]
+        .filter(s => s.activa !== false)
+        .sort((a, b) => a.orden - b.orden),
+    }))
+    destacados = mapShelfProductos(destacadosData)
 
     const destacadosIds = new Set(destacados.map(p => p.id))
 
-    ofertas = ((ofertasData as Producto[] | null) || [])
+    ofertas = mapShelfProductos(ofertasData)
       .filter(p => p.precio_antes != null && p.precio_antes > p.precio)
       .filter(p => !destacadosIds.has(p.id))
       .slice(0, 10)
 
     const ofertasIds = new Set(ofertas.map(p => p.id))
-    novedades = uniqueById((novedadesData as Producto[] | null) || [])
+    novedades = uniqueById(mapShelfProductos(novedadesData))
       .filter(p => !destacadosIds.has(p.id) && !ofertasIds.has(p.id))
       .slice(0, 10)
   } catch (error) {
@@ -127,7 +154,7 @@ export default async function HomePage() {
       <NosotrosSection
         texto={config['texto_nosotros'] || ''}
         whatsapp={config['whatsapp_numero']}
-        nombreNegocio="lila-store"
+        nombreNegocio={getSiteName(config)}
       />
     </div>
   )

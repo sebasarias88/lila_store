@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowRight, Search, Sparkles, Tag, TrendingUp, X } from 'lucide-react'
-import { catalogPath, type CatalogType } from '@/lib/catalog'
+import { catalogPath, catalogCategoriaPath, type CatalogType } from '@/lib/catalog'
 import { useGuardedRouter } from '@/lib/useGuardedRouter'
 import { SEARCH_SUGGESTIONS } from '@/lib/search-suggestions'
 import type { Categoria } from '@/types'
@@ -66,7 +66,7 @@ export default function DesktopSearchOverlay({
 
   const goCategoria = (slug: string) => {
     onClose()
-    router.push(`${productosPath}?categoria=${encodeURIComponent(slug)}`)
+    router.push(catalogCategoriaPath(catalogType, slug))
   }
 
   const handleSubmit = (e: React.FormEvent) => {

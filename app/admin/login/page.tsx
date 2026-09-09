@@ -55,7 +55,7 @@ export default function LoginPage() {
             <span className="admin-blob-badge admin-blob-badge--on-brand">
               <Heart size={18} fill="currentColor" />
             </span>
-            <p className="brand-wordmark admin-login__wordmark">lila-store</p>
+            <p className="brand-wordmark admin-login__wordmark">Lila-store</p>
           </div>
 
           <div className="admin-login__brand-copy">
@@ -84,7 +84,7 @@ export default function LoginPage() {
             <span className="admin-blob-badge">
               <Heart size={18} fill="currentColor" />
             </span>
-            <p className="brand-wordmark text-[var(--accent-deep)]">lila-store</p>
+            <p className="brand-wordmark text-[var(--accent-deep)]">Lila-store</p>
           </div>
 
           <header className="admin-login__header">
@@ -107,7 +107,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                placeholder="admin@lila-store.com"
+                placeholder="admin@lilastore.com.co"
                 className="admin-input admin-login__input"
               />
             </div>
@@ -161,7 +161,7 @@ export default function LoginPage() {
           </form>
 
           <p className="admin-login__footer">
-            lila-store © {new Date().getFullYear()}
+            Lila-store © {new Date().getFullYear()}
           </p>
         </div>
       </section>

@@ -14,12 +14,12 @@ type Props = {
 }
 
 const DEFAULT_TEXTO =
-  'Somos lila-store, tu aliada de belleza en el Quindío. En nuestras tiendas de Armenia y Quimbaya encuentras maquillaje, skincare y cuidados con atención cercana, y también te acompañamos con asesoría y envíos a toda Colombia.'
+  'Somos Lila-store, tu aliada de belleza en el Quindío. En nuestras tiendas de Armenia y Quimbaya encuentras maquillaje, skincare y cuidados con atención cercana, y también te acompañamos con asesoría y envíos a toda Colombia.'
 
 export default function NosotrosSection({
   texto,
   whatsapp,
-  nombreNegocio = 'lila-store',
+  nombreNegocio = 'Lila-store',
   catalogType = 'detal',
 }: Props) {
   const whatsappUrl = buildWhatsAppUrl(

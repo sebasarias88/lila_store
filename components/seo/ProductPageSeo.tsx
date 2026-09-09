@@ -1,9 +1,10 @@
 import type { Producto } from '@/types'
 import type { CatalogType } from '@/lib/catalog'
-import { catalogPath } from '@/lib/catalog'
+import { catalogCategoriaPath, catalogPath } from '@/lib/catalog'
 import {
   breadcrumbJsonLd,
   productJsonLd,
+  toAbsoluteUrl,
 } from '@/lib/seo'
 import { getSiteName, type SiteConfigMap } from '@/lib/site-config'
 import JsonLd from '@/components/seo/JsonLd'
@@ -22,6 +23,7 @@ export default function ProductPageSeo({
   const siteName = getSiteName(config)
   const productosPath = catalogPath(catalogType, '/productos')
   const productPath = catalogPath(catalogType, `/productos/${producto.slug}`)
+  const absoluteProductUrl = toAbsoluteUrl(productPath)
 
   return (
     <JsonLd
@@ -31,7 +33,12 @@ export default function ProductPageSeo({
           { name: 'Inicio', path: catalogPath(catalogType, '/') },
           { name: 'Productos', path: productosPath },
           ...(producto.categoria
-            ? [{ name: producto.categoria.nombre, path: `${productosPath}?categoria=${producto.categoria.slug}` }]
+            ? [
+                {
+                  name: producto.categoria.nombre,
+                  path: catalogCategoriaPath(catalogType, producto.categoria.slug),
+                },
+              ]
             : []),
           { name: producto.nombre, path: productPath },
         ]),
@@ -40,8 +47,8 @@ export default function ProductPageSeo({
           '@type': 'WebPage',
           name: producto.nombre,
           description: producto.descripcion || producto.nombre,
-          url: productPath,
-          isPartOf: { '@type': 'WebSite', name: siteName },
+          url: absoluteProductUrl,
+          isPartOf: { '@type': 'WebSite', name: siteName, url: toAbsoluteUrl('/') },
         },
       ]}
     />

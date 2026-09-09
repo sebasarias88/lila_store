@@ -1,5 +1,5 @@
 import { Producto } from '@/types'
-import { calcularPrecioConDescuento } from '@/lib/descuentos'
+import { resolveDescuentoProducto } from '@/lib/descuentos'
 
 export type CatalogType = 'detal' | 'mayoreo'
 
@@ -36,6 +36,24 @@ export function catalogPath(catalogType: CatalogType, path: string): string {
   return `${base}${normalized}`
 }
 
+/**
+ * URL limpia indexable de categoría (SEO).
+ * Ej: /productos/categoria/maquillaje
+ */
+export function catalogCategoriaPath(
+  catalogType: CatalogType,
+  slug: string,
+): string {
+  const clean = slug.trim()
+  if (!clean) return catalogPath(catalogType, '/productos')
+  return catalogPath(catalogType, `/productos/categoria/${encodeURIComponent(clean)}`)
+}
+
+/** Base `/productos` o `/mayorista/productos` desde un pathname. */
+export function productosBaseFromPathname(pathname: string): string {
+  return pathname.startsWith('/mayorista') ? '/mayorista/productos' : '/productos'
+}
+
 export function formatPrecio(precio: number) {
   return new Intl.NumberFormat('es-CO', {
     style: 'currency',
@@ -69,16 +87,15 @@ export function getProductoPrecios(
   }
 
   if (precio != null && !consultar) {
-    const { precioFinal, tieneDescuento } = calcularPrecioConDescuento(
-      precio,
-      producto.categoria,
-      catalogType,
-    )
-    if (tieneDescuento) {
-      return {
-        precio: precioFinal,
-        precioAntes: precio,
-        consultar: false,
+    const snap = resolveDescuentoProducto(producto, catalogType)
+    if (snap) {
+      const precioFinal = Math.round(precio * (1 - snap.porcentaje / 100))
+      if (precioFinal < precio) {
+        return {
+          precio: precioFinal,
+          precioAntes: precio,
+          consultar: false,
+        }
       }
     }
   }
@@ -93,8 +110,11 @@ export function getProductoPrecios(
 export function getPrecioDetalInfo(producto: Producto): number | null {
   const p = producto.precio
   if (p == null || p <= 0) return null
-  const { precioFinal } = calcularPrecioConDescuento(p, producto.categoria, 'detal')
-  return precioFinal
+  const snap = resolveDescuentoProducto(producto, 'detal')
+  if (snap) {
+    return Math.round(p * (1 - snap.porcentaje / 100))
+  }
+  return p
 }
 
 /** Valor numérico para ordenar por precio (mayorista sin precio va al final). */

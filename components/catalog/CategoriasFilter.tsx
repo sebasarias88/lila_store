@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Categoria } from '@/types'
+import { CATALOG_STICKY_TOP_CLASS } from '@/lib/catalog-layout'
 import { ChevronDown, X } from 'lucide-react'
 
 type CategoriasFilterProps = {
@@ -39,7 +40,7 @@ export default function CategoriasFilter({
   }
 
   return (
-    <nav aria-label="Filtrar por categoría" className="sticky top-28">
+    <nav aria-label="Filtrar por categoría" className={`sticky ${CATALOG_STICKY_TOP_CLASS}`}>
       <p className="mb-4 text-[9px] font-light uppercase tracking-[3px] text-[var(--gold)]">
         Categorías
       </p>

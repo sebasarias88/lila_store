@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import { Categoria } from '@/types'
-import { catalogPath, type CatalogType } from '@/lib/catalog'
+import { catalogPath, catalogCategoriaPath, type CatalogType } from '@/lib/catalog'
 import { ArrowRight, Sparkles } from 'lucide-react'
 import { categoriaTieneDescuentoActivo } from '@/lib/descuentos'
 
@@ -142,7 +142,7 @@ function CategoriaCard({
       className={compact ? 'w-[6.5rem] shrink-0' : 'mx-auto w-full max-w-[11rem]'}
     >
       <Link
-        href={`${productosHref}?categoria=${encodeURIComponent(cat.slug)}`}
+        href={catalogCategoriaPath(catalogType, cat.slug)}
         className="group flex flex-col items-center text-center"
       >
         <div

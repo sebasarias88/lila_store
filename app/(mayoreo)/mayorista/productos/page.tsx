@@ -1,12 +1,31 @@
 import type { Metadata } from 'next'
-import { createSupabaseServer } from '@/lib/supabase-server'
+import { redirect } from 'next/navigation'
 import ProductosClient from '@/components/catalog/ProductosClient'
 import { buildMetadata } from '@/lib/seo'
-import { catalogPath } from '@/lib/catalog'
+import { catalogCategoriaPath, catalogPath } from '@/lib/catalog'
 import { getSiteConfig, getSiteName } from '@/lib/site-config'
-import { withProductoCategorias } from '@/lib/producto-categorias'
-import type { Categoria, Producto } from '@/types'
+import {
+  CATALOG_PAGE_SIZE,
+  getCatalogProductosPage,
+  type CatalogOrden,
+} from '@/lib/catalog-productos'
+import { fetchCategoriasRaiz } from '@/lib/catalog-categorias'
+import type { Categoria } from '@/types'
 import { rethrowIfNextControlFlowError } from '@/lib/next-errors'
+
+export const revalidate = 60
+
+function parseOrden(raw: string | undefined): CatalogOrden {
+  if (
+    raw === 'precio-asc' ||
+    raw === 'precio-desc' ||
+    raw === 'nombre' ||
+    raw === 'relevancia'
+  ) {
+    return raw
+  }
+  return 'relevancia'
+}
 
 export async function generateMetadata({
   searchParams,
@@ -18,21 +37,21 @@ export async function generateMetadata({
   const siteName = getSiteName(config)
   const query = q?.trim()
   const categorySlug = categoria?.trim()
-  const hasFilters = Boolean(query || categorySlug)
-  const basePath = catalogPath('mayoreo', '/productos')
+
+  if (categorySlug && !query) {
+    return { robots: { index: false, follow: true } }
+  }
 
   let title = 'Catálogo mayorista'
-  let description = `Productos de belleza mayoristas en ${siteName}.`
-  let path = basePath
+  let description = `Productos de belleza mayoristas en ${siteName}. Envíos a toda Colombia.`
+  let path = catalogPath('mayoreo', '/productos')
+  let noIndex = false
 
   if (query) {
     title = `Mayorista: "${query}"`
     description = `Resultados mayoristas para "${query}" en ${siteName}.`
-    path = `${basePath}?q=${encodeURIComponent(query)}`
-  } else if (categorySlug) {
-    title = 'Mayorista por categoría'
-    description = `Productos mayoristas filtrados por categoría en ${siteName}.`
-    path = `${basePath}?categoria=${encodeURIComponent(categorySlug)}`
+    path = `${path}?q=${encodeURIComponent(query)}`
+    noIndex = true
   }
 
   return buildMetadata({
@@ -40,46 +59,55 @@ export async function generateMetadata({
     title,
     description,
     path,
-    noIndex: hasFilters,
+    noIndex,
   })
 }
 
 export default async function MayoreoProductosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; categoria?: string }>
+  searchParams: Promise<{
+    q?: string
+    categoria?: string
+    page?: string
+    orden?: string
+  }>
 }) {
-  const { q, categoria } = await searchParams
+  const { q, categoria, page: pageRaw, orden: ordenRaw } = await searchParams
+
+  const catSlug = categoria?.trim()
+  if (catSlug) {
+    const params = new URLSearchParams()
+    if (q?.trim()) params.set('q', q.trim())
+    if (ordenRaw && ordenRaw !== 'relevancia') params.set('orden', ordenRaw)
+    if (pageRaw && Number(pageRaw) > 1) params.set('page', pageRaw)
+    const qs = params.toString()
+    const dest = catalogCategoriaPath('mayoreo', catSlug)
+    redirect(qs ? `${dest}?${qs}` : dest)
+  }
+
+  const page = Math.max(1, Number(pageRaw) || 1)
+  const orden = parseOrden(ordenRaw)
 
   let categorias: Categoria[] = []
-  let productos: (Producto & { producto_categorias?: { categoria_id?: string; categoria?: Categoria | null }[] })[] = []
+  let productos: Awaited<ReturnType<typeof getCatalogProductosPage>>['productos'] =
+    []
+  let total = 0
+  let totalPages = 0
 
   try {
-    const supabase = await createSupabaseServer()
-    const [cat, prod] = await Promise.all([
-      supabase
-        .from('categorias')
-        .select('*, subcategorias:categorias!padre_id(*)')
-        .is('padre_id', null)
-        .eq('activa', true)
-        .order('orden')
-        .order('orden', { referencedTable: 'subcategorias' }),
-      supabase
-        .from('productos')
-        .select(
-          '*, categoria:categorias(id,nombre,slug,padre_id,descuento_porcentaje,descuento_activo,descuento_fecha_fin,descuento_porcentaje_mayoreo,descuento_activo_mayoreo,descuento_fecha_fin_mayoreo), producto_categorias(categoria_id, categoria:categorias(id,nombre,slug,padre_id,descuento_porcentaje,descuento_activo,descuento_fecha_fin,descuento_porcentaje_mayoreo,descuento_activo_mayoreo,descuento_fecha_fin_mayoreo))',
-        )
-        .eq('disponible_mayoreo', true)
-        .order('orden', { ascending: true })
-        .order('created_at', { ascending: false }),
-    ])
-    categorias = ((cat.data as Categoria[] | null) ?? []).map(raiz => ({
-      ...raiz,
-      subcategorias: [...(raiz.subcategorias || [])]
-        .filter(s => s.activa !== false)
-        .sort((a, b) => a.orden - b.orden),
-    }))
-    productos = (prod.data as typeof productos | null) ?? []
+    categorias = await fetchCategoriasRaiz()
+    const result = await getCatalogProductosPage({
+      catalogType: 'mayoreo',
+      page,
+      pageSize: CATALOG_PAGE_SIZE,
+      q,
+      categoriasRaiz: categorias,
+      orden,
+    })
+    productos = result.productos
+    total = result.total
+    totalPages = result.totalPages
   } catch (error) {
     rethrowIfNextControlFlowError(error)
     console.error('[MayoreoProductosPage] Error cargando datos:', error)
@@ -87,11 +115,16 @@ export default async function MayoreoProductosPage({
 
   return (
     <ProductosClient
-      productos={withProductoCategorias(productos)}
+      productos={productos}
       categorias={categorias}
       initialQ={q || ''}
-      initialCategoria={categoria || ''}
+      initialCategoria=""
       catalogType="mayoreo"
+      page={page}
+      pageSize={CATALOG_PAGE_SIZE}
+      total={total}
+      totalPages={totalPages}
+      orden={orden}
     />
   )
 }

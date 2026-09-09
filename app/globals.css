@@ -130,6 +130,89 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* ── Cute cursor (desktop, toda la web) ── */
+html[data-cute-cursor],
+html[data-cute-cursor] * {
+  cursor: none !important;
+}
+
+html[data-cute-cursor] input,
+html[data-cute-cursor] textarea,
+html[data-cute-cursor] [contenteditable='true'],
+html[data-cute-cursor] input *,
+html[data-cute-cursor] textarea * {
+  cursor: text !important;
+}
+
+.cute-cursor {
+  position: fixed;
+  inset: 0;
+  z-index: 99998;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.cute-cursor[data-visible='true'] {
+  opacity: 1;
+}
+
+.cute-cursor[data-text='true'] {
+  opacity: 0;
+}
+
+.cute-cursor__tip,
+.cute-cursor__trail {
+  position: fixed;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  will-change: transform;
+  color: var(--accent-primary);
+}
+
+.cute-cursor__tip {
+  color: var(--accent-primary);
+  filter:
+    drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.95))
+    drop-shadow(0 4px 12px rgba(169, 137, 224, 0.55));
+  transition: color 0.2s ease, filter 0.2s ease;
+}
+
+.cute-cursor__tip svg {
+  display: block;
+  transition: transform 0.2s ease;
+}
+
+.cute-cursor__trail {
+  color: color-mix(in srgb, var(--accent-secondary) 70%, var(--accent-primary));
+  opacity: 0.32;
+}
+
+.cute-cursor__trail svg {
+  display: block;
+}
+
+.cute-cursor[data-hover='true'] .cute-cursor__tip {
+  color: var(--accent-deep);
+  filter:
+    drop-shadow(0 0 1.5px rgba(255, 255, 255, 1))
+    drop-shadow(0 5px 14px rgba(110, 79, 168, 0.5));
+}
+
+.cute-cursor[data-hover='true'] .cute-cursor__tip svg {
+  transform: scale(1.14) rotate(-6deg);
+}
+
+.cute-cursor[data-hover='true'] .cute-cursor__trail {
+  opacity: 0.45;
+}
+
+.cute-cursor[data-down='true'] .cute-cursor__tip svg {
+  transform: scale(0.9) rotate(4deg);
+}
+
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: var(--bg-base); }
 ::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 2px; }
@@ -1571,6 +1654,12 @@ header nav a {
   color: var(--accent-primary);
 }
 
+.mobile-cart-pay-option--soon {
+  cursor: not-allowed;
+  opacity: 0.78;
+  background: color-mix(in srgb, var(--bg-muted) 18%, var(--bg-card));
+}
+
 .mobile-cart-checkout-notes {
   padding: 1rem;
   border-top: 1px solid var(--border-subtle);
@@ -2655,4 +2744,14 @@ header nav a {
 .app-toast--desktop > div[role='status'] {
   flex-shrink: 0;
   margin: 0;
+}
+
+.app-toast-producto {
+  max-width: min(22rem, calc(100vw - 2rem)) !important;
+}
+
+.app-toast-producto > div[role='status'] {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

@@ -1,0 +1,138 @@
+import type { Metadata } from 'next'
+import { notFound } from 'next/navigation'
+import ProductosClient from '@/components/catalog/ProductosClient'
+import { buildCategoriaMetadata, breadcrumbJsonLd, toAbsoluteUrl } from '@/lib/seo'
+import { getSiteConfig, getSiteName } from '@/lib/site-config'
+import {
+  CATALOG_PAGE_SIZE,
+  getCatalogProductosPage,
+  type CatalogOrden,
+} from '@/lib/catalog-productos'
+import {
+  fetchCategoriasRaiz,
+  findCategoriaBySlug,
+} from '@/lib/catalog-categorias'
+import { rethrowIfNextControlFlowError } from '@/lib/next-errors'
+import JsonLd from '@/components/seo/JsonLd'
+import { catalogCategoriaPath, catalogPath } from '@/lib/catalog'
+
+export const revalidate = 60
+
+function parseOrden(raw: string | undefined): CatalogOrden {
+  if (
+    raw === 'precio-asc' ||
+    raw === 'precio-desc' ||
+    raw === 'nombre' ||
+    raw === 'relevancia'
+  ) {
+    return raw
+  }
+  return 'relevancia'
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params
+  const config = await getSiteConfig()
+  const categorias = await fetchCategoriasRaiz()
+  const cat = findCategoriaBySlug(categorias, slug)
+  if (!cat) {
+    return { title: 'Categoría no encontrada', robots: { index: false, follow: false } }
+  }
+  return buildCategoriaMetadata({
+    config,
+    categoriaNombre: cat.nombre,
+    categoriaSlug: cat.slug,
+    catalogType: 'mayoreo',
+  })
+}
+
+export default async function MayoreoProductosCategoriaPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>
+  searchParams: Promise<{ q?: string; page?: string; orden?: string }>
+}) {
+  const { slug } = await params
+  const { q, page: pageRaw, orden: ordenRaw } = await searchParams
+  const page = Math.max(1, Number(pageRaw) || 1)
+  const orden = parseOrden(ordenRaw)
+
+  const categorias = await fetchCategoriasRaiz().catch(error => {
+    rethrowIfNextControlFlowError(error)
+    console.error('[MayoreoProductosCategoriaPage] categorias:', error)
+    return []
+  })
+
+  const cat = findCategoriaBySlug(categorias, slug)
+  if (!cat) notFound()
+
+  let productos: Awaited<ReturnType<typeof getCatalogProductosPage>>['productos'] =
+    []
+  let total = 0
+  let totalPages = 0
+
+  try {
+    const result = await getCatalogProductosPage({
+      catalogType: 'mayoreo',
+      page,
+      pageSize: CATALOG_PAGE_SIZE,
+      q,
+      categoriaSlug: cat.slug,
+      categoriasRaiz: categorias,
+      orden,
+    })
+    productos = result.productos
+    total = result.total
+    totalPages = result.totalPages
+  } catch (error) {
+    rethrowIfNextControlFlowError(error)
+    console.error('[MayoreoProductosCategoriaPage] productos:', error)
+  }
+
+  const config = await getSiteConfig()
+  const siteName = getSiteName(config)
+  const categoryPath = catalogCategoriaPath('mayoreo', cat.slug)
+
+  return (
+    <>
+      <JsonLd
+        data={[
+          breadcrumbJsonLd([
+            { name: 'Inicio', path: catalogPath('mayoreo', '/') },
+            { name: 'Productos', path: catalogPath('mayoreo', '/productos') },
+            { name: cat.nombre, path: categoryPath },
+          ]),
+          {
+            '@context': 'https://schema.org',
+            '@type': 'CollectionPage',
+            name: `${cat.nombre} — Mayorista`,
+            description: `Catálogo mayorista de ${cat.nombre} en ${siteName}`,
+            url: toAbsoluteUrl(categoryPath),
+            isPartOf: {
+              '@type': 'WebSite',
+              name: siteName,
+              url: toAbsoluteUrl('/'),
+            },
+          },
+        ]}
+      />
+      <ProductosClient
+        productos={productos}
+        categorias={categorias}
+        initialQ={q || ''}
+        initialCategoria={cat.slug}
+        catalogType="mayoreo"
+        page={page}
+        pageSize={CATALOG_PAGE_SIZE}
+        total={total}
+        totalPages={totalPages}
+        orden={orden}
+      />
+    </>
+  )
+}

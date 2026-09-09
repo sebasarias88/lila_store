@@ -5,6 +5,12 @@ import Providers from '@/components/Providers'
 import ScrollToTop from '@/components/ScrollToTop'
 import ConnectionStatus from '@/components/ConnectionStatus'
 import { getSiteUrl } from '@/lib/seo'
+import {
+  SEO_DEFAULT_KEYWORDS,
+  SEO_HOME_DESCRIPTION,
+  SEO_HOME_TITLE,
+  SITE_BRAND_NAME,
+} from '@/lib/seo-brand'
 
 const baloo = Baloo_2({
   subsets: ['latin'],
@@ -21,25 +27,15 @@ const nunito = Nunito({
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   title: {
-    default: 'Catálogo detal — lila-store',
-    template: '%s | lila-store',
+    default: SEO_HOME_TITLE,
+    template: `%s | ${SITE_BRAND_NAME}`,
   },
-  description:
-    'Catálogo detal de belleza en Armenia y Quimbaya, Quindío. Maquillaje, skincare y cuidados con envíos a toda Colombia.',
-  keywords: [
-    'belleza',
-    'cuidado capilar',
-    'cosmética',
-    'catálogo detal',
-    'lila-store',
-    'Armenia',
-    'Quindío',
-    'Colombia',
-  ],
-  applicationName: 'lila-store',
-  authors: [{ name: 'lila-store' }],
-  creator: 'lila-store',
-  publisher: 'lila-store',
+  description: SEO_HOME_DESCRIPTION,
+  keywords: [...SEO_DEFAULT_KEYWORDS],
+  applicationName: SITE_BRAND_NAME,
+  authors: [{ name: SITE_BRAND_NAME }],
+  creator: SITE_BRAND_NAME,
+  publisher: SITE_BRAND_NAME,
   formatDetection: {
     telephone: false,
     email: false,
@@ -48,10 +44,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'es_CO',
-    siteName: 'lila-store',
+    siteName: SITE_BRAND_NAME,
+    title: SEO_HOME_TITLE,
+    description: SEO_HOME_DESCRIPTION,
   },
   twitter: {
     card: 'summary_large_image',
+    title: SEO_HOME_TITLE,
+    description: SEO_HOME_DESCRIPTION,
   },
   robots: {
     index: true,

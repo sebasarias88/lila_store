@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { CATALOG_STICKY_TOP_PX } from '@/lib/catalog-layout'
 
 type StickySidebarProps = {
   children: ReactNode
@@ -15,7 +16,7 @@ type StickySidebarProps = {
 export default function StickySidebar({
   children,
   className = '',
-  top = 96,
+  top = CATALOG_STICKY_TOP_PX,
 }: StickySidebarProps) {
   const slotRef = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
