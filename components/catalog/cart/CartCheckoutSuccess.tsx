@@ -5,6 +5,8 @@ import { CheckCircle2, MessageCircle, RotateCcw, Sparkles } from 'lucide-react'
 
 type CartCheckoutSuccessProps = {
   productosHref: string
+  /** Href real wa.me — más confiable que un click sintético */
+  whatsappHref?: string | null
   onReabrirWhatsApp: () => void
   onVolverResumen: () => void
   onConfirmarEnviado: () => void
@@ -26,8 +28,12 @@ function WhatsAppIcon({ size = 18 }: { size?: number }) {
   )
 }
 
+const waBtnClass =
+  'inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-[#25D366] px-5 text-[13px] font-bold text-white transition-opacity hover:opacity-95'
+
 export default function CartCheckoutSuccess({
   productosHref,
+  whatsappHref,
   onReabrirWhatsApp,
   onVolverResumen,
   onConfirmarEnviado,
@@ -57,14 +63,22 @@ export default function CartCheckoutSuccess({
       </p>
 
       <div className="mt-7 flex w-full max-w-sm flex-col gap-2.5">
-        <button
-          type="button"
-          onClick={onReabrirWhatsApp}
-          className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 rounded-full bg-[#25D366] px-5 text-[13px] font-bold text-white transition-opacity hover:opacity-95"
-        >
-          <WhatsAppIcon size={18} />
-          Reabrir WhatsApp
-        </button>
+        {whatsappHref ? (
+          <a
+            href={whatsappHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={waBtnClass}
+          >
+            <WhatsAppIcon size={18} />
+            Reabrir WhatsApp
+          </a>
+        ) : (
+          <button type="button" onClick={onReabrirWhatsApp} className={waBtnClass}>
+            <WhatsAppIcon size={18} />
+            Reabrir WhatsApp
+          </button>
+        )}
         <button
           type="button"
           onClick={onConfirmarEnviado}

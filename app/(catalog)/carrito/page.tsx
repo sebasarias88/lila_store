@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import { useCarrito } from '@/lib/store'
 import { supabase } from '@/lib/supabase'
 import { DatosCliente, ItemCarrito, MetodoPago } from '@/types'
-import { generarMensajeWhatsApp, abrirWhatsApp } from '@/lib/whatsapp'
+import { generarMensajeWhatsApp, abrirWhatsApp, reservarVentanaWhatsApp, cerrarVentanaReservada, buildWhatsAppPedidoHref } from '@/lib/whatsapp'
 import {
   findItemsSinVariaciones,
   getProductIdsWithVariaciones,
@@ -517,24 +517,28 @@ export default function CarritoPage() {
       return
     }
 
-    let idsVariaciones = idsConVariaciones
-    if (!idsVariaciones) {
-      idsVariaciones = await getProductIdsWithVariaciones(
-        items.map(i => i.producto.id),
-      )
-      setIdsConVariaciones(idsVariaciones)
-    }
-    const sinVars = findItemsSinVariaciones(items, idsVariaciones)
-    if (sinVars.length > 0) {
-      const nombre = sinVars[0].producto.nombre
-      toast.error(
-        `Elige las opciones de “${nombre.length > 36 ? `${nombre.slice(0, 36)}…` : nombre}” antes de enviar`,
-      )
-      return
-    }
-
+    // Capturar el gesto del usuario ANTES de cualquier await.
+    // En móvil/Safari el popup se bloquea si abrimos WA después de fetches async.
+    const waWin = reservarVentanaWhatsApp()
     setEnviando(true)
     try {
+      let idsVariaciones = idsConVariaciones
+      if (!idsVariaciones) {
+        idsVariaciones = await getProductIdsWithVariaciones(
+          items.map(i => i.producto.id),
+        )
+        setIdsConVariaciones(idsVariaciones)
+      }
+      const sinVars = findItemsSinVariaciones(items, idsVariaciones)
+      if (sinVars.length > 0) {
+        cerrarVentanaReservada(waWin)
+        const nombre = sinVars[0].producto.nombre
+        toast.error(
+          `Elige las opciones de “${nombre.length > 36 ? `${nombre.slice(0, 36)}…` : nombre}” antes de enviar`,
+        )
+        return
+      }
+
       const ids = [...new Set(items.map(i => i.producto.id))]
       const { data, error } = await supabase
         .from('productos')
@@ -544,6 +548,7 @@ export default function CarritoPage() {
         .in('id', ids)
 
       if (error || !data) {
+        cerrarVentanaReservada(waWin)
         console.error('[carrito] stock revalidate:', error)
         toast.error('No pudimos verificar el stock. Intenta de nuevo.')
         return
@@ -561,6 +566,7 @@ export default function CarritoPage() {
         catalogType,
       )
       if (!stockOk.ok) {
+        cerrarVentanaReservada(waWin)
         toast.error(stockOk.message)
         return
       }
@@ -569,6 +575,7 @@ export default function CarritoPage() {
       if (esTransferencia && comprobantePago) {
         const uploaded = await subirComprobantePago(comprobantePago)
         if (!uploaded.ok) {
+          cerrarVentanaReservada(waWin)
           toast.error(uploaded.message)
           return
         }
@@ -587,8 +594,12 @@ export default function CarritoPage() {
         comprobanteUrl,
       )
       setUltimoMensajeWa(mensaje)
-      abrirWhatsApp(mensaje, resolveWhatsAppPedidoNumero())
       setStep('exito')
+      abrirWhatsApp(mensaje, resolveWhatsAppPedidoNumero(), waWin)
+    } catch (err) {
+      cerrarVentanaReservada(waWin)
+      console.error('[carrito] enviar WhatsApp:', err)
+      toast.error('No pudimos abrir WhatsApp. Intenta de nuevo.')
     } finally {
       setEnviando(false)
     }
@@ -598,6 +609,10 @@ export default function CarritoPage() {
     if (!ultimoMensajeWa) return
     abrirWhatsApp(ultimoMensajeWa, resolveWhatsAppPedidoNumero())
   }
+
+  const whatsappPedidoHref = ultimoMensajeWa
+    ? buildWhatsAppPedidoHref(ultimoMensajeWa, resolveWhatsAppPedidoNumero())
+    : null
 
   const handleConfirmarPedidoEnviado = () => {
     vaciar()
@@ -663,6 +678,7 @@ export default function CarritoPage() {
           handleEnviarWhatsApp={handleEnviarWhatsApp}
           handleReabrirWhatsApp={handleReabrirWhatsApp}
           handleConfirmarPedidoEnviado={handleConfirmarPedidoEnviado}
+          whatsappHref={whatsappPedidoHref}
           inputClass={inputClass}
         />
       </div>
@@ -1528,6 +1544,7 @@ export default function CarritoPage() {
             >
               <CartCheckoutSuccess
                 productosHref={productosHref}
+                whatsappHref={whatsappPedidoHref}
                 onReabrirWhatsApp={handleReabrirWhatsApp}
                 onVolverResumen={() => setStep('resumen')}
                 onConfirmarEnviado={handleConfirmarPedidoEnviado}

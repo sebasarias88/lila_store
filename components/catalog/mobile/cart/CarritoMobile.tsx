@@ -92,6 +92,7 @@ type CarritoMobileProps = {
   handleEnviarWhatsApp: () => void | Promise<void>
   handleReabrirWhatsApp: () => void
   handleConfirmarPedidoEnviado: () => void
+  whatsappHref?: string | null
   inputClass: (campo: keyof DatosCliente) => string
 }
 
@@ -158,6 +159,7 @@ export default function CarritoMobile({
   handleEnviarWhatsApp,
   handleReabrirWhatsApp,
   handleConfirmarPedidoEnviado,
+  whatsappHref = null,
   inputClass,
 }: CarritoMobileProps) {
   const esRecogida = datos.tipoEntrega === 'recogida'
@@ -724,6 +726,7 @@ export default function CarritoMobile({
             <CartCheckoutSuccess
               compact
               productosHref={productosHref}
+              whatsappHref={whatsappHref}
               onReabrirWhatsApp={handleReabrirWhatsApp}
               onVolverResumen={() => setStep('resumen')}
               onConfirmarEnviado={handleConfirmarPedidoEnviado}

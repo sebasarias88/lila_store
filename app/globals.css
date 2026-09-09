@@ -173,10 +173,10 @@ html[data-cute-cursor] textarea * {
 }
 
 .cute-cursor__tip {
-  color: var(--accent-primary);
+  color: var(--accent-deep);
   filter:
     drop-shadow(0 0 1.5px rgba(255, 255, 255, 0.95))
-    drop-shadow(0 4px 12px rgba(169, 137, 224, 0.55));
+    drop-shadow(0 4px 10px rgba(169, 137, 224, 0.5));
   transition: color 0.2s ease, filter 0.2s ease;
 }
 
@@ -186,8 +186,8 @@ html[data-cute-cursor] textarea * {
 }
 
 .cute-cursor__trail {
-  color: color-mix(in srgb, var(--accent-secondary) 70%, var(--accent-primary));
-  opacity: 0.32;
+  color: color-mix(in srgb, var(--accent-primary) 70%, white);
+  opacity: 0.28;
 }
 
 .cute-cursor__trail svg {
@@ -195,22 +195,22 @@ html[data-cute-cursor] textarea * {
 }
 
 .cute-cursor[data-hover='true'] .cute-cursor__tip {
-  color: var(--accent-deep);
+  color: var(--accent-primary);
   filter:
     drop-shadow(0 0 1.5px rgba(255, 255, 255, 1))
-    drop-shadow(0 5px 14px rgba(110, 79, 168, 0.5));
+    drop-shadow(0 5px 14px rgba(110, 79, 168, 0.48));
 }
 
 .cute-cursor[data-hover='true'] .cute-cursor__tip svg {
-  transform: scale(1.14) rotate(-6deg);
+  transform: scale(1.12);
 }
 
 .cute-cursor[data-hover='true'] .cute-cursor__trail {
-  opacity: 0.45;
+  opacity: 0.4;
 }
 
 .cute-cursor[data-down='true'] .cute-cursor__tip svg {
-  transform: scale(0.9) rotate(4deg);
+  transform: scale(0.92);
 }
 
 ::-webkit-scrollbar { width: 4px; height: 4px; }
