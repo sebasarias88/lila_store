@@ -75,7 +75,7 @@ export default function ProcesoPedido({
   const STEPS = isPasarela ? STEPS_PASARELA : STEPS_WHATSAPP
 
   return (
-    <section className="relative overflow-hidden bg-[var(--bg-muted)] py-12 sm:py-14">
+    <section className="relative overflow-x-clip bg-[var(--bg-muted)] py-12 sm:py-14">
       <div className="pointer-events-none absolute -left-16 top-8 h-40 w-40 rounded-full bg-[rgba(169,137,224,0.14)] blur-3xl" />
       <div className="pointer-events-none absolute -right-12 bottom-4 h-44 w-44 rounded-full bg-[rgba(232,160,200,0.12)] blur-3xl" />
 
@@ -107,7 +107,7 @@ export default function ProcesoPedido({
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: '-40px' }}
-          className="flex items-start gap-0 overflow-x-auto pb-2 scrollbar-hide lg:overflow-visible lg:pb-0"
+          className="flex items-start gap-0 overflow-x-auto overflow-y-hidden pb-2 pt-3 scrollbar-hide lg:overflow-visible lg:pb-0 lg:pt-1"
         >
           {STEPS.map((step, index) => {
             const Icon = step.icon
