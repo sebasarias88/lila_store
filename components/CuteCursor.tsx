@@ -7,37 +7,17 @@ const INTERACTIVE =
 const TEXT_FIELD =
   'input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]),textarea,[contenteditable="true"]'
 
-/** Moñito / lazo cute */
-function BowIcon({ size = 28 }: { size?: number }) {
+/** Flecha tipo mouse + corazoncito */
+function ArrowHeartIcon({ size = 28 }: { size?: number }) {
   return (
-    <svg viewBox="0 0 40 32" width={size} height={size * 0.8} aria-hidden>
+    <svg viewBox="0 0 32 32" width={size} height={size} aria-hidden>
       <path
-        d="M19.2 15.2C14.2 8.4 8.2 6.6 5.4 9.2c-2.8 2.6-1.2 8.2 4.2 12.2 3.4 2.5 7.2 2.6 9.6-.2"
+        d="M6.2 4.4c-.55-.3-1.15.2-1 0.8l3.4 19.1c.15.8 1.2 1 1.7.35l4.55-5.9 2.55 6.55c.2.5.8.7 1.25.4l2.05-1.35c.45-.3.55-.9.25-1.3L16.5 14.2l7.35-1.55c.8-.15.95-1.2.25-1.6L6.2 4.4Z"
         fill="currentColor"
       />
       <path
-        d="M20.8 15.2C25.8 8.4 31.8 6.6 34.6 9.2c2.8 2.6 1.2 8.2-4.2 12.2-3.4 2.5-7.2 2.6-9.6-.2"
-        fill="currentColor"
-      />
-      <path
-        d="M18.6 15C15.2 10.4 11 9.2 9.2 10.8c-1.8 1.6-.7 5.2 2.9 7.8 2.2 1.6 4.7 1.7 6.5-.3"
+        d="M22.8 20.2c0-1.35 1-2.25 2.15-2.25.7 0 1.3.35 1.55.9.25-.55.85-.9 1.55-.9 1.15 0 2.15.9 2.15 2.25 0 2.55-3.7 4.7-3.7 4.7s-3.7-2.15-3.7-4.7Z"
         fill="#E8A0C8"
-        opacity="0.85"
-      />
-      <path
-        d="M21.4 15C24.8 10.4 29 9.2 30.8 10.8c1.8 1.6.7 5.2-2.9 7.8-2.2 1.6-4.7 1.7-6.5-.3"
-        fill="#E8A0C8"
-        opacity="0.85"
-      />
-      <ellipse cx="20" cy="15.6" rx="3.4" ry="3.8" fill="currentColor" />
-      <ellipse cx="20" cy="15.4" rx="1.7" ry="1.9" fill="#F9F6FF" opacity="0.55" />
-      <path
-        d="M17.6 18.2 12.8 28.4c-.35.75.35 1.5 1.1 1.2l5.4-2.2 1.2-6.8"
-        fill="currentColor"
-      />
-      <path
-        d="M22.4 18.2 27.2 28.4c.35.75-.35 1.5-1.1 1.2l-5.4-2.2-1.2-6.8"
-        fill="currentColor"
       />
     </svg>
   )
@@ -83,15 +63,16 @@ export default function CuteCursor() {
     if (!enabled) return
 
     const tick = () => {
-      const ease = 0.2
+      const ease = 0.22
       trail.current.x += (pos.current.x - trail.current.x) * ease
       trail.current.y += (pos.current.y - trail.current.y) * ease
 
+      // Hotspot cerca de la punta de la flecha
       if (tipRef.current) {
-        tipRef.current.style.transform = `translate3d(${pos.current.x}px, ${pos.current.y}px, 0) translate(-50%, -42%)`
+        tipRef.current.style.transform = `translate3d(${pos.current.x}px, ${pos.current.y}px, 0) translate(-12%, -8%)`
       }
       if (trailRef.current) {
-        trailRef.current.style.transform = `translate3d(${trail.current.x}px, ${trail.current.y}px, 0) translate(-50%, -42%)`
+        trailRef.current.style.transform = `translate3d(${trail.current.x}px, ${trail.current.y}px, 0) translate(-12%, -8%)`
       }
       if (rootRef.current) {
         rootRef.current.dataset.hover = hovering.current ? 'true' : 'false'
@@ -159,10 +140,10 @@ export default function CuteCursor() {
       data-down="false"
     >
       <span ref={trailRef} className="cute-cursor__trail">
-        <BowIcon size={22} />
+        <ArrowHeartIcon size={22} />
       </span>
       <span ref={tipRef} className="cute-cursor__tip">
-        <BowIcon size={28} />
+        <ArrowHeartIcon size={28} />
       </span>
     </div>
   )

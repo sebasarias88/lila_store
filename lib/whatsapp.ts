@@ -145,9 +145,81 @@ _Pedido generado desde el catálogo de Lila-store_`
   return encodeURIComponent(mensaje)
 }
 
-/** Abre WhatsApp de forma mobile-safe (evita bloqueo de popup en taps async). */
-export function abrirWhatsApp(mensaje: string, numero: string): void {
-  const href = `https://wa.me/${numero}?text=${mensaje}`
+/** Href wa.me (mensaje ya debe venir encodeURIComponent). */
+export function buildWhatsAppPedidoHref(
+  mensajeEncoded: string,
+  numero: string,
+): string {
+  const digits = numero.replace(/\D/g, '')
+  return `https://wa.me/${digits}?text=${mensajeEncoded}`
+}
+
+/**
+ * Abre una pestaña en el mismo gesto del usuario (antes de cualquier await).
+ * Luego se navega a wa.me cuando el pedido ya está listo.
+ */
+export function reservarVentanaWhatsApp(): Window | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const w = window.open('about:blank', '_blank')
+    if (w) {
+      try {
+        w.document.write(
+          '<!doctype html><title>WhatsApp…</title><body style="font-family:system-ui;padding:2rem;color:#6E4FA8">Abriendo WhatsApp…</body>',
+        )
+        w.document.close()
+      } catch {
+        /* ignore opaque / restricted docs */
+      }
+    }
+    return w
+  } catch {
+    return null
+  }
+}
+
+export function cerrarVentanaReservada(w: Window | null | undefined): void {
+  if (!w || w.closed) return
+  try {
+    w.close()
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Abre WhatsApp.
+ * Preferir `ventanaReservada` creada en el click (mobile-safe tras awaits).
+ */
+export function abrirWhatsApp(
+  mensajeEncoded: string,
+  numero: string,
+  ventanaReservada?: Window | null,
+): void {
+  const href = buildWhatsAppPedidoHref(mensajeEncoded, numero)
+
+  if (ventanaReservada && !ventanaReservada.closed) {
+    try {
+      ventanaReservada.location.href = href
+      return
+    } catch {
+      cerrarVentanaReservada(ventanaReservada)
+    }
+  }
+
+  // Same-tab en touch: no lo bloquea el popup blocker (a diferencia de target=_blank)
+  const isTouch =
+    window.matchMedia('(pointer: coarse)').matches ||
+    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+
+  if (isTouch) {
+    window.location.assign(href)
+    return
+  }
+
+  const opened = window.open(href, '_blank', 'noopener,noreferrer')
+  if (opened) return
+
   const a = document.createElement('a')
   a.href = href
   a.target = '_blank'
