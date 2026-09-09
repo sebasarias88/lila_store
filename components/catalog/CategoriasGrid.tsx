@@ -43,7 +43,7 @@ export default function CategoriasGrid({
   return (
     <section
       id="categorias"
-      className="scroll-mt-28 relative overflow-hidden bg-[var(--bg-base)] py-12 sm:py-14"
+      className="scroll-mt-28 relative overflow-x-clip bg-[var(--bg-base)] py-12 sm:py-14"
     >
       <div className="pointer-events-none absolute -right-10 top-10 h-36 w-36 rounded-full bg-[rgba(169,137,224,0.14)] blur-3xl" />
       <div className="pointer-events-none absolute -left-8 bottom-6 h-32 w-32 rounded-full bg-[rgba(232,160,200,0.1)] blur-3xl" />
@@ -81,8 +81,8 @@ export default function CategoriasGrid({
           </Link>
         </motion.div>
 
-        {/* Mobile: horizontal scroll */}
-        <div className="flex gap-4 overflow-x-auto overscroll-x-contain pb-1 scrollbar-hide sm:hidden">
+        {/* Mobile: horizontal scroll — pt evita que se corten círculos/sombras */}
+        <div className="flex gap-4 overflow-x-auto overflow-y-hidden overscroll-x-contain px-0.5 pb-2 pt-2 scrollbar-hide sm:hidden">
           {visibles.map((cat, i) => (
             <CategoriaCard
               key={cat.id}

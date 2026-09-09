@@ -433,7 +433,7 @@ export default function CarritoMobile({
                 </CartFormField>
 
                 {esRecogida ? (
-                  <div className="mx-4 mb-3 rounded-xl border border-[var(--border)] bg-[var(--bg-muted)] p-3.5">
+                  <div className="mt-3 mb-3 rounded-xl border border-[var(--border)] bg-[var(--bg-muted)] p-3.5">
                     <div className="flex items-start gap-2.5">
                       <Store size={15} className="mt-0.5 shrink-0 text-[var(--accent-primary)]" />
                       <div className="min-w-0">
