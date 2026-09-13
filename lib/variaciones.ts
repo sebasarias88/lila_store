@@ -1,4 +1,9 @@
-import { VariacionTipo } from '@/types'
+import { ItemCarrito, Producto, VariacionOpcion, VariacionTipo } from '@/types'
+import {
+  getProductoPrecios,
+  type CatalogType,
+  type ProductoPrecios,
+} from '@/lib/catalog'
 
 /** Solo tipos con al menos una opción disponible, ordenados. */
 export function normalizarVariacionesProducto(
@@ -58,4 +63,115 @@ export function imagenUrlVariacionActiva(
   }
 
   return found
+}
+
+export type VariacionPrecioOverride = {
+  precio: number | null
+  precio_antes: number | null
+  precio_mayoreo: number | null
+  precio_antes_mayoreo: number | null
+}
+
+function opcionTienePrecioPropio(opcion: VariacionOpcion): boolean {
+  return (
+    opcion.precio != null ||
+    opcion.precio_antes != null ||
+    opcion.precio_mayoreo != null ||
+    opcion.precio_antes_mayoreo != null
+  )
+}
+
+/**
+ * Snapshot de precios de la opción elegida.
+ * Si hay varias opciones con precio (varios tipos), gana la del tipo con mayor `orden`.
+ */
+export function buildVariacionPrecioOverride(
+  variaciones: VariacionTipo[],
+  selectedByTipoId: Record<string, string[]>,
+): VariacionPrecioOverride | null {
+  let found: VariacionPrecioOverride | null = null
+
+  const tipos = [...variaciones].sort((a, b) => a.orden - b.orden)
+  for (const tipo of tipos) {
+    const opcionIds = selectedByTipoId[tipo.id] ?? []
+    for (const opcionId of opcionIds) {
+      const opcion = (tipo.opciones || []).find(o => o.id === opcionId)
+      if (!opcion || !opcionTienePrecioPropio(opcion)) continue
+      found = {
+        precio: opcion.precio ?? null,
+        precio_antes: opcion.precio_antes ?? null,
+        precio_mayoreo: opcion.precio_mayoreo ?? null,
+        precio_antes_mayoreo: opcion.precio_antes_mayoreo ?? null,
+      }
+    }
+  }
+
+  return found
+}
+
+/** Producto con precios de variante aplicados (antes del descuento de categoría). */
+export function productoConPrecioVariacion(
+  producto: Producto,
+  override?: VariacionPrecioOverride | null,
+): Producto {
+  if (!override) return producto
+
+  const precioDetal =
+    override.precio != null ? override.precio : producto.precio
+  const precioAntesDetal =
+    override.precio != null
+      ? override.precio_antes
+      : producto.precio_antes
+
+  const precioMayoreo =
+    override.precio_mayoreo != null
+      ? override.precio_mayoreo
+      : producto.precio_mayoreo
+  const precioAntesMayoreo =
+    override.precio_mayoreo != null
+      ? override.precio_antes_mayoreo
+      : producto.precio_antes_mayoreo
+
+  return {
+    ...producto,
+    precio: precioDetal,
+    precio_antes: precioAntesDetal,
+    precio_mayoreo: precioMayoreo,
+    precio_antes_mayoreo: precioAntesMayoreo,
+  }
+}
+
+export function getPreciosConVariacion(
+  producto: Producto,
+  catalogType: CatalogType,
+  override?: VariacionPrecioOverride | null,
+): ProductoPrecios {
+  return getProductoPrecios(
+    productoConPrecioVariacion(producto, override),
+    catalogType,
+  )
+}
+
+export function getItemPrecios(
+  item: ItemCarrito,
+  catalogType: CatalogType = 'detal',
+): ProductoPrecios {
+  return getPreciosConVariacion(
+    item.producto,
+    catalogType,
+    item.variacionPrecioOverride,
+  )
+}
+
+/** Precio de lista corto para chips de opción en PDP (sin descuento de categoría). */
+export function precioOpcionLabel(
+  opcion: VariacionOpcion,
+  catalogType: CatalogType,
+): number | null {
+  if (catalogType === 'mayoreo') {
+    return opcion.precio_mayoreo != null && opcion.precio_mayoreo > 0
+      ? opcion.precio_mayoreo
+      : null
+  }
+  return opcion.precio != null && opcion.precio > 0 ? opcion.precio : null
 }

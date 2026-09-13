@@ -5,7 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useCarrito } from '@/lib/store'
 import { Producto, ProductoSeccion, VariacionTipo } from '@/types'
 import { getLineKey } from '@/lib/cart'
-import { buildVariacionesSeleccionadas, imagenUrlVariacionActiva } from '@/lib/variaciones'
+import {
+  buildVariacionesSeleccionadas,
+  buildVariacionPrecioOverride,
+  getPreciosConVariacion,
+  imagenUrlVariacionActiva,
+  precioOpcionLabel,
+} from '@/lib/variaciones'
 import {
   ShoppingBag,
   Plus,
@@ -30,8 +36,8 @@ import { toastProductoAgregado } from '@/lib/toastCatalog'
 import {
   catalogPath,
   catalogCategoriaPath,
+  formatPrecio,
   getDescuentoPorcentaje,
-  getProductoPrecios,
 } from '@/lib/catalog'
 import ProductoPrecio from '@/components/catalog/ProductoPrecio'
 import PageGoldAccent from '@/components/catalog/PageGoldAccent'
@@ -183,6 +189,10 @@ export default function ProductoDetalle({
     variaciones,
     selectedVariaciones,
   )
+  const variacionPrecioOverride = buildVariacionPrecioOverride(
+    variaciones,
+    selectedVariaciones,
+  )
   const lineKeyActual = getLineKey(producto.id, variacionesParaCarrito)
 
   const enCarrito = items.find(i => {
@@ -219,7 +229,13 @@ export default function ProductoDetalle({
     }
 
     const qty = Math.min(cantidad, stockRestante)
-    const result = agregar(producto, variacionesParaCarrito, catalogType, qty)
+    const result = agregar(
+      producto,
+      variacionesParaCarrito,
+      catalogType,
+      qty,
+      variacionPrecioOverride,
+    )
     if (!result.ok) {
       toast.error(result.message)
       if (qty <= 0) return
@@ -247,7 +263,11 @@ export default function ProductoDetalle({
     }
   }
 
-  const precios = getProductoPrecios(producto, catalogType)
+  const precios = getPreciosConVariacion(
+    producto,
+    catalogType,
+    variacionPrecioOverride,
+  )
   const descuento =
     precios.precio != null
       ? getDescuentoPorcentaje(precios.precio, precios.precioAntes)
@@ -485,6 +505,7 @@ export default function ProductoDetalle({
                 disponible={producto.disponible}
                 size="lg"
                 layout="stack"
+                variacionOverride={variacionPrecioOverride}
               />
             </div>
 
@@ -508,11 +529,16 @@ export default function ProductoDetalle({
                         const unavailable = !opcion.disponible
 
                         if (opcion.valor_color) {
+                          const precioLabel = precioOpcionLabel(opcion, catalogType)
                           return (
                             <button
                               key={opcion.id}
                               type="button"
-                              title={opcion.nombre}
+                              title={
+                                precioLabel != null
+                                  ? `${opcion.nombre} · ${formatPrecio(precioLabel)}`
+                                  : opcion.nombre
+                              }
                               disabled={unavailable}
                               onClick={() => toggleOpcion(tipo.id, opcion.id)}
                               className={`rounded-full p-0.5 transition-all ${
@@ -555,7 +581,18 @@ export default function ProductoDetalle({
                                 className="h-7 w-7 shrink-0 rounded-full object-cover"
                               />
                             ) : null}
-                            {opcion.nombre}
+                            <span>{opcion.nombre}</span>
+                            {precioOpcionLabel(opcion, catalogType) != null ? (
+                              <span
+                                className={`text-[11px] font-semibold ${
+                                  selected
+                                    ? 'text-[var(--accent-primary)]'
+                                    : 'text-[var(--text-muted)]'
+                                }`}
+                              >
+                                {formatPrecio(precioOpcionLabel(opcion, catalogType)!)}
+                              </span>
+                            ) : null}
                           </button>
                         )
                       })}

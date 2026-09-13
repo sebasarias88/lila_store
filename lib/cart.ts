@@ -1,5 +1,6 @@
 import { ItemCarrito } from '@/types'
-import { getProductoPrecios, type CatalogType } from '@/lib/catalog'
+import type { CatalogType } from '@/lib/catalog'
+import { getItemPrecios } from '@/lib/variaciones'
 
 /** Clave única por producto + combinación de variaciones. */
 export function getLineKey(
@@ -35,7 +36,7 @@ export function itemLineTotal(
   item: ItemCarrito,
   catalogType: CatalogType = 'detal',
 ): number | null {
-  const { precio, consultar } = getProductoPrecios(item.producto, catalogType)
+  const { precio, consultar } = getItemPrecios(item, catalogType)
   if (consultar || precio == null) return null
   return precio * item.cantidad
 }

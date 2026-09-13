@@ -34,6 +34,12 @@ export type VariacionOpcion = {
   imagen_url: string | null
   disponible: boolean
   orden: number
+  /** Precio detal de la opción. null = hereda del producto */
+  precio: number | null
+  precio_antes: number | null
+  /** Precio mayorista de la opción. null = hereda del producto */
+  precio_mayoreo: number | null
+  precio_antes_mayoreo: number | null
 }
 
 export type VariacionTipo = {
@@ -131,6 +137,16 @@ export type ItemCarrito = {
   cantidad: number
   /** tipo nombre → opción nombre */
   variacionesSeleccionadas?: Record<string, string>
+  /**
+   * Precios de la opción elegida (snapshot al agregar).
+   * null en un campo = heredar del producto para ese catálogo.
+   */
+  variacionPrecioOverride?: {
+    precio: number | null
+    precio_antes: number | null
+    precio_mayoreo: number | null
+    precio_antes_mayoreo: number | null
+  } | null
   lineKey?: string
 }
 

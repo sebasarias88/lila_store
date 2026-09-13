@@ -9,7 +9,8 @@ import {
   itemLineTotal,
   variacionesCarritoClassName,
 } from '@/lib/cart'
-import { catalogPath, getProductoPrecios, type CatalogType } from '@/lib/catalog'
+import { catalogPath, type CatalogType } from '@/lib/catalog'
+import { getItemPrecios } from '@/lib/variaciones'
 import { X, ShoppingBag, Minus, Plus, Trash2, Sparkles, Heart, CreditCard } from 'lucide-react'
 import Link from 'next/link'
 import { useScrollLock } from '@/lib/useScrollLock'
@@ -138,7 +139,7 @@ export default function CartDrawer({
                       const key = itemLineKey(item)
                       const { producto, cantidad, variacionesSeleccionadas } = item
                       const vars = formatVariacionesResumen(variacionesSeleccionadas)
-                      const { precio, consultar } = getProductoPrecios(producto, catalogType)
+                      const { precio, consultar } = getItemPrecios(item, catalogType)
                       const line = itemLineTotal(item, catalogType)
                       const maxQty =
                         stockRestanteParaProducto(producto, items, catalogType, key) +
