@@ -6,9 +6,14 @@ import {
   formatPrecio,
   getDescuentoPorcentaje,
   getPrecioDetalInfo,
-  getProductoPrecios,
+  type ProductoPrecios,
 } from '@/lib/catalog'
 import { categoriaTieneDescuentoActivo } from '@/lib/descuentos'
+import {
+  getPreciosConVariacion,
+  productoConPrecioVariacion,
+  type VariacionPrecioOverride,
+} from '@/lib/variaciones'
 
 type ProductoPrecioProps = {
   producto: Producto
@@ -16,6 +21,8 @@ type ProductoPrecioProps = {
   disponible?: boolean
   size?: 'sm' | 'lg'
   layout?: 'inline' | 'stack'
+  /** Precios de la opción de variación seleccionada */
+  variacionOverride?: VariacionPrecioOverride | null
 }
 
 export default function ProductoPrecio({
@@ -24,10 +31,16 @@ export default function ProductoPrecio({
   disponible = producto.disponible,
   size = 'sm',
   layout = 'inline',
+  variacionOverride = null,
 }: ProductoPrecioProps) {
-  const { precio, precioAntes, consultar } = getProductoPrecios(producto, catalogType)
+  const { precio, precioAntes, consultar }: ProductoPrecios = getPreciosConVariacion(
+    producto,
+    catalogType,
+    variacionOverride,
+  )
   const isMayoreo = catalogType === 'mayoreo'
-  const precioDetalInfo = isMayoreo ? getPrecioDetalInfo(producto) : null
+  const productoParaDetalInfo = productoConPrecioVariacion(producto, variacionOverride)
+  const precioDetalInfo = isMayoreo ? getPrecioDetalInfo(productoParaDetalInfo) : null
   const precioClass =
     size === 'lg'
       ? 'text-[1.85rem] font-bold leading-none sm:text-[2.1rem]'

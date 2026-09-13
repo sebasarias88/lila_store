@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { optimizeImage } from '@/lib/optimizeImage'
+import { formatCopInput, parseCopInput, sanitizeCopInput } from '@/lib/currency'
 import { VariacionOpcion, VariacionTipo } from '@/types'
 import Button from '@/components/ui/Button'
 import toast from 'react-hot-toast'
@@ -13,10 +14,24 @@ type VariacionesEditorProps = {
   onChange?: () => void
 }
 
-type NuevaOpcionState = {
+type OpcionPreciosFields = {
+  precio: string
+  precio_antes: string
+  precio_mayoreo: string
+  precio_antes_mayoreo: string
+}
+
+type NuevaOpcionState = OpcionPreciosFields & {
   nombre: string
   valor_color: string
   imagenFile: File | null
+}
+
+const EMPTY_PRECIOS: OpcionPreciosFields = {
+  precio: '',
+  precio_antes: '',
+  precio_mayoreo: '',
+  precio_antes_mayoreo: '',
 }
 
 const MAX_IMG_BYTES = 5 * 1024 * 1024
@@ -42,6 +57,66 @@ function colorSwatchStyle(value: string | null | undefined): React.CSSProperties
   return { backgroundColor: v }
 }
 
+function preciosFromOpcion(opcion: VariacionOpcion): OpcionPreciosFields {
+  return {
+    precio: opcion.precio != null ? formatCopInput(opcion.precio) : '',
+    precio_antes: opcion.precio_antes != null ? formatCopInput(opcion.precio_antes) : '',
+    precio_mayoreo:
+      opcion.precio_mayoreo != null ? formatCopInput(opcion.precio_mayoreo) : '',
+    precio_antes_mayoreo:
+      opcion.precio_antes_mayoreo != null
+        ? formatCopInput(opcion.precio_antes_mayoreo)
+        : '',
+  }
+}
+
+function preciosPayload(fields: OpcionPreciosFields) {
+  return {
+    precio: parseCopInput(fields.precio),
+    precio_antes: parseCopInput(fields.precio_antes),
+    precio_mayoreo: parseCopInput(fields.precio_mayoreo),
+    precio_antes_mayoreo: parseCopInput(fields.precio_antes_mayoreo),
+  }
+}
+
+function preciosIguales(a: OpcionPreciosFields, b: OpcionPreciosFields) {
+  return (
+    a.precio === b.precio &&
+    a.precio_antes === b.precio_antes &&
+    a.precio_mayoreo === b.precio_mayoreo &&
+    a.precio_antes_mayoreo === b.precio_antes_mayoreo
+  )
+}
+
+function PrecioField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+}) {
+  return (
+    <div className="min-w-0 space-y-1">
+      <label className="admin-form-label text-[9px] tracking-[0.1em]">{label}</label>
+      <input
+        type="text"
+        inputMode="numeric"
+        autoComplete="off"
+        value={value}
+        onChange={e => onChange(sanitizeCopInput(e.target.value))}
+        onBlur={() => {
+          const parsed = parseCopInput(value)
+          if (parsed !== null) onChange(formatCopInput(parsed))
+        }}
+        placeholder="Vacío = producto"
+        className={inputClass}
+      />
+    </div>
+  )
+}
+
 export default function VariacionesEditor({ productoId, onChange }: VariacionesEditorProps) {
   const [tipos, setTipos] = useState<VariacionTipo[]>([])
   const [loading, setLoading] = useState(false)
@@ -50,6 +125,8 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
   const [editingTipoId, setEditingTipoId] = useState<string | null>(null)
   const [editTipoNombre, setEditTipoNombre] = useState('')
   const [newOpcionByTipo, setNewOpcionByTipo] = useState<Record<string, NuevaOpcionState>>({})
+  const [preciosByOpcion, setPreciosByOpcion] = useState<Record<string, OpcionPreciosFields>>({})
+  const [savingPreciosId, setSavingPreciosId] = useState<string | null>(null)
   const [uploadingOpcionId, setUploadingOpcionId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const uploadTargetIdRef = useRef<string | null>(null)
@@ -97,28 +174,51 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
     if (error) {
       toast.error('Error al cargar variaciones')
       setTipos([])
+      setPreciosByOpcion({})
     } else {
       const sorted = ((data || []) as VariacionTipo[]).map(tipo => ({
         ...tipo,
         opciones: [...(tipo.opciones || [])].sort((a, b) => a.orden - b.orden),
       }))
       setTipos(sorted)
+      const nextPrecios: Record<string, OpcionPreciosFields> = {}
+      for (const tipo of sorted) {
+        for (const opcion of tipo.opciones || []) {
+          nextPrecios[opcion.id] = preciosFromOpcion(opcion)
+        }
+      }
+      setPreciosByOpcion(nextPrecios)
     }
     setLoading(false)
   }, [productoId])
 
   useEffect(() => {
     if (productoId) fetchTipos()
-    else setTipos([])
+    else {
+      setTipos([])
+      setPreciosByOpcion({})
+    }
   }, [productoId, fetchTipos])
 
   const getNewOpcion = (tipoId: string): NuevaOpcionState =>
-    newOpcionByTipo[tipoId] ?? { nombre: '', valor_color: '', imagenFile: null }
+    newOpcionByTipo[tipoId] ?? {
+      nombre: '',
+      valor_color: '',
+      imagenFile: null,
+      ...EMPTY_PRECIOS,
+    }
 
   const setNewOpcion = (tipoId: string, patch: Partial<NuevaOpcionState>) => {
     setNewOpcionByTipo(prev => ({
       ...prev,
       [tipoId]: { ...getNewOpcion(tipoId), ...patch },
+    }))
+  }
+
+  const patchOpcionPrecios = (opcionId: string, patch: Partial<OpcionPreciosFields>) => {
+    setPreciosByOpcion(prev => ({
+      ...prev,
+      [opcionId]: { ...(prev[opcionId] ?? EMPTY_PRECIOS), ...patch },
     }))
   }
 
@@ -189,8 +289,8 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
   }
 
   const handleAgregarOpcion = async (tipoId: string) => {
-    const { nombre, valor_color } = getNewOpcion(tipoId)
-    const trimmed = nombre.trim()
+    const draft = getNewOpcion(tipoId)
+    const trimmed = draft.nombre.trim()
     if (!trimmed) {
       toast.error('Escribe el nombre de la opción')
       return
@@ -198,7 +298,8 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
 
     const tipo = tipos.find(t => t.id === tipoId)
     const orden = tipo?.opciones?.length ?? 0
-    const colorTrimmed = valor_color.trim()
+    const colorTrimmed = draft.valor_color.trim()
+    const precios = preciosPayload(draft)
 
     const { data, error } = await supabase
       .from('variacion_opciones')
@@ -209,6 +310,7 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
           valor_color: colorTrimmed || null,
           disponible: true,
           orden,
+          ...precios,
         },
       ])
       .select('id')
@@ -219,7 +321,7 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
       return
     }
 
-    const imagenFile = getNewOpcion(tipoId).imagenFile
+    const imagenFile = draft.imagenFile
     if (imagenFile) {
       setUploadingOpcionId(data.id)
       const url = await uploadOpcionFile(imagenFile, data.id)
@@ -241,6 +343,29 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
       delete next[tipoId]
       return next
     })
+    await fetchTipos()
+    notifyChange()
+  }
+
+  const handleGuardarPreciosOpcion = async (opcion: VariacionOpcion) => {
+    const draft = preciosByOpcion[opcion.id] ?? preciosFromOpcion(opcion)
+    const baseline = preciosFromOpcion(opcion)
+    if (preciosIguales(draft, baseline)) return
+
+    setSavingPreciosId(opcion.id)
+    const { error } = await supabase
+      .from('variacion_opciones')
+      .update(preciosPayload(draft))
+      .eq('id', opcion.id)
+
+    if (error) {
+      toast.error('Error al guardar precios de la opción')
+      setSavingPreciosId(null)
+      return
+    }
+
+    toast.success('Precios de opción guardados')
+    setSavingPreciosId(null)
     await fetchTipos()
     notifyChange()
   }
@@ -347,7 +472,6 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
         <p className="text-[13px] text-[var(--text-muted)]">
           Guarda el producto primero para agregar variaciones
         </p>
-        <p className="admin-form-hint mt-1">Ej: Color → Rubio, Castaño · Tono → Claro, Oscuro</p>
       </div>
     )
   }
@@ -416,81 +540,145 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="space-y-3">
                 {tipo.opciones && tipo.opciones.length > 0 ? (
-                  tipo.opciones.map(opcion => (
-                    <div
-                      key={opcion.id}
-                      className={`inline-flex items-center gap-2 rounded-lg border px-2 py-1.5 ${
-                        opcion.disponible
-                          ? 'border-[rgba(169,137,224,0.3)] bg-[rgba(169,137,224,0.08)]'
-                          : 'border-[var(--border-subtle)] bg-[rgba(248,246,241,0.04)] opacity-60'
-                      }`}
-                    >
-                      <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md border border-[rgba(169,137,224,0.28)] bg-[rgba(248,246,241,0.06)]">
-                        {uploadingOpcionId === opcion.id ? (
-                          <span className="flex h-full w-full items-center justify-center">
-                            <Loader2 size={14} className="animate-spin text-[var(--accent-secondary)]" />
+                  tipo.opciones.map(opcion => {
+                    const draft =
+                      preciosByOpcion[opcion.id] ?? preciosFromOpcion(opcion)
+                    const dirty = !preciosIguales(draft, preciosFromOpcion(opcion))
+                    const saving = savingPreciosId === opcion.id
+
+                    return (
+                      <div
+                        key={opcion.id}
+                        className={`rounded-xl border p-3 ${
+                          opcion.disponible
+                            ? 'border-[rgba(169,137,224,0.3)] bg-[rgba(169,137,224,0.06)]'
+                            : 'border-[var(--border-subtle)] bg-[rgba(248,246,241,0.04)] opacity-70'
+                        }`}
+                      >
+                        <div className="flex flex-wrap items-center gap-2">
+                          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md border border-[rgba(169,137,224,0.28)] bg-[rgba(248,246,241,0.06)]">
+                            {uploadingOpcionId === opcion.id ? (
+                              <span className="flex h-full w-full items-center justify-center">
+                                <Loader2
+                                  size={14}
+                                  className="animate-spin text-[var(--accent-secondary)]"
+                                />
+                              </span>
+                            ) : opcion.imagen_url ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={opcion.imagen_url}
+                                alt=""
+                                className="h-full w-full object-cover"
+                              />
+                            ) : opcion.valor_color ? (
+                              <span
+                                className="block h-full w-full"
+                                style={colorSwatchStyle(opcion.valor_color)}
+                              />
+                            ) : (
+                              <span className="flex h-full w-full items-center justify-center text-[var(--text-subtle)]">
+                                <ImagePlus size={14} />
+                              </span>
+                            )}
+                          </div>
+                          <span className="min-w-0 flex-1 text-[13px] font-medium text-[var(--text-primary)]">
+                            {opcion.nombre}
                           </span>
-                        ) : opcion.imagen_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={opcion.imagen_url}
-                            alt=""
-                            className="h-full w-full object-cover"
+                          <button
+                            type="button"
+                            onClick={() => pickOpcionImagen(opcion.id)}
+                            className="rounded px-1.5 py-0.5 text-[9px] uppercase tracking-[0.5px] text-[var(--accent-secondary)] hover:bg-[rgba(169,137,224,0.12)]"
+                            title={opcion.imagen_url ? 'Cambiar foto' : 'Subir foto'}
+                          >
+                            Foto
+                          </button>
+                          {opcion.imagen_url && (
+                            <button
+                              type="button"
+                              onClick={() => handleQuitarImagenOpcion(opcion)}
+                              className="rounded px-1.5 py-0.5 text-[9px] uppercase tracking-[0.5px] text-[var(--text-subtle)] hover:bg-[rgba(248,113,113,0.1)] hover:text-red-400"
+                              title="Quitar foto"
+                            >
+                              Quitar
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleToggleDisponible(opcion.id, opcion.disponible)
+                            }
+                            className={`rounded px-1.5 py-0.5 text-[9px] uppercase tracking-[0.5px] transition-colors ${
+                              opcion.disponible
+                                ? 'text-emerald-400 hover:bg-[rgba(74,222,128,0.12)]'
+                                : 'text-[var(--text-subtle)] hover:bg-[rgba(248,246,241,0.06)]'
+                            }`}
+                            title={
+                              opcion.disponible
+                                ? 'Marcar no disponible'
+                                : 'Marcar disponible'
+                            }
+                          >
+                            {opcion.disponible ? 'On' : 'Off'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleEliminarOpcion(opcion)}
+                            className="text-[var(--text-subtle)] hover:text-red-400"
+                            aria-label="Eliminar opción"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+
+                        <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-4">
+                          <PrecioField
+                            label="Precio detal"
+                            value={draft.precio}
+                            onChange={v => patchOpcionPrecios(opcion.id, { precio: v })}
                           />
-                        ) : opcion.valor_color ? (
-                          <span
-                            className="block h-full w-full"
-                            style={colorSwatchStyle(opcion.valor_color)}
+                          <PrecioField
+                            label="Antes detal"
+                            value={draft.precio_antes}
+                            onChange={v =>
+                              patchOpcionPrecios(opcion.id, { precio_antes: v })
+                            }
                           />
-                        ) : (
-                          <span className="flex h-full w-full items-center justify-center text-[var(--text-subtle)]">
-                            <ImagePlus size={14} />
-                          </span>
+                          <PrecioField
+                            label="Precio mayoreo"
+                            value={draft.precio_mayoreo}
+                            onChange={v =>
+                              patchOpcionPrecios(opcion.id, { precio_mayoreo: v })
+                            }
+                          />
+                          <PrecioField
+                            label="Antes mayoreo"
+                            value={draft.precio_antes_mayoreo}
+                            onChange={v =>
+                              patchOpcionPrecios(opcion.id, {
+                                precio_antes_mayoreo: v,
+                              })
+                            }
+                          />
+                        </div>
+
+                        {dirty && (
+                          <div className="mt-2 flex justify-end">
+                            <Button
+                              type="button"
+                              size="sm"
+                              loading={saving}
+                              onClick={() => handleGuardarPreciosOpcion(opcion)}
+                            >
+                              Guardar precios
+                            </Button>
+                          </div>
                         )}
                       </div>
-                      <span className="text-[12px] text-[var(--text-primary)]">{opcion.nombre}</span>
-                      <button
-                        type="button"
-                        onClick={() => pickOpcionImagen(opcion.id)}
-                        className="rounded px-1.5 py-0.5 text-[9px] uppercase tracking-[0.5px] text-[var(--accent-secondary)] hover:bg-[rgba(169,137,224,0.12)]"
-                        title={opcion.imagen_url ? 'Cambiar foto' : 'Subir foto'}
-                      >
-                        Foto
-                      </button>
-                      {opcion.imagen_url && (
-                        <button
-                          type="button"
-                          onClick={() => handleQuitarImagenOpcion(opcion)}
-                          className="rounded px-1.5 py-0.5 text-[9px] uppercase tracking-[0.5px] text-[var(--text-subtle)] hover:bg-[rgba(248,113,113,0.1)] hover:text-red-400"
-                          title="Quitar foto"
-                        >
-                          Quitar
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => handleToggleDisponible(opcion.id, opcion.disponible)}
-                        className={`rounded px-1.5 py-0.5 text-[9px] uppercase tracking-[0.5px] transition-colors ${
-                          opcion.disponible
-                            ? 'text-emerald-400 hover:bg-[rgba(74,222,128,0.12)]'
-                            : 'text-[var(--text-subtle)] hover:bg-[rgba(248,246,241,0.06)]'
-                        }`}
-                        title={opcion.disponible ? 'Marcar no disponible' : 'Marcar disponible'}
-                      >
-                        {opcion.disponible ? 'On' : 'Off'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleEliminarOpcion(opcion)}
-                        className="text-[var(--text-subtle)] hover:text-red-400"
-                        aria-label="Eliminar opción"
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                  ))
+                    )
+                  })
                 ) : (
                   <p className="text-[11px] font-light italic text-[var(--text-subtle)]">
                     Sin opciones — agrega la primera abajo
@@ -498,75 +686,107 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
                 )}
               </div>
 
-              <div className="admin-form-empty mt-3 flex flex-col gap-2 p-3 md:flex-row md:items-end">
-                <div className="min-w-0 flex-1 space-y-1">
-                  <label className="admin-form-label text-[9px] tracking-[0.1em]">
-                    Nombre de la opción
-                  </label>
-                  <input
-                    type="text"
-                    value={getNewOpcion(tipo.id).nombre}
-                    onChange={e => setNewOpcion(tipo.id, { nombre: e.target.value })}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        handleAgregarOpcion(tipo.id)
-                      }
-                    }}
-                    placeholder="Ej: Rubio, 500ml, Claro"
-                    className={inputClass}
-                  />
-                </div>
-                <div className="w-full space-y-1 md:w-36">
-                  <label className="admin-form-label text-[9px] tracking-[0.1em]">
-                    Color hex (opcional)
-                  </label>
-                  <div className="flex items-center gap-2">
-                    {getNewOpcion(tipo.id).valor_color.trim() && (
-                      <span
-                        className="h-8 w-8 shrink-0 rounded-full border border-[rgba(248,246,241,0.2)]"
-                        style={colorSwatchStyle(getNewOpcion(tipo.id).valor_color)}
-                      />
-                    )}
+              <div className="admin-form-empty mt-3 space-y-3 p-3">
+                <div className="flex flex-col gap-2 md:flex-row md:items-end">
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <label className="admin-form-label text-[9px] tracking-[0.1em]">
+                      Nombre de la opción
+                    </label>
                     <input
                       type="text"
-                      value={getNewOpcion(tipo.id).valor_color}
-                      onChange={e => setNewOpcion(tipo.id, { valor_color: e.target.value })}
-                      placeholder="#A989E0"
-                      className={`${inputClass} py-2`}
+                      value={getNewOpcion(tipo.id).nombre}
+                      onChange={e => setNewOpcion(tipo.id, { nombre: e.target.value })}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          handleAgregarOpcion(tipo.id)
+                        }
+                      }}
+                      placeholder="Ej: Rubio, 500ml, Claro"
+                      className={inputClass}
                     />
                   </div>
+                  <div className="w-full space-y-1 md:w-36">
+                    <label className="admin-form-label text-[9px] tracking-[0.1em]">
+                      Color hex (opcional)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      {getNewOpcion(tipo.id).valor_color.trim() && (
+                        <span
+                          className="h-8 w-8 shrink-0 rounded-full border border-[rgba(248,246,241,0.2)]"
+                          style={colorSwatchStyle(getNewOpcion(tipo.id).valor_color)}
+                        />
+                      )}
+                      <input
+                        type="text"
+                        value={getNewOpcion(tipo.id).valor_color}
+                        onChange={e =>
+                          setNewOpcion(tipo.id, { valor_color: e.target.value })
+                        }
+                        placeholder="#A989E0"
+                        className={`${inputClass} py-2`}
+                      />
+                    </div>
+                  </div>
+                  <div className="w-full space-y-1 md:w-40">
+                    <label className="admin-form-label text-[9px] tracking-[0.1em]">
+                      Foto (opcional)
+                    </label>
+                    <label className="admin-input admin-input--compact flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-[12px] text-[var(--text-muted)]">
+                      <ImagePlus size={14} className="shrink-0 text-[var(--accent-secondary)]" />
+                      <span className="min-w-0 truncate">
+                        {getNewOpcion(tipo.id).imagenFile
+                          ? getNewOpcion(tipo.id).imagenFile!.name
+                          : 'Elegir imagen'}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={e =>
+                          setNewOpcion(tipo.id, {
+                            imagenFile: e.target.files?.[0] ?? null,
+                          })
+                        }
+                      />
+                    </label>
+                  </div>
                 </div>
-                <div className="w-full space-y-1 md:w-40">
-                  <label className="admin-form-label text-[9px] tracking-[0.1em]">
-                    Foto (opcional)
-                  </label>
-                  <label className="admin-input admin-input--compact flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 text-[12px] text-[var(--text-muted)]">
-                    <ImagePlus size={14} className="shrink-0 text-[var(--accent-secondary)]" />
-                    <span className="min-w-0 truncate">
-                      {getNewOpcion(tipo.id).imagenFile
-                        ? getNewOpcion(tipo.id).imagenFile!.name
-                        : 'Elegir imagen'}
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={e =>
-                        setNewOpcion(tipo.id, { imagenFile: e.target.files?.[0] ?? null })
-                      }
-                    />
-                  </label>
+
+                <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+                  <PrecioField
+                    label="Precio detal"
+                    value={getNewOpcion(tipo.id).precio}
+                    onChange={v => setNewOpcion(tipo.id, { precio: v })}
+                  />
+                  <PrecioField
+                    label="Antes detal"
+                    value={getNewOpcion(tipo.id).precio_antes}
+                    onChange={v => setNewOpcion(tipo.id, { precio_antes: v })}
+                  />
+                  <PrecioField
+                    label="Precio mayoreo"
+                    value={getNewOpcion(tipo.id).precio_mayoreo}
+                    onChange={v => setNewOpcion(tipo.id, { precio_mayoreo: v })}
+                  />
+                  <PrecioField
+                    label="Antes mayoreo"
+                    value={getNewOpcion(tipo.id).precio_antes_mayoreo}
+                    onChange={v => setNewOpcion(tipo.id, { precio_antes_mayoreo: v })}
+                  />
                 </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => handleAgregarOpcion(tipo.id)}
-                  className="shrink-0"
-                >
-                  <Plus size={13} />
-                  Agregar
-                </Button>
+
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => handleAgregarOpcion(tipo.id)}
+                    className="shrink-0"
+                  >
+                    <Plus size={13} />
+                    Agregar
+                  </Button>
+                </div>
               </div>
             </div>
           ))}
@@ -609,8 +829,8 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
           </Button>
         </div>
         <p className="admin-form-hint mt-3">
-          El color hex es opcional (círculo de muestra). La foto de cada opción también es
-          opcional: en la tienda se muestra al elegirla.
+          Precio vacío en una opción = hereda el precio del producto. Si varias opciones tienen
+          precio, gana la del tipo con mayor orden (ej. Tamaño).
         </p>
       </div>
 

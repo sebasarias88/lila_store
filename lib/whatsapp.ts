@@ -1,6 +1,7 @@
 import { ItemCarrito, DatosCliente } from '@/types'
 import { formatVariacionesResumen } from '@/lib/cart'
-import { getProductoPrecios, type CatalogType } from '@/lib/catalog'
+import type { CatalogType } from '@/lib/catalog'
+import { getItemPrecios } from '@/lib/variaciones'
 
 export type WhatsAppConsultaContext = 'flotante' | 'nosotros' | 'footer'
 
@@ -52,7 +53,7 @@ function precioUnitarioItem(
   item: ItemCarrito,
   catalogType: CatalogType,
 ): number | null {
-  const { precio, consultar } = getProductoPrecios(item.producto, catalogType)
+  const { precio, consultar } = getItemPrecios(item, catalogType)
   if (consultar || precio == null) return null
   return precio
 }
@@ -79,8 +80,8 @@ export function generarMensajeWhatsApp(
 
   const productosLineas = items
     .map((item) => {
-      const { precio, precioAntes, consultar } = getProductoPrecios(
-        item.producto,
+      const { precio, precioAntes, consultar } = getItemPrecios(
+        item,
         catalogType,
       )
       const unitario =

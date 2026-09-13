@@ -9,7 +9,8 @@ import {
   itemLineTotal,
   variacionesCarritoClassName,
 } from '@/lib/cart'
-import { catalogPath, getProductoPrecios, type CatalogType } from '@/lib/catalog'
+import { catalogPath, type CatalogType } from '@/lib/catalog'
+import { getItemPrecios } from '@/lib/variaciones'
 import MobileCartQtyStepper from '@/components/catalog/mobile/cart/MobileCartQtyStepper'
 
 function formatPrecio(precio: number) {
@@ -43,7 +44,7 @@ export default function MobileCartItem({
   const vars = formatVariacionesResumen(variacionesSeleccionadas)
   const line = itemLineTotal(item, catalogType)
   const productHref = catalogPath(catalogType, `/productos/${producto.slug}`)
-  const { precio, consultar } = getProductoPrecios(producto, catalogType)
+  const { precio, consultar } = getItemPrecios(item, catalogType)
 
   return (
     <motion.article

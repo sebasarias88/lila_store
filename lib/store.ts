@@ -1,8 +1,9 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { ItemCarrito, Producto } from '@/types'
-import { getLineKey, itemLineKey } from '@/lib/cart'
+import { getLineKey, itemLineKey, itemLineTotal } from '@/lib/cart'
 import type { CatalogType } from '@/lib/catalog'
+import type { VariacionPrecioOverride } from '@/lib/variaciones'
 import {
   getStockCatalogo,
   mensajeStockRestante,
@@ -21,6 +22,7 @@ type CartStore = {
     variacionesSeleccionadas?: Record<string, string>,
     catalogType?: CatalogType,
     cantidad?: number,
+    variacionPrecioOverride?: VariacionPrecioOverride | null,
   ) => AgregarResultado
   quitar: (lineKey: string) => void
   actualizarCantidad: (
@@ -31,7 +33,7 @@ type CartStore = {
   vaciar: () => void
   /** Actualiza stock/disponibilidad de productos en el carrito con datos frescos. */
   aplicarStockFresco: (freshById: Record<string, StockProductoFresh>) => void
-  total: () => number
+  total: (catalogType?: CatalogType) => number
   cantidad: () => number
 }
 
@@ -45,6 +47,7 @@ export const useCarrito = create<CartStore>()(
         variacionesSeleccionadas,
         catalogType = 'detal',
         cantidad = 1,
+        variacionPrecioOverride = null,
       ) => {
         const qty = Math.max(1, Math.floor(cantidad) || 1)
         const restantes = stockRestanteParaProducto(
@@ -68,7 +71,12 @@ export const useCarrito = create<CartStore>()(
           set({
             items: items.map(i =>
               itemLineKey(i) === lineKey
-                ? { ...i, cantidad: i.cantidad + toAdd }
+                ? {
+                    ...i,
+                    cantidad: i.cantidad + toAdd,
+                    variacionPrecioOverride:
+                      variacionPrecioOverride ?? i.variacionPrecioOverride ?? null,
+                  }
                 : i,
             ),
           })
@@ -80,6 +88,7 @@ export const useCarrito = create<CartStore>()(
                 producto,
                 cantidad: toAdd,
                 variacionesSeleccionadas,
+                variacionPrecioOverride: variacionPrecioOverride ?? null,
                 lineKey,
               },
             ],
@@ -162,11 +171,11 @@ export const useCarrito = create<CartStore>()(
         })
       },
 
-      total: () =>
-        get().items.reduce(
-          (acc, i) => acc + i.producto.precio * i.cantidad,
-          0,
-        ),
+      total: (catalogType = 'detal') =>
+        get().items.reduce((acc, i) => {
+          const line = itemLineTotal(i, catalogType)
+          return line != null ? acc + line : acc
+        }, 0),
 
       cantidad: () =>
         get().items.reduce((acc, i) => acc + i.cantidad, 0),
