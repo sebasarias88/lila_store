@@ -5,7 +5,7 @@ import { NextResponse, type NextRequest } from 'next/server'
  * Solo rutas de admin: refresca la sesión Auth.
  * El catálogo público NO pasa por aquí → evita Auth API en cada pageview (egress).
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(

@@ -62,7 +62,7 @@ export default async function ProductosCategoriaPage({
   const page = Math.max(1, Number(pageRaw) || 1)
   const orden = parseOrden(ordenRaw)
 
-  let categorias = await fetchCategoriasRaiz().catch(error => {
+  const categorias = await fetchCategoriasRaiz().catch(error => {
     rethrowIfNextControlFlowError(error)
     console.error('[ProductosCategoriaPage] categorias:', error)
     return []

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { optimizeImage } from '@/lib/optimizeImage'
 
 export const CONFIG_TRANSFERENCIA_ACTIVO = 'transferencia_activo'
 export const CONFIG_TRANSFERENCIA_BANCO = 'transferencia_banco'
@@ -8,8 +9,17 @@ export const CONFIG_TRANSFERENCIA_TITULAR = 'transferencia_titular'
 export const CONFIG_TRANSFERENCIA_LLAVE = 'transferencia_llave'
 
 export const BUCKET_COMPROBANTES = 'comprobantes-pago'
-export const COMPROBANTE_SIGNED_TTL_SEC = 60 * 60 * 24 * 7 // 7 días
-const COMPROBANTE_MAX_BYTES = 10 * 1024 * 1024
+/** Receipts live under this folder; the admin route only serves paths like this. */
+export const COMPROBANTE_PATH_RE =
+  /^receipts\/\d{4}-\d{2}\/[0-9a-f-]{36}\.(webp|jpg|jpeg|png|pdf)$/
+/** Same limit as the bucket (5 MB). */
+const COMPROBANTE_MAX_BYTES = 5 * 1024 * 1024
+const COMPROBANTE_MIME_OK = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'application/pdf',
+])
 
 export type DatosTransferencia = {
   activo: boolean
@@ -41,16 +51,6 @@ export function esMetodoTransferencia(nombre: string | null | undefined): boolea
   return (nombre || '').trim().toLowerCase().includes('transferencia')
 }
 
-function extDeArchivo(file: File): string {
-  const fromName = file.name.split('.').pop()?.toLowerCase() || ''
-  if (fromName && /^[a-z0-9]{1,5}$/.test(fromName)) return fromName
-  if (file.type === 'application/pdf') return 'pdf'
-  if (file.type === 'image/png') return 'png'
-  if (file.type === 'image/webp') return 'webp'
-  if (file.type === 'image/heic' || file.type === 'image/heif') return 'heic'
-  return 'jpg'
-}
-
 export function validarArchivoComprobante(
   file: File,
 ): { ok: true } | { ok: false; message: string } {
@@ -63,26 +63,47 @@ export function validarArchivoComprobante(
     return { ok: false, message: 'El comprobante debe ser una imagen o un PDF' }
   }
   if (file.size > COMPROBANTE_MAX_BYTES) {
-    return { ok: false, message: 'El archivo no puede superar 10 MB' }
+    return { ok: false, message: 'El archivo no puede superar 5 MB' }
   }
   return { ok: true }
 }
 
+/**
+ * Uploads the customer's transfer receipt to the private bucket.
+ * Images are compressed to WebP first. The returned URL points to the admin
+ * panel (/admin/comprobantes/...), so only a signed-in admin can open it:
+ * the receipt (personal data) is never exposed through a public link.
+ */
 export async function subirComprobantePago(
   file: File,
 ): Promise<{ ok: true; url: string } | { ok: false; message: string }> {
   const valid = validarArchivoComprobante(file)
   if (!valid.ok) return valid
 
-  const ext = extDeArchivo(file)
-  const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+  let toUpload = file
+  if (file.type.startsWith('image/')) {
+    const optimized = await optimizeImage(file)
+    if (optimized.ok) toUpload = optimized.file
+  }
+
+  const mime = toUpload.type.toLowerCase()
+  if (!COMPROBANTE_MIME_OK.has(mime)) {
+    return {
+      ok: false,
+      message: 'No pudimos leer ese formato. Envía una captura de pantalla (JPG o PNG) o un PDF.',
+    }
+  }
+  if (toUpload.size > COMPROBANTE_MAX_BYTES) {
+    return { ok: false, message: 'El archivo no puede superar 5 MB' }
+  }
+
+  const ext = mime === 'application/pdf' ? 'pdf' : mime.split('/')[1]
+  const month = new Date().toISOString().slice(0, 7)
+  const path = `receipts/${month}/${crypto.randomUUID()}.${ext}`
 
   const { error: uploadError } = await supabase.storage
     .from(BUCKET_COMPROBANTES)
-    .upload(path, file, {
-      upsert: false,
-      contentType: file.type || undefined,
-    })
+    .upload(path, toUpload, { upsert: false, contentType: mime })
 
   if (uploadError) {
     console.error('[comprobante] upload:', uploadError)
@@ -92,17 +113,5 @@ export async function subirComprobantePago(
     }
   }
 
-  const { data, error: signError } = await supabase.storage
-    .from(BUCKET_COMPROBANTES)
-    .createSignedUrl(path, COMPROBANTE_SIGNED_TTL_SEC)
-
-  if (signError || !data?.signedUrl) {
-    console.error('[comprobante] signed url:', signError)
-    return {
-      ok: false,
-      message: 'El archivo se subió, pero no pudimos generar el enlace. Intenta de nuevo.',
-    }
-  }
-
-  return { ok: true, url: data.signedUrl }
+  return { ok: true, url: `${window.location.origin}/admin/comprobantes/${path}` }
 }

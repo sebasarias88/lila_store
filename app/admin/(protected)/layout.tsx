@@ -1,4 +1,4 @@
-import { createSupabaseServer } from '@/lib/supabase-server'
+import { getAdminUser } from '@/lib/adminAuth'
 import { redirect } from 'next/navigation'
 import AdminSidebar from '@/components/admin/Sidebar'
 import MobileAdminShell from '@/components/admin/mobile/MobileAdminShell'
@@ -8,10 +8,9 @@ export default async function AdminProtectedLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createSupabaseServer()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) redirect('/admin/login')
+  // Being signed in is not enough: the account must be in private.admin_users.
+  const admin = await getAdminUser()
+  if (!admin) redirect('/admin/login')
 
   return (
     <div className="admin-shell min-h-screen bg-[var(--bg-base)]">
