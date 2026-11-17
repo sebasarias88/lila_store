@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Banner } from '@/types'
@@ -34,9 +34,10 @@ export default function HeroBanner({
   const hasImages = bannersConImagen.length > 0
   const currentBanner = bannersConImagen[current]
 
-  const next = useCallback(() => {
-    setCurrent(c => (c + 1) % Math.max(bannersConImagen.length, 1))
-  }, [bannersConImagen.length])
+  const bannerCount = bannersConImagen.length
+  const next = () => {
+    setCurrent(c => (c + 1) % Math.max(bannerCount, 1))
+  }
 
   const prev = () => {
     setCurrent(c =>
@@ -45,10 +46,12 @@ export default function HeroBanner({
   }
 
   useEffect(() => {
-    if (!isPlaying || bannersConImagen.length <= 1) return
-    const timer = setInterval(next, 5500)
+    if (!isPlaying || bannerCount <= 1) return
+    const timer = setInterval(() => {
+      setCurrent(c => (c + 1) % Math.max(bannerCount, 1))
+    }, 5500)
     return () => clearInterval(timer)
-  }, [isPlaying, next, bannersConImagen.length])
+  }, [isPlaying, bannerCount])
 
   useEffect(() => {
     document.documentElement.setAttribute(

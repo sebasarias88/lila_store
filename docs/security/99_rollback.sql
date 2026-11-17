@@ -1,0 +1,30 @@
+-- Rollback: recreate the legacy policies exactly as they were on 2026-11-17
+-- (snapshot also stored in private.policies_backup_20261117).
+create policy anuncio_modal_write_auth on public.anuncio_modal for all using (auth.role() = 'authenticated');
+create policy anuncio_modal_read_public on public.anuncio_modal for select using (true);
+create policy banners_write on public.banners for all using (auth.role() = 'authenticated');
+create policy banners_read on public.banners for select using (true);
+create policy cats_write_auth on public.categorias for all using (auth.role() = 'authenticated');
+create policy cats_read_public on public.categorias for select using (true);
+create policy config_write_auth on public.configuracion for all using (auth.role() = 'authenticated');
+create policy config_read_public on public.configuracion for select using (true);
+create policy metodos_pago_write_auth on public.metodos_pago for all using (auth.role() = 'authenticated');
+create policy metodos_pago_read_public on public.metodos_pago for select using (true);
+create policy prod_cats_write on public.producto_categorias for all using (auth.role() = 'authenticated');
+create policy prod_cats_read on public.producto_categorias for select using (true);
+create policy secciones_write on public.producto_secciones for all using (auth.role() = 'authenticated');
+create policy secciones_read on public.producto_secciones for select using (true);
+create policy prods_write_auth on public.productos for all using (auth.role() = 'authenticated');
+create policy prods_read_public on public.productos for select using (true);
+create policy promociones_write on public.promociones for all using (auth.role() = 'authenticated');
+create policy promociones_read on public.promociones for select using (true);
+create policy var_opciones_write on public.variacion_opciones for all using (auth.role() = 'authenticated');
+create policy var_opciones_read on public.variacion_opciones for select using (true);
+create policy var_tipos_write on public.variacion_tipos for all using (auth.role() = 'authenticated');
+create policy var_tipos_read on public.variacion_tipos for select using (true);
+create policy banners_storage_delete on storage.objects for delete using (bucket_id = 'banners' and auth.role() = 'authenticated');
+create policy banners_storage_write on storage.objects for insert with check (bucket_id = 'banners' and auth.role() = 'authenticated');
+create policy banners_storage_read on storage.objects for select using (bucket_id = 'banners');
+create policy storage_delete_auth on storage.objects for delete using (bucket_id = 'productos' and auth.role() = 'authenticated');
+create policy storage_upload_auth on storage.objects for insert with check (bucket_id = 'productos' and auth.role() = 'authenticated');
+create policy storage_read_public on storage.objects for select using (bucket_id = 'productos');

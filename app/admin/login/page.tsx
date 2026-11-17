@@ -35,6 +35,15 @@ export default function LoginPage() {
       return
     }
 
+    // Signed in, but only accounts listed as admins may enter the panel.
+    const { data: isAdmin, error: adminError } = await supabase.rpc('is_admin')
+    if (adminError || isAdmin !== true) {
+      await supabase.auth.signOut()
+      setError('Esta cuenta no tiene permisos de administrador')
+      setLoading(false)
+      return
+    }
+
     router.push('/admin/dashboard')
     router.refresh()
   }
