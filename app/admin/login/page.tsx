@@ -44,6 +44,13 @@ export default function LoginPage() {
       return
     }
 
+    // Return to where the admin was going (e.g. a receipt link from WhatsApp).
+    const next = new URLSearchParams(window.location.search).get('next')
+    if (next && next.startsWith('/admin/') && !next.startsWith('//')) {
+      // Full navigation: the receipt link is a route handler, not a page.
+      window.location.assign(next)
+      return
+    }
     router.push('/admin/dashboard')
     router.refresh()
   }
