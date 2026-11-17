@@ -5,6 +5,7 @@ import Footer from '@/components/catalog/Footer'
 import PageTransition from '@/components/catalog/PageTransition'
 import NavigationProgress from '@/components/catalog/NavigationProgress'
 import FloatingWhatsApp from '@/components/catalog/FloatingWhatsApp'
+import CookieNotice from '@/components/legal/CookieNotice'
 import JsonLd from '@/components/seo/JsonLd'
 import { organizationJsonLd, websiteJsonLd } from '@/lib/seo'
 import { resolveWhatsAppNumero } from '@/lib/negocio'
@@ -64,6 +65,7 @@ export default async function CatalogLayout({
         nombreNegocio={nombreNegocio}
         whatsapp={resolveWhatsAppNumero(config['whatsapp_numero'])}
       />
+      <CookieNotice />
       <FloatingWhatsApp
         whatsapp={resolveWhatsAppNumero(config['whatsapp_numero'])}
       />

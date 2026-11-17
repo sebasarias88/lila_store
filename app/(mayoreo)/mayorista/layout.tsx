@@ -4,6 +4,7 @@ import Footer from '@/components/catalog/Footer'
 import PageTransition from '@/components/catalog/PageTransition'
 import NavigationProgress from '@/components/catalog/NavigationProgress'
 import FloatingWhatsApp from '@/components/catalog/FloatingWhatsApp'
+import CookieNotice from '@/components/legal/CookieNotice'
 import {
   CONFIG_MAYORISTA_MINIMO,
   CONFIG_MAYORISTA_RECOMPRA,
@@ -94,6 +95,7 @@ export default async function MayoreoLayout({
         whatsapp={resolveWhatsAppNumero(config['whatsapp_numero'])}
         catalogType="mayoreo"
       />
+      <CookieNotice />
       <FloatingWhatsApp
         whatsapp={resolveWhatsAppNumero(config['whatsapp_numero'])}
         catalogType="mayoreo"

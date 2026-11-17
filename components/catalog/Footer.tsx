@@ -8,6 +8,7 @@ import {
   resolveWhatsAppNumero,
 } from '@/lib/negocio'
 import { buildWhatsAppUrl, mensajeConsultaWhatsApp } from '@/lib/whatsapp'
+import { LEGAL_LINKS } from '@/lib/legal'
 
 type Props = {
   nombreNegocio: string
@@ -134,9 +135,22 @@ export default function Footer({
         </div>
 
         <div className="flex flex-col items-center justify-between gap-3 border-t border-[var(--border)] py-6 sm:flex-row">
-          <p className="text-center text-[12px] font-medium text-[var(--text-muted)] sm:text-left">
-            © {new Date().getFullYear()} {nombreNegocio}. Hecho con ♡
-          </p>
+          <div className="flex flex-col items-center gap-1.5 sm:items-start">
+            <p className="text-center text-[12px] font-medium text-[var(--text-muted)] sm:text-left">
+              © {new Date().getFullYear()} {nombreNegocio}. Hecho con ♡
+            </p>
+            <nav aria-label="Información legal" className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+              {LEGAL_LINKS.map(({ href, label }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="text-[12px] font-semibold text-[var(--text-secondary)] underline-offset-2 hover:text-[var(--accent-deep)] hover:underline"
+                >
+                  {label}
+                </Link>
+              ))}
+            </nav>
+          </div>
           <p className="rounded-full bg-[var(--bg-muted)] px-3 py-1 text-[12px] font-bold text-[var(--accent-deep)]">
             Efectivo · Transferencia · más medios pronto
           </p>
