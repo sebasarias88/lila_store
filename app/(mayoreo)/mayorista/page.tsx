@@ -8,6 +8,7 @@ import ProductosOfertas from '@/components/catalog/ProductosOfertas'
 import ProductosNovedades from '@/components/catalog/ProductosNovedades'
 import TestimoniosSection from '@/components/catalog/TestimoniosSection'
 import NosotrosSection from '@/components/catalog/NosotrosSection'
+import { getSucursales } from '@/lib/sucursales'
 import ProcesoPedido from '@/components/catalog/ProcesoPedido'
 import AnuncioModalPromo from '@/components/catalog/AnuncioModalPromo'
 import { buildMetadata } from '@/lib/seo'
@@ -144,6 +145,8 @@ export default async function MayoreoHomePage() {
 
   const anuncioModal = await getAnuncioModalVigente()
 
+  const sucursales = await getSucursales()
+
   return (
     <div className="min-h-screen bg-[var(--bg-base)]">
       <AnuncioModalPromo anuncio={anuncioModal} catalogType="mayoreo" />
@@ -156,6 +159,7 @@ export default async function MayoreoHomePage() {
       <ProcesoPedido catalogHref="/mayorista/productos" variant="whatsapp" />
       <TestimoniosSection />
       <NosotrosSection
+        sucursales={sucursales}
         texto={config['texto_nosotros'] || ''}
         whatsapp={config['whatsapp_numero']}
         nombreNegocio={getSiteName(config)}

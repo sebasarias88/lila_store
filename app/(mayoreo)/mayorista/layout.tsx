@@ -5,6 +5,7 @@ import PageTransition from '@/components/catalog/PageTransition'
 import NavigationProgress from '@/components/catalog/NavigationProgress'
 import FloatingWhatsApp from '@/components/catalog/FloatingWhatsApp'
 import CookieNotice from '@/components/legal/CookieNotice'
+import { getSucursales } from '@/lib/sucursales'
 import {
   CONFIG_MAYORISTA_MINIMO,
   CONFIG_MAYORISTA_RECOMPRA,
@@ -62,6 +63,8 @@ export default async function MayoreoLayout({
       .sort((a: { orden: number }, b: { orden: number }) => a.orden - b.orden),
   })) as unknown) as Categoria[]
 
+  const sucursales = await getSucursales()
+
   return (
     <div className="min-h-screen bg-[var(--bg-base)]">
       <NavigationProgress />
@@ -91,6 +94,7 @@ export default async function MayoreoLayout({
         <PageTransition>{children}</PageTransition>
       </main>
       <Footer
+        sucursales={sucursales}
         nombreNegocio={nombreNegocio}
         whatsapp={resolveWhatsAppNumero(config['whatsapp_numero'])}
         catalogType="mayoreo"

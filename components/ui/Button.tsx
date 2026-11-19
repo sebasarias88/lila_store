@@ -46,19 +46,28 @@ export default function Button({
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
+      aria-busy={loading || undefined}
       whileTap={{ scale: 0.98 }}
       className={`
         ui-btn inline-flex items-center justify-center gap-2
         rounded-full transition-all duration-200
-        cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed
+        relative cursor-pointer disabled:cursor-not-allowed
+        ${loading ? 'cursor-wait' : 'disabled:opacity-40'}
         ${variants[variant]}
         ${sizes[size]}
         ${fullWidth ? 'w-full' : ''}
         ${className}
       `}
     >
-      {loading && <Loader2 size={12} className="animate-spin" />}
-      {children}
+      {loading && (
+        <span className="absolute inset-0 flex items-center justify-center" role="status">
+          <Loader2 size={14} className="animate-spin" aria-hidden />
+          <span className="sr-only">Cargando…</span>
+        </span>
+      )}
+      <span className={`inline-flex items-center gap-2 ${loading ? 'invisible' : ''}`}>
+        {children}
+      </span>
     </motion.button>
   )
 }

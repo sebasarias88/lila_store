@@ -31,6 +31,7 @@ import {
 } from '@/lib/catalog'
 import {
   WHATSAPP_CONSULTA_NUMERO,
+  type Sucursal,
   resolveWhatsAppPedidoNumero,
 } from '@/lib/negocio'
 import {
@@ -319,6 +320,22 @@ export default function CarritoPage() {
 
   const [errores, setErrores] = useState<Partial<DatosCliente>>({})
 
+  const [sucursales, setSucursales] = useState<Sucursal[] | null>(null)
+
+  const fetchSucursales = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('sucursales')
+      .select('id, ciudad, direccion, telefono, nota, orden')
+      .eq('activa', true)
+      .order('orden', { ascending: true })
+    if (error) {
+      console.error('[carrito] sucursales:', error)
+      setSucursales([])
+      return
+    }
+    setSucursales((data ?? []) as Sucursal[])
+  }, [])
+
   const fetchConfig = useCallback(async () => {
     const { data } = await supabase.from('configuracion').select('clave, valor')
     if (data) {
@@ -366,7 +383,8 @@ export default function CarritoPage() {
     setMounted(true)
     void fetchConfig()
     void fetchMetodosPago()
-  }, [fetchConfig, fetchMetodosPago])
+    void fetchSucursales()
+  }, [fetchConfig, fetchMetodosPago, fetchSucursales])
 
   const esRecogida = datos.tipoEntrega === 'recogida'
   const transferencia = useMemo(
@@ -640,6 +658,7 @@ export default function CarritoPage() {
       {/* ── Mobile checkout ── */}
       <div className={`relative min-h-screen md:hidden ${mobilePaddingTop}`}>
         <CarritoMobile
+          sucursales={sucursales}
           catalogType={catalogType}
           productosHref={productosHref}
           step={step}
@@ -916,6 +935,7 @@ export default function CarritoPage() {
 
                     <section className="rounded-[24px] border border-[var(--border)] bg-[var(--bg-surface)] p-5 shadow-[var(--shadow-soft)] sm:p-6">
                       <EntregaPicker
+                        sucursales={sucursales}
                         tipoEntrega={datos.tipoEntrega}
                         sucursalRecogida={datos.sucursalRecogida}
                         error={errores.sucursalRecogida}

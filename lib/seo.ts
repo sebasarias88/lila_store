@@ -7,7 +7,8 @@ import {
   getSiteName,
   type SiteConfigMap,
 } from '@/lib/site-config'
-import { DIRECCION_NEGOCIO, resolveWhatsAppNumero } from '@/lib/negocio'
+import { resolveWhatsAppNumero } from '@/lib/negocio'
+import { LEGAL_OWNER } from '@/lib/legal'
 import { SITE_BRAND_NAME } from '@/lib/seo-brand'
 
 const LOCALE = 'es_CO'
@@ -203,8 +204,8 @@ export function organizationJsonLd(config: SiteConfigMap) {
     },
     address: {
       '@type': 'PostalAddress',
-      streetAddress: DIRECCION_NEGOCIO,
-      addressLocality: 'Quimbaya',
+      streetAddress: LEGAL_OWNER.address,
+      addressLocality: 'Armenia',
       addressRegion: 'Quindío',
       addressCountry: 'CO',
     },

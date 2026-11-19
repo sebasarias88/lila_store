@@ -2,16 +2,16 @@ import Link from 'next/link'
 import { Heart, MapPin, Phone } from 'lucide-react'
 import { catalogPath, type CatalogType } from '@/lib/catalog'
 import {
-  SUCURSALES,
-  WHATSAPP_DISPLAY,
   formatTelefonoDisplay,
   resolveWhatsAppNumero,
+  type Sucursal,
 } from '@/lib/negocio'
 import { buildWhatsAppUrl, mensajeConsultaWhatsApp } from '@/lib/whatsapp'
 import { LEGAL_LINKS } from '@/lib/legal'
 
 type Props = {
   nombreNegocio: string
+  sucursales: Sucursal[]
   whatsapp?: string
   catalogType?: CatalogType
 }
@@ -42,6 +42,7 @@ function FooterHeading({ children }: { children: React.ReactNode }) {
 
 export default function Footer({
   nombreNegocio,
+  sucursales,
   whatsapp,
   catalogType = 'detal',
 }: Props) {
@@ -82,7 +83,7 @@ export default function Footer({
               className="mt-5 inline-flex items-center gap-2 rounded-full bg-[var(--bg-muted)] px-3.5 py-2 text-[13px] font-bold text-[var(--accent-deep)] transition-colors hover:bg-[var(--accent-primary)] hover:text-white"
             >
               <WhatsAppIcon size={14} />
-              WhatsApp {WHATSAPP_DISPLAY}
+              WhatsApp {formatTelefonoDisplay(wa.replace(/^57/, ''))}
             </a>
           </div>
 
@@ -104,9 +105,9 @@ export default function Footer({
           <div className="sm:col-span-2 lg:col-span-7">
             <FooterHeading>Nuestras tiendas</FooterHeading>
             <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {SUCURSALES.map(s => (
+              {sucursales.map(s => (
                 <li
-                  key={`${s.direccion}-${s.telefono}`}
+                  key={s.id}
                   className="rounded-[18px] border border-[var(--border)] bg-[var(--bg-surface)] p-3.5 shadow-[var(--shadow-soft)]"
                 >
                   <p className="flex items-start gap-2 text-[13px] font-bold text-[var(--text-primary)]">
@@ -121,13 +122,15 @@ export default function Footer({
                   <p className="mt-1.5 pl-5 text-[12px] font-bold text-[var(--accent-deep)]">
                     {s.ciudad}
                   </p>
-                  <a
-                    href={`tel:+57${s.telefono.replace(/\D/g, '')}`}
-                    className="mt-2.5 inline-flex items-center gap-1.5 pl-5 text-[12px] font-bold text-[var(--text-secondary)] transition-colors hover:text-[var(--accent-primary)]"
-                  >
-                    <Phone size={12} />
-                    {formatTelefonoDisplay(s.telefono)}
-                  </a>
+                  {s.telefono ? (
+                    <a
+                      href={`tel:+57${s.telefono.replace(/\D/g, '')}`}
+                      className="mt-2.5 inline-flex items-center gap-1.5 pl-5 text-[12px] font-bold text-[var(--text-secondary)] transition-colors hover:text-[var(--accent-primary)]"
+                    >
+                      <Phone size={12} />
+                      {formatTelefonoDisplay(s.telefono)}
+                    </a>
+                  ) : null}
                 </li>
               ))}
             </ul>

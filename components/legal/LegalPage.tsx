@@ -12,7 +12,7 @@ export default function LegalPage({
   children: ReactNode
 }) {
   return (
-    <article className="legal-page mx-auto max-w-3xl px-5 py-12 sm:px-6 lg:py-16">
+    <article className="legal-page mx-auto max-w-3xl px-5 pb-12 pt-28 sm:px-6 sm:pt-36 lg:pb-16 max-md:pt-[7rem]">
       <header className="mb-10 border-b border-[var(--border)] pb-8">
         <h1 className="text-[28px] font-extrabold leading-tight text-[var(--text-primary)] sm:text-[34px]">
           {title}
