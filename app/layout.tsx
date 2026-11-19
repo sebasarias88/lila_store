@@ -1,9 +1,10 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Baloo_2, Nunito } from 'next/font/google'
 import './globals.css'
 import Providers from '@/components/Providers'
 import ScrollToTop from '@/components/ScrollToTop'
 import ConnectionStatus from '@/components/ConnectionStatus'
+import ServiceWorkerRegister from '@/components/pwa/ServiceWorkerRegister'
 import { getSiteUrl } from '@/lib/seo'
 import {
   SEO_DEFAULT_KEYWORDS,
@@ -65,6 +66,10 @@ export const metadata: Metadata = {
   },
 }
 
+export const viewport: Viewport = {
+  themeColor: '#A989E0',
+}
+
 export default function RootLayout({
   children,
 }: {
@@ -75,6 +80,7 @@ export default function RootLayout({
       <body className="min-h-screen antialiased">
         <ScrollToTop />
         <ConnectionStatus />
+        <ServiceWorkerRegister />
         <Providers>{children}</Providers>
       </body>
     </html>

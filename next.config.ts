@@ -8,6 +8,18 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: projectRoot,
   },
+  async headers() {
+    return [
+      {
+        // The service worker must always be re-checked so updates reach users quickly.
+        source: '/sw.js',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Content-Type', value: 'application/javascript; charset=utf-8' },
+        ],
+      },
+    ]
+  },
   async redirects() {
     return [
       // Alias interno mayoreo → mayorista

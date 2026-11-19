@@ -5,6 +5,8 @@ import PageTransition from '@/components/catalog/PageTransition'
 import NavigationProgress from '@/components/catalog/NavigationProgress'
 import FloatingWhatsApp from '@/components/catalog/FloatingWhatsApp'
 import CookieNotice from '@/components/legal/CookieNotice'
+import { isMaintenanceMode } from '@/lib/maintenance'
+import MaintenanceScreen from '@/components/catalog/MaintenanceScreen'
 import { getSucursales } from '@/lib/sucursales'
 import {
   CONFIG_MAYORISTA_MINIMO,
@@ -25,6 +27,9 @@ export default async function MayoreoLayout({
 }: {
   children: React.ReactNode
 }) {
+  // MAINTENANCE_MODE=true in Vercel: branded screen, no database calls.
+  if (isMaintenanceMode()) return <MaintenanceScreen />
+
   const supabase = createSupabasePublic()
 
   const { data: configData } = await supabase
