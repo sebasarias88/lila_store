@@ -80,7 +80,7 @@ export default function RootLayout({
       <head>
         {process.env.NEXT_PUBLIC_IMAGE_BASE_URL ? (
           // Product photos come from R2: open the connection early.
-          <link rel="preconnect" href={process.env.NEXT_PUBLIC_IMAGE_BASE_URL} crossOrigin="" />
+          <link rel="preconnect" href={process.env.NEXT_PUBLIC_IMAGE_BASE_URL} />
         ) : null}
       </head>
       <body className="min-h-screen antialiased">
