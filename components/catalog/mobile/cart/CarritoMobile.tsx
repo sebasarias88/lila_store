@@ -21,6 +21,8 @@ import type { MetodoPagoOpcion } from '@/lib/payment-methods'
 import type { DatosTransferencia } from '@/lib/transferencia'
 import { esMetodoTransferencia } from '@/lib/transferencia'
 import EntregaPicker from '@/components/catalog/cart/EntregaPicker'
+import PoliciesConsent from '@/components/legal/PoliciesConsent'
+import type { Sucursal } from '@/lib/negocio'
 import MetodoPagoPicker from '@/components/catalog/cart/MetodoPagoPicker'
 import TransferenciaCheckout from '@/components/catalog/cart/TransferenciaCheckout'
 import MobileCartSteps, { type Step } from '@/components/catalog/mobile/cart/MobileCartSteps'
@@ -53,6 +55,7 @@ function WhatsAppIcon({ size = 16 }: { size?: number }) {
 }
 
 type CarritoMobileProps = {
+  sucursales: Sucursal[] | null
   catalogType: CatalogType
   productosHref: string
   step: Step
@@ -124,6 +127,7 @@ function CartFormField({
 const checkoutInputClass = 'mobile-cart-checkout-field__input'
 
 export default function CarritoMobile({
+  sucursales,
   catalogType,
   productosHref,
   step,
@@ -290,6 +294,7 @@ export default function CarritoMobile({
                 <div className="mt-5 space-y-4">
                   <div className="rounded-[20px] border border-[var(--border)] bg-[var(--bg-surface)] p-4 shadow-[var(--shadow-soft)]">
                     <EntregaPicker
+                      sucursales={sucursales}
                       compact
                       tipoEntrega={datos.tipoEntrega}
                       sucursalRecogida={datos.sucursalRecogida}
@@ -552,6 +557,16 @@ export default function CarritoMobile({
                 />
               </div>
             </div>
+
+            <PoliciesConsent
+              compact
+              checked={datos.aceptaPoliticas === 'si'}
+              error={errores.aceptaPoliticas}
+              onChange={checked => {
+                setDatos(d => ({ ...d, aceptaPoliticas: checked ? 'si' : '' }))
+                if (errores.aceptaPoliticas) setErrores(er => ({ ...er, aceptaPoliticas: '' }))
+              }}
+            />
 
             <div className={stickySpacer} aria-hidden />
 

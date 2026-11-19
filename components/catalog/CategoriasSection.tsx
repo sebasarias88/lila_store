@@ -7,6 +7,7 @@ import { Categoria } from '@/types'
 import { catalogPath, catalogCategoriaPath, type CatalogType } from '@/lib/catalog'
 import { Tag, ArrowRight } from 'lucide-react'
 import HorizontalCarousel from '@/components/ui/HorizontalCarousel'
+import ThumbImg from '@/components/catalog/ThumbImg'
 
 export default function CategoriasSection({
   categorias,
@@ -86,7 +87,7 @@ export default function CategoriasSection({
               className="mobile-catalog-category-card group relative block aspect-[4/5] overflow-hidden rounded-xl border border-[var(--border-card)] bg-[var(--bg-card)] shadow-[var(--shadow-card)] md:rounded-none"
             >
               {cat.imagen_url ? (
-                <img
+                <ThumbImg
                   src={cat.imagen_url}
                   alt={cat.nombre}
                   className="h-full w-full object-cover opacity-90 transition-all duration-700 group-hover:scale-105 group-hover:opacity-100"

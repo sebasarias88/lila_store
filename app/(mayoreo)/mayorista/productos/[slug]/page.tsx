@@ -5,7 +5,7 @@ import ProductoDetalle from '@/components/catalog/ProductoDetalle'
 import ProductosRelacionados from '@/components/catalog/ProductosRelacionados'
 import ProductPageSeo from '@/components/seo/ProductPageSeo'
 import { normalizarVariacionesProducto } from '@/lib/variaciones'
-import { buildProductMetadata } from '@/lib/seo'
+import { buildProductMetadata, toAbsoluteUrl } from '@/lib/seo'
 import { getSiteConfig } from '@/lib/site-config'
 import {
   PRODUCTO_DETAIL_SELECT,
@@ -17,6 +17,11 @@ import { Producto, ProductoSeccion, VariacionTipo } from '@/types'
 
 export const revalidate = 60
 
+/** Pages are generated on first visit and cached (ISR), not at build time. */
+export async function generateStaticParams() {
+  return []
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -26,17 +31,24 @@ export async function generateMetadata({
   const supabase = createSupabasePublic()
   const config = await getSiteConfig()
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('productos')
-    .select('nombre, descripcion, imagenes, slug')
+    .select('nombre, descripcion, imagenes, slug, disponible_detal')
     .eq('slug', slug)
-    .single()
+    .maybeSingle()
+  // A DB failure must not become a cached "not found": throw so ISR keeps the last good page.
+  if (error) throw new Error(`[product metadata] ${error.message}`)
 
   if (!data) {
     return { title: 'Producto no encontrado', robots: { index: false, follow: false } }
   }
 
-  return buildProductMetadata(config, data, 'mayoreo')
+  const metadata = buildProductMetadata(config, data, 'mayoreo')
+  // Same product, same content: when it is sold in retail, the retail page is the canonical one.
+  if (data.disponible_detal !== false) {
+    metadata.alternates = { canonical: toAbsoluteUrl(`/productos/${data.slug}`) }
+  }
+  return metadata
 }
 
 export default async function MayoreoProductoPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -48,10 +60,11 @@ export default async function MayoreoProductoPage({ params }: { params: Promise<
     .from('productos')
     .select(PRODUCTO_DETAIL_SELECT)
     .eq('slug', slug)
-    .single()
+    .maybeSingle()
 
+  if (error) throw new Error(`[product page] ${error.message}`)
   const producto = productoRaw as Producto | null
-  if (error || !producto) notFound()
+  if (!producto) notFound()
   if (producto.disponible_mayoreo === false) notFound()
 
   const productoMapped = withProductoCategorias([producto])[0] || producto

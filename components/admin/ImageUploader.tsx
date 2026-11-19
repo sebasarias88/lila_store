@@ -2,8 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { supabase } from '@/lib/supabase'
-import { optimizeImage } from '@/lib/optimizeImage'
+import { uploadCatalogImage } from '@/lib/catalogImages'
 import { ImageIcon, X, Loader2, GripVertical } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -17,26 +16,13 @@ export default function ImageUploader({ imagenes, onChange }: ImageUploaderProps
   const [dragOver, setDragOver] = useState(false)
 
   const uploadFile = async (file: File): Promise<string | null> => {
-    const optimized = await optimizeImage(file)
-    if (!optimized.ok) {
-      toast.error(optimized.message)
+    try {
+      // WebP + weight budget (≤150KB) + 640px thumbnail, uploaded to R2.
+      return await uploadCatalogImage(file, 'productos')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'No se pudo subir la imagen')
       return null
     }
-    const toUpload = optimized.file
-    const ext = toUpload.name.split('.').pop() || 'webp'
-    const path = `productos/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
-
-    const { error } = await supabase.storage
-      .from('productos')
-      .upload(path, toUpload, {
-        upsert: true,
-        contentType: toUpload.type || 'image/webp',
-      })
-
-    if (error) return null
-
-    const { data } = supabase.storage.from('productos').getPublicUrl(path)
-    return data.publicUrl
   }
 
   const handleFiles = async (files: FileList | File[]) => {
@@ -58,8 +44,6 @@ export default function ImageUploader({ imagenes, onChange }: ImageUploaderProps
     if (urls.length) {
       onChange([...imagenes, ...urls])
       toast.success(`${urls.length} imagen${urls.length > 1 ? 'es' : ''} subida${urls.length > 1 ? 's' : ''}`)
-    } else {
-      toast.error('Error al subir imágenes')
     }
     setUploading(false)
   }
@@ -70,13 +54,10 @@ export default function ImageUploader({ imagenes, onChange }: ImageUploaderProps
     handleFiles(e.dataTransfer.files)
   }
 
-  const eliminarImagen = async (url: string) => {
-    const path = url.split('/productos/')[1]
-    if (path) {
-      await supabase.storage.from('productos').remove([`productos/${path}`])
-    }
+  // Only removes it from the form. The file is deleted from R2 when the product
+  // is deleted, so cancelling the form never leaves the product without its photo.
+  const eliminarImagen = (url: string) => {
     onChange(imagenes.filter(i => i !== url))
-    toast.success('Imagen eliminada')
   }
 
   const moverImagen = (from: number, to: number) => {

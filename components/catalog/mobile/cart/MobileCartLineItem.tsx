@@ -9,6 +9,7 @@ import {
   variacionesCarritoClassName,
 } from '@/lib/cart'
 import { catalogPath, type CatalogType } from '@/lib/catalog'
+import ThumbImg from '@/components/catalog/ThumbImg'
 
 function formatPrecio(precio: number) {
   return new Intl.NumberFormat('es-CO', {
@@ -43,7 +44,7 @@ export default function MobileCartLineItem({
       }`}
     >
       {producto.imagenes?.[0] ? (
-        <img
+        <ThumbImg
           src={producto.imagenes[0]}
           alt={producto.nombre}
           className="h-full w-full object-cover"

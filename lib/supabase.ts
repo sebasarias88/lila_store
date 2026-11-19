@@ -1,4 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr'
+import { fetchWithStorefrontRefresh } from '@/lib/storefrontRefresh'
 
 type BrowserClient = ReturnType<typeof createBrowserClient>
 
@@ -20,7 +21,10 @@ function getSupabaseEnv() {
 
 export function createClient() {
   const { url, anonKey } = getSupabaseEnv()
-  return createBrowserClient(url, anonKey)
+  // Admin writes trigger a storefront refresh (see lib/storefrontRefresh.ts).
+  return createBrowserClient(url, anonKey, {
+    global: { fetch: fetchWithStorefrontRefresh },
+  })
 }
 
 let browserClient: BrowserClient | undefined

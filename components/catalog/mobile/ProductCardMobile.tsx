@@ -19,6 +19,7 @@ import { productoTieneVideo } from '@/lib/video-url'
 import { productoComprableEnCatalogo } from '@/lib/stock'
 import toast from 'react-hot-toast'
 import { useGuardedRouter } from '@/lib/useGuardedRouter'
+import ThumbImg from '@/components/catalog/ThumbImg'
 
 const MAX_TITULO_CARD = 48
 
@@ -79,7 +80,7 @@ export default function ProductCardMobile({
         <div className="relative block aspect-[4/5] w-full shrink-0 overflow-hidden bg-gradient-to-b from-[#EEE8FC] to-[var(--bg-muted)]">
           <Link href={productHref} className="block h-full w-full">
             {producto.imagenes?.[0] ? (
-              <img
+              <ThumbImg
                 src={producto.imagenes[0]}
                 alt={producto.nombre}
                 className="h-full w-full object-cover transition-transform duration-500 group-active:scale-[1.03]"

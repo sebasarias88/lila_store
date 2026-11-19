@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
+import { deleteCatalogImages } from '@/lib/catalogImages'
 import { Producto } from '@/types'
 import Modal from '@/components/ui/Modal'
 import Button from '@/components/ui/Button'
@@ -42,26 +43,8 @@ import MobileAdminToolbar from '@/components/admin/mobile/MobileAdminToolbar'
 import MobileProductCard from '@/components/admin/mobile/MobileProductCard'
 import { MobileEmptyState } from '@/components/admin/mobile/MobileAdminPrimitives'
 import AdminLoadError from '@/components/admin/AdminLoadError'
-import { stockBadgeTone } from '@/lib/stock'
 
 type CategoriaInfo = { nombre: string; padre_id: string | null }
-
-function StockChip({ label, stock }: { label: string; stock: number }) {
-  const tone = stockBadgeTone(stock)
-  const toneClass =
-    tone === 'ok'
-      ? 'bg-[rgba(52,211,153,0.12)] text-emerald-400'
-      : tone === 'low'
-        ? 'bg-[rgba(251,191,36,0.14)] text-amber-400'
-        : 'bg-[rgba(248,113,113,0.12)] text-red-400'
-  return (
-    <span
-      className={`inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-medium ${toneClass}`}
-    >
-      {label}: {stock}
-    </span>
-  )
-}
 
 export default function ProductosPage() {
   const [productos, setProductos] = useState<Producto[]>([])
@@ -181,18 +164,15 @@ export default function ProductosPage() {
         .update({ producto_id: null })
         .eq('producto_id', productoId)
 
-      if (selected.imagenes?.length) {
-        const paths = selected.imagenes
-          .map(url => {
-            const parts = url.split('/productos/')
-            return parts.length > 1 ? `productos/${parts[1]}` : null
-          })
-          .filter(Boolean) as string[]
-        if (paths.length) await supabase.storage.from('productos').remove(paths)
-      }
-
       const { error } = await supabase.from('productos').delete().eq('id', productoId)
       if (error) throw error
+
+      // Files are removed only after the product is gone (legacy Supabase URLs are skipped).
+      if (selected.imagenes?.length) {
+        await deleteCatalogImages(selected.imagenes).catch(err =>
+          console.error('[admin] Eliminar imágenes:', err),
+        )
+      }
 
       toast.success('Producto eliminado')
       setDeleteModal(false)
@@ -339,7 +319,6 @@ export default function ProductosPage() {
             <AdminTableTh className="min-w-[6.5rem]">Imagen</AdminTableTh>
             <AdminTableTh className="min-w-[14rem]">Producto</AdminTableTh>
             <AdminTableTh className="min-w-[12rem]">Categoría</AdminTableTh>
-            <AdminTableTh className="min-w-[8.5rem]">Stock</AdminTableTh>
             <AdminTableTh className="min-w-[8rem]">Precio detal</AdminTableTh>
             <AdminTableTh className="min-w-[9rem]">Precio mayorista</AdminTableTh>
             <AdminTableTh className="min-w-[8rem]">Estado</AdminTableTh>
@@ -400,15 +379,6 @@ export default function ProductosPage() {
                   )}
                 </AdminTableTd>
 
-                <AdminTableTd>
-                  <div className="flex flex-col items-start gap-1">
-                    <StockChip label="Detal" stock={Math.max(0, Math.floor(p.stock_detal ?? 0))} />
-                    <StockChip
-                      label="Mayoreo"
-                      stock={Math.max(0, Math.floor(p.stock_mayoreo ?? 0))}
-                    />
-                  </div>
-                </AdminTableTd>
 
                 <AdminTableTd>
                   <AdminTablePrice

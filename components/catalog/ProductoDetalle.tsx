@@ -47,7 +47,6 @@ import ProductVideoThumb from '@/components/catalog/ProductVideoThumb'
 import ProductVideoModal from '@/components/catalog/ProductVideoModal'
 import { productoTieneVideo } from '@/lib/video-url'
 import {
-  getStockCatalogo,
   mensajeStockRestante,
   productoComprableEnCatalogo,
   stockRestanteParaProducto,
@@ -169,7 +168,6 @@ export default function ProductoDetalle({
   const enSlideVideo = tieneVideo && imagenActiva === videoSlideIndex
   const posterVideo = imagenes[0] || null
   const comprable = productoComprableEnCatalogo(producto, catalogType)
-  const stockCatalogo = getStockCatalogo(producto, catalogType)
   const stockRestante = stockRestanteParaProducto(producto, items, catalogType)
   const maxCantidadSeleccionable = Math.max(0, stockRestante)
 
@@ -644,10 +642,6 @@ export default function ProductoDetalle({
                   <p className="text-[12px] font-medium text-[var(--accent-deep)]">
                     {mensajeStockRestante(0)}
                   </p>
-                ) : stockRestante < stockCatalogo ? (
-                  <p className="text-[12px] font-medium text-[var(--text-muted)]">
-                    {mensajeStockRestante(stockRestante)}
-                  </p>
                 ) : null}
 
                 <motion.button
@@ -682,7 +676,7 @@ export default function ProductoDetalle({
                         className="flex items-center gap-2"
                       >
                         <ShoppingBag size={16} />
-                        {stockRestante <= 0 ? 'Sin unidades disponibles' : 'Lo quiero ✨'}
+                        {stockRestante <= 0 ? 'Máximo por pedido' : 'Lo quiero ✨'}
                       </motion.span>
                     )}
                   </AnimatePresence>

@@ -8,6 +8,7 @@ import ProductosOfertas from '@/components/catalog/ProductosOfertas'
 import ProductosNovedades from '@/components/catalog/ProductosNovedades'
 import TestimoniosSection from '@/components/catalog/TestimoniosSection'
 import NosotrosSection from '@/components/catalog/NosotrosSection'
+import { getSucursales } from '@/lib/sucursales'
 import ProcesoPedido from '@/components/catalog/ProcesoPedido'
 import AnuncioModalPromo from '@/components/catalog/AnuncioModalPromo'
 import { buildMetadata } from '@/lib/seo'
@@ -140,8 +141,14 @@ export default async function HomePage() {
 
   const anuncioModal = await getAnuncioModalVigente()
 
+  const sucursales = await getSucursales()
+
   return (
     <div className="min-h-screen bg-[var(--bg-base)]">
+      {/* The hero is an image: this is the page's real H1 for search engines and screen readers. */}
+      <h1 className="sr-only">
+        Lila Store: maquillaje, skincare y cuidado capilar en Armenia y Quimbaya, Quindío
+      </h1>
       <AnuncioModalPromo anuncio={anuncioModal} catalogType="detal" />
       <HeroBanner banners={banners} config={config} />
       <CategoriasGrid categorias={categorias} />
@@ -152,6 +159,7 @@ export default async function HomePage() {
       <ProcesoPedido catalogHref={catalogPath('detal', '/productos')} />
       <TestimoniosSection />
       <NosotrosSection
+        sucursales={sucursales}
         texto={config['texto_nosotros'] || ''}
         whatsapp={config['whatsapp_numero']}
         nombreNegocio={getSiteName(config)}

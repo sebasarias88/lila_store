@@ -6,6 +6,7 @@ import { Check, ShoppingBag, ArrowRight } from 'lucide-react'
 import { Producto } from '@/types'
 import { catalogPath, type CatalogType } from '@/lib/catalog'
 import MobileBottomSheet from '@/components/catalog/mobile/MobileBottomSheet'
+import ThumbImg from '@/components/catalog/ThumbImg'
 
 type MobileQuickAddSheetProps = {
   open: boolean
@@ -36,7 +37,7 @@ export default function MobileQuickAddSheet({
         <div className="mb-5 flex items-center gap-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-muted)] p-3">
           <div className="mobile-catalog-thumb relative h-16 w-14 shrink-0 overflow-hidden rounded-lg bg-[var(--bg-surface)]">
             {producto.imagenes?.[0] ? (
-              <img
+              <ThumbImg
                 src={producto.imagenes[0]}
                 alt={producto.nombre}
                 className="h-full w-full object-cover"

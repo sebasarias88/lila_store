@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
+import { uploadCatalogImage } from '@/lib/catalogImages'
 import { Banner } from '@/types'
 import Modal from '@/components/ui/Modal'
 import Button from '@/components/ui/Button'
@@ -102,22 +103,19 @@ export default function BannersPage() {
   }
 
   const uploadImage = async (file: File) => {
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
-    const path = `banners/${Date.now()}.${ext}`
     setUploading(true)
-    const { error } = await supabase.storage.from('banners').upload(path, file, {
-      upsert: true,
-    })
-    if (error) {
-      toast.error('Error al subir la imagen')
+    try {
+      // Optimized to WebP with a weight budget and uploaded to R2.
+      const url = await uploadCatalogImage(file, 'banners')
+      setForm(f => ({ ...f, imagen_url: url }))
+      toast.success('Imagen subida')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error al subir la imagen')
+    } finally {
       setUploading(false)
-      return
     }
-    const { data } = supabase.storage.from('banners').getPublicUrl(path)
-    setForm(f => ({ ...f, imagen_url: data.publicUrl }))
-    toast.success('Imagen subida')
-    setUploading(false)
   }
+
 
   const handleGuardar = async (e: React.FormEvent) => {
     e.preventDefault()

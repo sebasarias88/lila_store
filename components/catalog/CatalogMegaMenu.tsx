@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronRight, Sparkles } from 'lucide-react'
 import type { Categoria } from '@/types'
 import { catalogCategoriaPath, type CatalogType } from '@/lib/catalog'
+import ThumbImg from '@/components/catalog/ThumbImg'
 
 type CatalogMegaMenuProps = {
   open: boolean
@@ -156,7 +157,7 @@ export default function CatalogMegaMenu({
                       <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-[12px] bg-[var(--bg-muted)] ring-1 ring-[var(--border)]">
                         {cat.imagen_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img
+                          <ThumbImg
                             src={cat.imagen_url}
                             alt=""
                             className="h-full w-full object-cover"
@@ -200,7 +201,7 @@ export default function CatalogMegaMenu({
                       <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[14px] bg-white ring-1 ring-[var(--border)]">
                         {activeCat.imagen_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img
+                          <ThumbImg
                             src={activeCat.imagen_url}
                             alt=""
                             className="h-full w-full object-cover"

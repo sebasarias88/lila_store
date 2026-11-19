@@ -31,6 +31,7 @@ import {
 } from '@/lib/catalog'
 import {
   WHATSAPP_CONSULTA_NUMERO,
+  type Sucursal,
   resolveWhatsAppPedidoNumero,
 } from '@/lib/negocio'
 import {
@@ -52,6 +53,7 @@ import {
 import { PAGOS_COPY } from '@/lib/pagos-proximos'
 import EntregaPicker from '@/components/catalog/cart/EntregaPicker'
 import MetodoPagoPicker from '@/components/catalog/cart/MetodoPagoPicker'
+import PoliciesConsent from '@/components/legal/PoliciesConsent'
 import TransferenciaCheckout from '@/components/catalog/cart/TransferenciaCheckout'
 import CarritoMobile from '@/components/catalog/mobile/cart/CarritoMobile'
 import PageGoldAccent from '@/components/catalog/PageGoldAccent'
@@ -76,6 +78,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import ThumbImg from '@/components/catalog/ThumbImg'
 
 function formatPrecio(precio: number) {
   return new Intl.NumberFormat('es-CO', {
@@ -195,7 +198,7 @@ function OrderSummaryPanel({
             <div key={key} className="flex gap-3">
               <div className="h-12 w-12 shrink-0 overflow-hidden rounded-[12px] bg-[var(--bg-muted)]">
                 {producto.imagenes?.[0] ? (
-                  <img
+                  <ThumbImg
                     src={producto.imagenes[0]}
                     alt={producto.nombre}
                     className="h-full w-full object-cover"
@@ -315,9 +318,26 @@ export default function CarritoPage() {
     notas: '',
     tipoEntrega: 'envio',
     sucursalRecogida: '',
+    aceptaPoliticas: '',
   })
 
   const [errores, setErrores] = useState<Partial<DatosCliente>>({})
+
+  const [sucursales, setSucursales] = useState<Sucursal[] | null>(null)
+
+  const fetchSucursales = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('sucursales')
+      .select('id, ciudad, direccion, telefono, nota, orden')
+      .eq('activa', true)
+      .order('orden', { ascending: true })
+    if (error) {
+      console.error('[carrito] sucursales:', error)
+      setSucursales([])
+      return
+    }
+    setSucursales((data ?? []) as Sucursal[])
+  }, [])
 
   const fetchConfig = useCallback(async () => {
     const { data } = await supabase.from('configuracion').select('clave, valor')
@@ -366,7 +386,8 @@ export default function CarritoPage() {
     setMounted(true)
     void fetchConfig()
     void fetchMetodosPago()
-  }, [fetchConfig, fetchMetodosPago])
+    void fetchSucursales()
+  }, [fetchConfig, fetchMetodosPago, fetchSucursales])
 
   const esRecogida = datos.tipoEntrega === 'recogida'
   const transferencia = useMemo(
@@ -473,6 +494,9 @@ export default function CarritoPage() {
       if (!datos.ciudad.trim()) e.ciudad = 'La ciudad es requerida'
     }
     if (!datos.metodoPago) e.metodoPago = 'Selecciona un método de pago'
+    if (datos.aceptaPoliticas !== 'si') {
+      e.aceptaPoliticas = 'Para enviar tu pedido debes aceptar los términos y la política de privacidad'
+    }
     setErrores(e)
     return Object.keys(e).length === 0
   }
@@ -640,6 +664,7 @@ export default function CarritoPage() {
       {/* ── Mobile checkout ── */}
       <div className={`relative min-h-screen md:hidden ${mobilePaddingTop}`}>
         <CarritoMobile
+          sucursales={sucursales}
           catalogType={catalogType}
           productosHref={productosHref}
           step={step}
@@ -819,7 +844,7 @@ export default function CarritoPage() {
                               className="h-24 w-20 shrink-0 overflow-hidden rounded-[16px] bg-gradient-to-b from-[#EEE8FC] to-[var(--bg-muted)] ring-1 ring-[var(--border)] sm:h-28 sm:w-24"
                             >
                               {producto.imagenes?.[0] ? (
-                                <img
+                                <ThumbImg
                                   src={producto.imagenes[0]}
                                   alt={producto.nombre}
                                   className="h-full w-full object-cover"
@@ -916,6 +941,7 @@ export default function CarritoPage() {
 
                     <section className="rounded-[24px] border border-[var(--border)] bg-[var(--bg-surface)] p-5 shadow-[var(--shadow-soft)] sm:p-6">
                       <EntregaPicker
+                        sucursales={sucursales}
                         tipoEntrega={datos.tipoEntrega}
                         sucursalRecogida={datos.sucursalRecogida}
                         error={errores.sucursalRecogida}
@@ -1193,6 +1219,15 @@ export default function CarritoPage() {
                   />
                 </section>
 
+                <PoliciesConsent
+                  checked={datos.aceptaPoliticas === 'si'}
+                  error={errores.aceptaPoliticas}
+                  onChange={checked => {
+                    setDatos(d => ({ ...d, aceptaPoliticas: checked ? 'si' : '' }))
+                    if (errores.aceptaPoliticas) setErrores(er => ({ ...er, aceptaPoliticas: '' }))
+                  }}
+                />
+
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <button
                     type="button"
@@ -1302,7 +1337,7 @@ export default function CarritoPage() {
                         <div key={key} className="flex items-center gap-3">
                           <div className="h-14 w-14 shrink-0 overflow-hidden rounded-[14px] bg-[var(--bg-muted)]">
                             {producto.imagenes?.[0] && (
-                              <img
+                              <ThumbImg
                                 src={producto.imagenes[0]}
                                 alt={producto.nombre}
                                 className="h-full w-full object-cover"

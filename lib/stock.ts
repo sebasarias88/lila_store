@@ -1,15 +1,20 @@
 import type { ItemCarrito, Producto } from '@/types'
 import type { CatalogType } from '@/lib/catalog'
 
-/** Stock del producto para el catálogo actual. */
+/**
+ * The store no longer tracks inventory (owner's request, Nov 2026): whether a
+ * product can be bought depends only on its visibility toggle. The stock
+ * columns stay in the database but are ignored. This cap only limits how many
+ * units of one product fit in a single order.
+ */
+export const MAX_UNITS_PER_PRODUCT = 50
+
+/** Units of this product that can be ordered in this catalog (cap or 0 if hidden). */
 export function getStockCatalogo(
   producto: Producto,
   catalogType: CatalogType = 'detal',
 ): number {
-  const raw =
-    catalogType === 'mayoreo' ? producto.stock_mayoreo : producto.stock_detal
-  const n = Math.floor(Number(raw))
-  return Number.isFinite(n) && n > 0 ? n : 0
+  return productoVisibleEnCatalogo(producto, catalogType) ? MAX_UNITS_PER_PRODUCT : 0
 }
 
 /** ¿El toggle de visibilidad del catálogo está activo? */
@@ -23,10 +28,7 @@ export function productoVisibleEnCatalogo(
   return Boolean(producto.disponible_detal ?? producto.disponible)
 }
 
-/**
- * Se puede comprar en este catálogo: visible y con stock > 0.
- * Stock 0 ⇒ Agotado aunque el toggle esté activo.
- */
+/** Se puede comprar en este catálogo: depende solo del toggle de visibilidad. */
 export function productoComprableEnCatalogo(
   producto: Producto,
   catalogType: CatalogType,
@@ -66,18 +68,10 @@ export function stockRestanteParaProducto(
 }
 
 export function mensajeStockRestante(restantes: number): string {
-  if (restantes <= 0) return 'No hay unidades disponibles'
-  if (restantes === 1) return 'Solo queda 1 unidad disponible'
-  return `Solo quedan ${restantes} unidades disponibles`
-}
-
-/** Badge admin: verde >10, amarillo 1–10, rojo 0. */
-export function stockBadgeTone(
-  stock: number,
-): 'ok' | 'low' | 'out' {
-  if (stock <= 0) return 'out'
-  if (stock <= 10) return 'low'
-  return 'ok'
+  if (restantes <= 0) {
+    return `Máximo ${MAX_UNITS_PER_PRODUCT} unidades por pedido. Para más, escríbenos por WhatsApp.`
+  }
+  return ''
 }
 
 export type StockProductoFresh = Pick<
@@ -120,14 +114,14 @@ export function validarStockCarrito(
     if (!productoComprableEnCatalogo(asProducto, catalogType)) {
       return {
         ok: false,
-        message: `${fresh.nombre}: se agotó. Quítalo del carrito para continuar.`,
+        message: `${fresh.nombre} ya no está disponible. Quítalo del carrito para continuar.`,
       }
     }
     const stock = getStockCatalogo(asProducto, catalogType)
     if (qty > stock) {
       return {
         ok: false,
-        message: `${fresh.nombre}: ${mensajeStockRestante(stock)}. Ajusta la cantidad.`,
+        message: `${fresh.nombre}: ${mensajeStockRestante(0)}`,
       }
     }
   }

@@ -2,12 +2,13 @@
 
 import { motion } from 'framer-motion'
 import { ArrowRight, Heart, MapPin, MessageCircle, Sparkles, Truck } from 'lucide-react'
-import { SUCURSALES, resolveWhatsAppNumero } from '@/lib/negocio'
+import { resolveWhatsAppNumero, type Sucursal } from '@/lib/negocio'
 import type { CatalogType } from '@/lib/catalog'
 import { buildWhatsAppUrl, mensajeConsultaWhatsApp } from '@/lib/whatsapp'
 
 type Props = {
   texto: string
+  sucursales: Sucursal[]
   whatsapp?: string
   nombreNegocio?: string
   catalogType?: CatalogType
@@ -18,6 +19,7 @@ const DEFAULT_TEXTO =
 
 export default function NosotrosSection({
   texto,
+  sucursales,
   whatsapp,
   nombreNegocio = 'Lila-store',
   catalogType = 'detal',
@@ -103,9 +105,9 @@ export default function NosotrosSection({
               Nuestras tiendas
             </p>
             <ul className="space-y-3">
-              {SUCURSALES.map((s, i) => (
+              {sucursales.map(s => (
                 <li
-                  key={`${s.ciudad}-${s.direccion}-${i}`}
+                  key={s.id}
                   className="flex gap-3 rounded-[18px] bg-gradient-to-br from-[#F9F6FF] to-[#EEE8FC] p-3.5"
                 >
                   <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--bg-muted)] text-[var(--accent-primary)]">

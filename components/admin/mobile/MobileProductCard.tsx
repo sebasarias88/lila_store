@@ -2,22 +2,6 @@
 
 import { CheckCircle2, ChevronRight, CornerDownRight, Edit2, Star, Tag, Trash2, XCircle } from 'lucide-react'
 import { Producto } from '@/types'
-import { stockBadgeTone } from '@/lib/stock'
-
-function StockChip({ label, stock }: { label: string; stock: number }) {
-  const tone = stockBadgeTone(stock)
-  const toneClass =
-    tone === 'ok'
-      ? 'bg-[rgba(52,211,153,0.12)] text-emerald-400'
-      : tone === 'low'
-        ? 'bg-[rgba(251,191,36,0.14)] text-amber-400'
-        : 'bg-[rgba(248,113,113,0.12)] text-red-400'
-  return (
-    <span className={`inline-flex rounded-full px-2 py-0.5 text-[9px] font-medium ${toneClass}`}>
-      {label}: {stock}
-    </span>
-  )
-}
 
 type MobileProductCardProps = {
   producto: Producto
@@ -71,16 +55,6 @@ export default function MobileProductCard({
               Mayorista · {formatPrecio(producto.precio_mayoreo)}
             </p>
           ) : null}
-          <div className="mt-1.5 flex flex-wrap gap-1">
-            <StockChip
-              label="Detal"
-              stock={Math.max(0, Math.floor(producto.stock_detal ?? 0))}
-            />
-            <StockChip
-              label="Mayoreo"
-              stock={Math.max(0, Math.floor(producto.stock_mayoreo ?? 0))}
-            />
-          </div>
           {producto.categoria ? (
             <span
               className={`mt-1.5 inline-flex max-w-full items-center gap-1 rounded-full border py-0.5 pl-1.5 pr-2 text-[10px] ${

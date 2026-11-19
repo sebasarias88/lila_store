@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { optimizeImage } from '@/lib/optimizeImage'
+import { deleteCatalogImages, uploadCatalogImage } from '@/lib/catalogImages'
 import { formatCopInput, parseCopInput, sanitizeCopInput } from '@/lib/currency'
 import { VariacionOpcion, VariacionTipo } from '@/types'
 import Button from '@/components/ui/Button'
@@ -34,19 +34,12 @@ const EMPTY_PRECIOS: OpcionPreciosFields = {
   precio_antes_mayoreo: '',
 }
 
-const MAX_IMG_BYTES = 5 * 1024 * 1024
-
-function pathInProductosBucket(url: string): string | null {
-  const marker = '/object/public/productos/'
-  const idx = url.indexOf(marker)
-  if (idx < 0) return null
-  return decodeURIComponent(url.slice(idx + marker.length).split('?')[0])
-}
+const MAX_IMG_BYTES = 25 * 1024 * 1024 // phone photos; shrunk in the browser before upload
 
 async function removeFromProductosBucket(url: string | null | undefined) {
   if (!url) return
-  const path = pathInProductosBucket(url)
-  if (path) await supabase.storage.from('productos').remove([path])
+  // R2 only; legacy Supabase URLs are ignored by the server.
+  await deleteCatalogImages([url]).catch(err => console.error('[variaciones] delete image', err))
 }
 
 const inputClass = 'admin-input admin-input--compact w-full rounded-xl px-3 py-2 text-[13px] md:rounded-xl'
@@ -133,33 +126,23 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
 
   const notifyChange = () => onChange?.()
 
-  const uploadOpcionFile = async (file: File, opcionId: string): Promise<string | null> => {
+  const uploadOpcionFile = async (file: File): Promise<string | null> => {
     if (!productoId) return null
     if (!file.type.startsWith('image/')) {
       toast.error('Solo se permiten imágenes')
       return null
     }
     if (file.size > MAX_IMG_BYTES) {
-      toast.error('La imagen no puede superar 5MB')
+      toast.error('La imagen no puede superar 25MB')
       return null
     }
 
-    const optimized = await optimizeImage(file)
-    if (!optimized.ok) {
-      toast.error(optimized.message)
+    try {
+      return await uploadCatalogImage(file, 'variaciones')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'No se pudo subir la imagen')
       return null
     }
-    const toUpload = optimized.file
-    const ext = toUpload.name.split('.').pop()?.toLowerCase() || 'webp'
-    const path = `variaciones/${productoId}/${opcionId}-${Date.now()}.${ext}`
-    const { error } = await supabase.storage.from('productos').upload(path, toUpload, {
-      upsert: true,
-      contentType: toUpload.type || 'image/webp',
-    })
-    if (error) return null
-
-    const { data } = supabase.storage.from('productos').getPublicUrl(path)
-    return data.publicUrl
   }
 
   const fetchTipos = useCallback(async () => {
@@ -324,7 +307,7 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
     const imagenFile = draft.imagenFile
     if (imagenFile) {
       setUploadingOpcionId(data.id)
-      const url = await uploadOpcionFile(imagenFile, data.id)
+      const url = await uploadOpcionFile(imagenFile)
       if (url) {
         const { error: imgError } = await supabase
           .from('variacion_opciones')
@@ -386,7 +369,7 @@ export default function VariacionesEditor({ productoId, onChange }: VariacionesE
 
   const handleOpcionImagen = async (opcion: VariacionOpcion, file: File) => {
     setUploadingOpcionId(opcion.id)
-    const url = await uploadOpcionFile(file, opcion.id)
+    const url = await uploadOpcionFile(file)
     if (!url) {
       toast.error('Error al subir la foto')
       setUploadingOpcionId(null)
