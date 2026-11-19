@@ -16,6 +16,7 @@ import {
   signalCatalogCategoria,
   signalCatalogNavigating,
 } from '@/components/catalog/NavigationProgress'
+import ThumbImg from '@/components/catalog/ThumbImg'
 
 type MobileNavDrawerProps = {
   open: boolean
@@ -210,7 +211,7 @@ export default function MobileNavDrawer({
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[var(--bg-muted)]">
                           {cat.imagen_url ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img
+                            <ThumbImg
                               src={cat.imagen_url}
                               alt=""
                               className="h-full w-full object-cover"
@@ -244,7 +245,7 @@ export default function MobileNavDrawer({
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/80 ring-1 ring-[var(--border)]">
                           {cat.imagen_url ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img
+                            <ThumbImg
                               src={cat.imagen_url}
                               alt=""
                               className="h-full w-full object-cover"

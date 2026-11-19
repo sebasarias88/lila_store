@@ -17,6 +17,7 @@ export const LEGAL_OWNER = {
 export const LEGAL_UPDATED_AT = '17 de noviembre de 2026'
 
 export const LEGAL_LINKS = [
+  { href: '/terminos-y-condiciones', label: 'Términos y condiciones' },
   { href: '/politica-de-privacidad', label: 'Política de privacidad' },
   { href: '/politica-de-cookies', label: 'Política de cookies' },
 ] as const

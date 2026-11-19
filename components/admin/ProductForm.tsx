@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Producto, Categoria, VideoTipo } from '@/types'
 import { Input, Textarea } from '@/components/ui/Input'
-import { AdminMultiSelect } from '@/components/ui/AdminSelect'
+import { AdminMultiSelect, AdminSelect } from '@/components/ui/AdminSelect'
 import { CopInput } from '@/components/ui/CopInput'
 import { formatCopInput, parseCopInput } from '@/lib/currency'
 import Button from '@/components/ui/Button'
@@ -53,8 +53,6 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
     precio_antes: '',
     precio_mayoreo: '',
     precio_antes_mayoreo: '',
-    stock_detal: '0',
-    stock_mayoreo: '0',
     disponible_detal: true,
     disponible_mayoreo: true,
     destacado: false,
@@ -84,8 +82,6 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
         precio_mayoreo: producto.precio_mayoreo != null ? formatCopInput(producto.precio_mayoreo) : '',
         precio_antes_mayoreo:
           producto.precio_antes_mayoreo != null ? formatCopInput(producto.precio_antes_mayoreo) : '',
-        stock_detal: String(Math.max(0, Math.floor(producto.stock_detal ?? 0))),
-        stock_mayoreo: String(Math.max(0, Math.floor(producto.stock_mayoreo ?? 0))),
         disponible_detal: producto.disponible_detal ?? producto.disponible,
         disponible_mayoreo: producto.disponible_mayoreo ?? producto.disponible,
         destacado: producto.destacado,
@@ -188,8 +184,6 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
       precio_antes: parseCopInput(form.precio_antes),
       precio_mayoreo: parseCopInput(form.precio_mayoreo),
       precio_antes_mayoreo: parseCopInput(form.precio_antes_mayoreo),
-      stock_detal: Math.max(0, Math.floor(Number(form.stock_detal) || 0)),
-      stock_mayoreo: Math.max(0, Math.floor(Number(form.stock_mayoreo) || 0)),
       disponible_detal: form.disponible_detal,
       disponible_mayoreo: form.disponible_mayoreo,
       disponible: form.disponible_detal || form.disponible_mayoreo,
@@ -276,25 +270,20 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
       <FormSection title="Video (opcional)">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,180px)_minmax(0,1fr)]">
           <div className="space-y-1.5">
-            <label className="admin-form-label" htmlFor="producto-video-tipo">
-              Plataforma
-            </label>
-            <select
-              id="producto-video-tipo"
+            <span className="admin-form-label">Plataforma</span>
+            <AdminSelect
               value={form.video_tipo}
-              onChange={e =>
-                setForm(f => ({
-                  ...f,
-                  video_tipo: e.target.value as '' | VideoTipo,
-                }))
+              onChange={value =>
+                setForm(f => ({ ...f, video_tipo: value as '' | VideoTipo }))
               }
-              className="admin-input w-full rounded-xl border px-4 py-3 text-[13px] md:rounded-[2px]"
-            >
-              <option value="">Sin video</option>
-              <option value="youtube">YouTube</option>
-              <option value="tiktok">TikTok</option>
-              <option value="instagram">Instagram</option>
-            </select>
+              placeholder="Sin video"
+              options={[
+                { value: '', label: 'Sin video' },
+                { value: 'youtube', label: 'YouTube' },
+                { value: 'tiktok', label: 'TikTok' },
+                { value: 'instagram', label: 'Instagram' },
+              ]}
+            />
           </div>
           <Input
             label="Link de video (opcional)"
@@ -410,50 +399,7 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
       </FormSection>
 
       <FormSection title="Visibilidad">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="admin-form-panel px-4 py-3.5">
-            <Input
-              label="Stock detal"
-              type="number"
-              min={0}
-              step={1}
-              inputMode="numeric"
-              value={form.stock_detal}
-              onChange={e => {
-                const raw = e.target.value
-                if (raw === '') {
-                  setForm(f => ({ ...f, stock_detal: '' }))
-                  return
-                }
-                if (!/^\d+$/.test(raw)) return
-                setForm(f => ({ ...f, stock_detal: raw }))
-              }}
-              hint="Inventario del catálogo detal. 0 = agotado en detal."
-            />
-          </div>
-          <div className="admin-form-panel px-4 py-3.5">
-            <Input
-              label="Stock mayorista"
-              type="number"
-              min={0}
-              step={1}
-              inputMode="numeric"
-              value={form.stock_mayoreo}
-              onChange={e => {
-                const raw = e.target.value
-                if (raw === '') {
-                  setForm(f => ({ ...f, stock_mayoreo: '' }))
-                  return
-                }
-                if (!/^\d+$/.test(raw)) return
-                setForm(f => ({ ...f, stock_mayoreo: raw }))
-              }}
-              hint="Inventario del catálogo mayorista. 0 = agotado en mayoreo."
-            />
-          </div>
-        </div>
-
-        <div className="mt-3 grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {[
             {
               key: 'disponible_detal' as const,

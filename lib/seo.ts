@@ -7,8 +7,8 @@ import {
   getSiteName,
   type SiteConfigMap,
 } from '@/lib/site-config'
-import { DIRECCION_NEGOCIO, resolveWhatsAppNumero } from '@/lib/negocio'
-import { SITE_BRAND_NAME } from '@/lib/seo-brand'
+import { resolveWhatsAppNumero } from '@/lib/negocio'
+import { LEGAL_OWNER } from '@/lib/legal'
 
 const LOCALE = 'es_CO'
 
@@ -123,13 +123,20 @@ export function buildCategoriaMetadata(opts: {
     `/productos/categoria/${opts.categoriaSlug}`,
   )
 
-  return buildMetadata({
+  const metadata = buildMetadata({
     config: opts.config,
     title,
     description,
     path,
     noIndex: false,
   })
+  // Wholesale category pages list the same products: the retail page is canonical.
+  if (isMayoreo) {
+    metadata.alternates = {
+      canonical: toAbsoluteUrl(catalogPath('detal', `/productos/categoria/${opts.categoriaSlug}`)),
+    }
+  }
+  return metadata
 }
 
 export function productJsonLd(
@@ -203,8 +210,8 @@ export function organizationJsonLd(config: SiteConfigMap) {
     },
     address: {
       '@type': 'PostalAddress',
-      streetAddress: DIRECCION_NEGOCIO,
-      addressLocality: 'Quimbaya',
+      streetAddress: LEGAL_OWNER.address,
+      addressLocality: 'Armenia',
       addressRegion: 'Quindío',
       addressCountry: 'CO',
     },

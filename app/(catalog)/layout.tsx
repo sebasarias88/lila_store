@@ -6,6 +6,9 @@ import PageTransition from '@/components/catalog/PageTransition'
 import NavigationProgress from '@/components/catalog/NavigationProgress'
 import FloatingWhatsApp from '@/components/catalog/FloatingWhatsApp'
 import CookieNotice from '@/components/legal/CookieNotice'
+import { isMaintenanceMode } from '@/lib/maintenance'
+import MaintenanceScreen from '@/components/catalog/MaintenanceScreen'
+import { getSucursales } from '@/lib/sucursales'
 import JsonLd from '@/components/seo/JsonLd'
 import { organizationJsonLd, websiteJsonLd } from '@/lib/seo'
 import { resolveWhatsAppNumero } from '@/lib/negocio'
@@ -19,6 +22,9 @@ export default async function CatalogLayout({
 }: {
   children: React.ReactNode
 }) {
+  // MAINTENANCE_MODE=true in Vercel: branded screen, no database calls.
+  if (isMaintenanceMode()) return <MaintenanceScreen />
+
   const supabase = createSupabasePublic()
 
   const { data: configData } = await supabase
@@ -48,6 +54,8 @@ export default async function CatalogLayout({
       .sort((a: { orden: number }, b: { orden: number }) => a.orden - b.orden),
   })) as unknown) as Categoria[]
 
+  const sucursales = await getSucursales()
+
   return (
     <div className="min-h-screen bg-[var(--bg-base)]">
       <JsonLd data={[organizationJsonLd(config), websiteJsonLd(config)]} />
@@ -62,6 +70,7 @@ export default async function CatalogLayout({
         <PageTransition>{children}</PageTransition>
       </main>
       <Footer
+        sucursales={sucursales}
         nombreNegocio={nombreNegocio}
         whatsapp={resolveWhatsAppNumero(config['whatsapp_numero'])}
       />

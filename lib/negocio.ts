@@ -1,19 +1,22 @@
 /** Datos públicos del negocio — seguro para Client y Server Components */
 
+/** A physical store (table public.sucursales, editable in /admin/sucursales). */
 export type Sucursal = {
+  id: string
   ciudad: string
   direccion: string
-  telefono: string
+  telefono: string | null
   /** Nota corta opcional (ej. referencia de ubicación) */
-  nota?: string
+  nota?: string | null
+  orden?: number
 }
 
 /**
  * WhatsApp de consultas (flotante, footer, nosotros, menú, etc.).
  * No usar para el resumen del pedido del carrito.
  */
-export const WHATSAPP_CONSULTA_NUMERO = '573178928174'
-export const WHATSAPP_CONSULTA_DISPLAY = '317 892 8174'
+export const WHATSAPP_CONSULTA_NUMERO = '573104244912'
+export const WHATSAPP_CONSULTA_DISPLAY = '310 424 4912'
 
 /**
  * WhatsApp solo para enviar el resumen del pedido desde el carrito
@@ -26,41 +29,23 @@ export const WHATSAPP_PEDIDO_DISPLAY = '310 424 4912'
 export const WHATSAPP_NUMERO = WHATSAPP_CONSULTA_NUMERO
 export const WHATSAPP_DISPLAY = WHATSAPP_CONSULTA_DISPLAY
 
-/** Números antiguos de otra tienda — no usar. */
+/**
+ * Numbers that must never be used: an old one from another store, and the
+ * Servientrega kiosk line (removed Nov 2026). If the admin config still has
+ * one of them, the site falls back to the official number.
+ */
 const WHATSAPP_BLOQUEADOS = new Set([
   '573185867702',
   '3185867702',
   '57318586770',
+  '573178928174',
+  '3178928174',
 ])
 
 const WHATSAPP_PEDIDO_DIGITOS = new Set([
   '3104244912',
   '573104244912',
 ])
-
-export const SUCURSALES: Sucursal[] = [
-  {
-    ciudad: 'Quimbaya, Quindío',
-    direccion: 'Calle 18 No 5-23',
-    telefono: '3104244912',
-  },
-  {
-    ciudad: 'Armenia, Quindío',
-    direccion: 'Cra 15 calle 16 esquina',
-    telefono: '3178928174',
-    nota: 'Burbuja al interior del Servientrega',
-  },
-  {
-    ciudad: 'Armenia, Quindío',
-    direccion: 'Calle 16 No 13-47 local 3',
-    telefono: '3237723175',
-  },
-]
-
-/** Sucursal principal (primera / WhatsApp). */
-export const DIRECCION_NEGOCIO = SUCURSALES[0].direccion
-export const CIUDAD_NEGOCIO = 'Armenia y Quimbaya, Quindío'
-export const DIRECCION_COMPLETA = `${SUCURSALES[0].direccion}, ${SUCURSALES[0].ciudad}`
 
 function normalizeColombiaWhatsApp(digits: string): string | null {
   if (digits.startsWith('57') && digits.length >= 12) return digits
@@ -94,11 +79,8 @@ export function formatSucursalLabel(s: Sucursal): string {
   return s.nota ? `${base} (${s.nota})` : base
 }
 
-export function findSucursalByLabel(label: string): Sucursal | undefined {
-  return SUCURSALES.find(s => formatSucursalLabel(s) === label)
-}
-
-export function formatTelefonoDisplay(telefono: string): string {
+export function formatTelefonoDisplay(telefono: string | null | undefined): string {
+  if (!telefono) return ''
   const d = telefono.replace(/\D/g, '')
   if (d.length === 10) return `${d.slice(0, 3)} ${d.slice(3, 6)} ${d.slice(6)}`
   return telefono

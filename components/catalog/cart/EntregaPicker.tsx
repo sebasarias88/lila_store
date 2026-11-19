@@ -1,10 +1,12 @@
 'use client'
 
 import { Store, Truck } from 'lucide-react'
-import { SUCURSALES, formatSucursalLabel } from '@/lib/negocio'
+import { formatSucursalLabel, type Sucursal } from '@/lib/negocio'
 import type { TipoEntrega } from '@/types'
 
 type EntregaPickerProps = {
+  /** null while the stores are still loading (shows skeletons). */
+  sucursales: Sucursal[] | null
   tipoEntrega: TipoEntrega
   sucursalRecogida: string
   error?: string
@@ -15,6 +17,7 @@ type EntregaPickerProps = {
 }
 
 export default function EntregaPicker({
+  sucursales,
   tipoEntrega,
   sucursalRecogida,
   error,
@@ -112,8 +115,19 @@ export default function EntregaPicker({
           >
             Elige la tienda *
           </p>
-          <div className="space-y-2">
-            {SUCURSALES.map(s => {
+          <div className="space-y-2" aria-busy={sucursales === null}>
+            {sucursales === null ? (
+              <>
+                <span role="status" className="sr-only">Cargando tiendas…</span>
+                {[0, 1].map(i => (
+                  <div
+                    key={i}
+                    className="h-[62px] rounded-[18px] border border-[var(--border)] bg-[var(--bg-muted)] motion-safe:animate-pulse"
+                  />
+                ))}
+              </>
+            ) : null}
+            {(sucursales ?? []).map(s => {
               const label = formatSucursalLabel(s)
               const active = sucursalRecogida === label
               return (
