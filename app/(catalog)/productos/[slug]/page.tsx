@@ -17,6 +17,11 @@ import { Producto, ProductoSeccion, VariacionTipo } from '@/types'
 
 export const revalidate = 60
 
+/** Pages are generated on first visit and cached (ISR), not at build time. */
+export async function generateStaticParams() {
+  return []
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -26,11 +31,13 @@ export async function generateMetadata({
   const supabase = createSupabasePublic()
   const config = await getSiteConfig()
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('productos')
     .select('nombre, descripcion, imagenes, slug')
     .eq('slug', slug)
-    .single()
+    .maybeSingle()
+  // A DB failure must not become a cached "not found": throw so ISR keeps the last good page.
+  if (error) throw new Error(`[product metadata] ${error.message}`)
 
   if (!data) {
     return { title: 'Producto no encontrado', robots: { index: false, follow: false } }
@@ -48,10 +55,11 @@ export default async function ProductoPage({ params }: { params: Promise<{ slug:
     .from('productos')
     .select(PRODUCTO_DETAIL_SELECT)
     .eq('slug', slug)
-    .single()
+    .maybeSingle()
 
+  if (error) throw new Error(`[product page] ${error.message}`)
   const producto = productoRaw as Producto | null
-  if (error || !producto) notFound()
+  if (!producto) notFound()
   if (producto.disponible_detal === false) notFound()
 
   const productoMapped = withProductoCategorias([producto])[0] || producto

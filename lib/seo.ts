@@ -9,7 +9,6 @@ import {
 } from '@/lib/site-config'
 import { resolveWhatsAppNumero } from '@/lib/negocio'
 import { LEGAL_OWNER } from '@/lib/legal'
-import { SITE_BRAND_NAME } from '@/lib/seo-brand'
 
 const LOCALE = 'es_CO'
 
@@ -124,13 +123,20 @@ export function buildCategoriaMetadata(opts: {
     `/productos/categoria/${opts.categoriaSlug}`,
   )
 
-  return buildMetadata({
+  const metadata = buildMetadata({
     config: opts.config,
     title,
     description,
     path,
     noIndex: false,
   })
+  // Wholesale category pages list the same products: the retail page is canonical.
+  if (isMayoreo) {
+    metadata.alternates = {
+      canonical: toAbsoluteUrl(catalogPath('detal', `/productos/categoria/${opts.categoriaSlug}`)),
+    }
+  }
+  return metadata
 }
 
 export function productJsonLd(

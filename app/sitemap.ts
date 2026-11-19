@@ -13,7 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [{ data: productos }, categorias] = await Promise.all([
     supabase
       .from('productos')
-      .select('slug, updated_at')
+      .select('slug, updated_at, disponible_detal, disponible_mayoreo')
       .eq('disponible', true)
       .order('updated_at', { ascending: false }),
     fetchCategoriasRaiz().catch(() => []),
@@ -54,42 +54,40 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ]
 
+  // Only canonical URLs: wholesale pages of products/categories sold in retail
+  // point to the retail page, so they are left out.
   const categorySlugs = flattenCategoriaSlugs(categorias)
-  const categoryRoutes: MetadataRoute.Sitemap = categorySlugs.flatMap(slug => [
-    {
-      url: toAbsoluteUrl(catalogCategoriaPath('detal', slug)),
-      lastModified: now,
-      changeFrequency: 'weekly' as const,
-      priority: 0.8,
-    },
-    {
-      url: toAbsoluteUrl(catalogCategoriaPath('mayoreo', slug)),
-      lastModified: now,
-      changeFrequency: 'weekly' as const,
-      priority: 0.55,
-    },
-  ])
+  const categoryRoutes: MetadataRoute.Sitemap = categorySlugs.map(slug => ({
+    url: toAbsoluteUrl(catalogCategoriaPath('detal', slug)),
+    lastModified: now,
+    changeFrequency: 'weekly' as const,
+    priority: 0.8,
+  }))
 
-  const productRoutes: MetadataRoute.Sitemap = (productos ?? []).flatMap(
-    producto => [
-      {
-        url: toAbsoluteUrl(`/productos/${producto.slug}`),
-        lastModified: producto.updated_at
-          ? new Date(producto.updated_at)
-          : now,
-        changeFrequency: 'weekly' as const,
-        priority: 0.75,
-      },
-      {
-        url: toAbsoluteUrl(catalogPath('mayoreo', `/productos/${producto.slug}`)),
-        lastModified: producto.updated_at
-          ? new Date(producto.updated_at)
-          : now,
-        changeFrequency: 'weekly' as const,
-        priority: 0.5,
-      },
-    ],
-  )
+  const productRoutes: MetadataRoute.Sitemap = (productos ?? []).flatMap(producto => {
+    const lastModified = producto.updated_at ? new Date(producto.updated_at) : now
+    if (producto.disponible_detal !== false) {
+      return [
+        {
+          url: toAbsoluteUrl(`/productos/${producto.slug}`),
+          lastModified,
+          changeFrequency: 'weekly' as const,
+          priority: 0.75,
+        },
+      ]
+    }
+    if (producto.disponible_mayoreo !== false) {
+      return [
+        {
+          url: toAbsoluteUrl(catalogPath('mayoreo', `/productos/${producto.slug}`)),
+          lastModified,
+          changeFrequency: 'weekly' as const,
+          priority: 0.5,
+        },
+      ]
+    }
+    return []
+  })
 
   return [...staticRoutes, ...categoryRoutes, ...productRoutes]
 }
