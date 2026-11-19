@@ -13,8 +13,8 @@
 const DEFAULT_API_URL = 'https://api-v2.mpr.mipaquete.com'
 /** Every order ships from the Quimbaya store (Calle 18 No 5-23). */
 const DEFAULT_ORIGIN_DANE = '63594000'
-/** Any stable id works as Mipaquete's session-tracker header. */
-const SESSION_TRACKER = '4d1c2f6e-5b8a-4e0f-9a3d-lila00store01'
+/** Mipaquete requires a valid UUID (v4) in the session-tracker header; any stable one works. */
+const SESSION_TRACKER = 'b7e3c1a2-9f4d-4c8e-a6b1-3d5f7e9a2c40'
 const TIMEOUT_MS = 10_000
 
 import {
