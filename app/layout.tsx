@@ -77,6 +77,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className={`${nunito.variable} ${baloo.variable}`}>
+      <head>
+        {process.env.NEXT_PUBLIC_IMAGE_BASE_URL ? (
+          // Product photos come from R2: open the connection early.
+          <link rel="preconnect" href={process.env.NEXT_PUBLIC_IMAGE_BASE_URL} crossOrigin="" />
+        ) : null}
+      </head>
       <body className="min-h-screen antialiased">
         <ScrollToTop />
         <ConnectionStatus />

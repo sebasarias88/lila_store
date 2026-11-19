@@ -149,6 +149,7 @@ export default async function MayoreoHomePage() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-base)]">
+      <h1 className="sr-only">Catálogo mayorista de belleza Lila Store</h1>
       <AnuncioModalPromo anuncio={anuncioModal} catalogType="mayoreo" />
       <HeroBanner banners={banners} config={config} catalogType="mayoreo" />
       <CategoriasGrid categorias={categorias} catalogType="mayoreo" />

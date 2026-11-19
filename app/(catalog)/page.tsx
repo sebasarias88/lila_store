@@ -145,6 +145,10 @@ export default async function HomePage() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-base)]">
+      {/* The hero is an image: this is the page's real H1 for search engines and screen readers. */}
+      <h1 className="sr-only">
+        Lila Store: maquillaje, skincare y cuidado capilar en Armenia y Quimbaya, Quindío
+      </h1>
       <AnuncioModalPromo anuncio={anuncioModal} catalogType="detal" />
       <HeroBanner banners={banners} config={config} />
       <CategoriasGrid categorias={categorias} />
