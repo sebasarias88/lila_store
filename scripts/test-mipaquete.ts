@@ -8,10 +8,13 @@ import { fetchShippingCities, quoteShipping } from '../lib/mipaquete'
 async function main() {
   const cities = await fetchShippingCities()
   console.log(`Cities: ${cities.length}`)
-  for (const name of ['Bogotá', 'Medellín', 'Armenia', 'Quimbaya']) {
-    const found = cities.find(c => c.name.normalize('NFD').replace(/[̀-ͯ]/g, '').startsWith(name.normalize('NFD').replace(/[̀-ͯ]/g, '')))
-    console.log(`  ${name}: ${found ? `${found.code} (${found.department})` : 'not found'}`)
+  console.log('First 3:', JSON.stringify(cities.slice(0, 3)))
+  const plain = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  for (const code of ['11001000', '05001000', '63001000', '63594000']) {
+    const found = cities.find(c => c.code === code)
+    console.log(`  ${code}: ${found ? JSON.stringify(found) : 'not found'}`)
   }
+  console.log('  search "bogota":', cities.filter(c => plain(c.name).includes('bogota')).slice(0, 3).map(c => c.name))
   for (const destinyCode of ['11001000', '05001000']) {
     const options = await quoteShipping({
       destinyCode,

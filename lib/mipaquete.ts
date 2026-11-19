@@ -97,16 +97,44 @@ const asRows = (data: unknown, ...wrappers: string[]): Row[] => {
   return []
 }
 
+const LOWER_WORDS = new Set(['de', 'del', 'la', 'las', 'los', 'el', 'y', 'e', 'en'])
+
+/** "NORTE DE SANTANDER" → "Norte de Santander", "BOGOTÁ D.C." → "Bogotá D.C." (Mipaquete sends caps). */
+export function titleCase(text: string): string {
+  return text
+    .toLocaleLowerCase('es-CO')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word, i) => {
+      if (/^[a-z]\.([a-z]\.)+$/i.test(word)) return word.toUpperCase() // D.C.
+      if (i > 0 && LOWER_WORDS.has(word)) return word
+      return word.charAt(0).toLocaleUpperCase('es-CO') + word.slice(1)
+    })
+    .join(' ')
+}
+
+/** Short carrier names are acronyms (TCC); the rest read better in title case. */
+const carrierName = (name: string) => (name.length <= 4 ? name.toUpperCase() : titleCase(name))
+
 /** Every Colombian municipality Mipaquete can deliver to, with its DANE code. */
 export async function fetchShippingCities(): Promise<ShippingCity[]> {
   const data = await mpFetch('/getLocations', { method: 'GET' })
   const cities = asRows(data, 'locations', 'data', 'result')
-    .map(row => ({
-      code: str(row, 'locationCode', 'code', 'location_code', 'daneCode').padStart(8, '0'),
-      name: str(row, 'locationName', 'name', 'location_name', 'cityName'),
-      department: str(row, 'departmentOrStateName', 'departmentName', 'department', 'stateName'),
-    }))
+    .map(row => {
+      const name = titleCase(str(row, 'locationName', 'name', 'location_name', 'cityName'))
+      const department = titleCase(
+        str(row, 'departmentOrStateName', 'departmentName', 'department', 'stateName'),
+      )
+      return {
+        code: str(row, 'locationCode', 'code', 'location_code', 'daneCode').padStart(8, '0'),
+        name,
+        // "Bogotá D.C., Bogotá D.C." reads badly: drop the department when it repeats the name.
+        department: department === name ? '' : department,
+      }
+    })
     .filter(c => DANE_CODE_RE.test(c.code) && c.name)
+    // Mipaquete lists a few municipalities twice: keep one per DANE code.
+    .filter((c, i, all) => all.findIndex(o => o.code === c.code) === i)
   if (!cities.length) throw new MipaqueteError('Mipaquete returned no locations')
   return cities.sort((a, b) => a.name.localeCompare(b.name, 'es'))
 }
@@ -137,7 +165,7 @@ export async function quoteShipping(params: {
       const minutes = num(row, 'shippingTime')
       return {
         id: str(row, 'deliveryCompanyId', 'id', '_id'),
-        carrier: str(row, 'deliveryCompanyName', 'name', 'companyName'),
+        carrier: carrierName(str(row, 'deliveryCompanyName', 'name', 'companyName')),
         cost: Math.round(num(row, 'shippingCost', 'price', 'totalCost', 'value')),
         days: Number.isFinite(minutes) && minutes > 0 ? Math.max(1, Math.ceil(minutes / 1440)) : null,
       }
