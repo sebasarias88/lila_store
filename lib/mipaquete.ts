@@ -4,13 +4,13 @@
  *
  * Env:
  *   MIPAQUETE_API_KEY     (required) key created in Mipaquete → Integraciones → Clave de Api
- *   MIPAQUETE_API_URL     (optional) defaults to https://api-v2.mipaquete.com
+ *   MIPAQUETE_API_URL     (optional) defaults to https://api-v2.mpr.mipaquete.com
  *   MIPAQUETE_ORIGIN_DANE (optional) 8-digit DANE code of the dispatch store; defaults to Quimbaya
  *
  * The origin is never sent to the browser: customers only see carrier, cost and days.
  */
 
-const DEFAULT_API_URL = 'https://api-v2.mipaquete.com'
+const DEFAULT_API_URL = 'https://api-v2.mpr.mipaquete.com'
 /** Every order ships from the Quimbaya store (Calle 18 No 5-23). */
 const DEFAULT_ORIGIN_DANE = '63594000'
 /** Any stable id works as Mipaquete's session-tracker header. */
