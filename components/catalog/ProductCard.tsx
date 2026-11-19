@@ -17,7 +17,7 @@ import {
 import { ShoppingBag, ImageIcon, Heart, Sparkles, Play } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { toastProductoAgregado } from '@/lib/toastCatalog'
-import { productoTieneVideo } from '@/lib/video-url'
+import { getProductVideos } from '@/lib/productVideos'
 import { productoComprableEnCatalogo } from '@/lib/stock'
 import { useGuardedRouter } from '@/lib/useGuardedRouter'
 import ThumbImg from '@/components/catalog/ThumbImg'
@@ -98,7 +98,7 @@ export default function ProductCard({
             </div>
           )}
 
-          {productoTieneVideo(producto) ? (
+          {getProductVideos(producto).length > 0 ? (
             <span className="absolute bottom-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-[var(--accent-deep)] shadow-[var(--shadow-soft)]">
               <Play size={14} className="ml-0.5" fill="currentColor" />
             </span>

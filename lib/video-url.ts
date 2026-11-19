@@ -96,6 +96,7 @@ export function getVideoEmbedUrl(
 }
 
 export function videoEmbedAspect(tipo: VideoTipo): 'video' | 'portrait' {
+  // Phone videos (uploaded, TikTok, Reels) are vertical; YouTube is landscape.
   return tipo === 'youtube' ? 'video' : 'portrait'
 }
 
@@ -144,4 +145,12 @@ export function isValidHttpUrl(url: string): boolean {
   } catch {
     return false
   }
+}
+
+/** Platform of a pasted link, or null if it isn't YouTube / TikTok / Instagram. */
+export function detectVideoTipo(url: string): Exclude<VideoTipo, 'archivo'> | null {
+  for (const tipo of ['youtube', 'tiktok', 'instagram'] as const) {
+    if (isLikelyVideoUrl(url, tipo)) return tipo
+  }
+  return null
 }

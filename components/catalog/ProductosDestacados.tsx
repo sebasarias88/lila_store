@@ -24,7 +24,6 @@ export default function ProductosDestacados({
       description="Piezas que enamoran: lo más pedido de la tienda ✨"
       verMasHref={catalogPath(catalogType, '/productos')}
       verMasLabel="Ver catálogo"
-      layout="grid"
       sectionId="destacados"
       muted
     />

@@ -15,7 +15,7 @@ import {
 import { resolveDescuentoProducto } from '@/lib/descuentos'
 import { ShoppingBag, ImageIcon, Play, Sparkles } from 'lucide-react'
 import MobileQuickAddSheet from '@/components/catalog/mobile/MobileQuickAddSheet'
-import { productoTieneVideo } from '@/lib/video-url'
+import { getProductVideos } from '@/lib/productVideos'
 import { productoComprableEnCatalogo } from '@/lib/stock'
 import toast from 'react-hot-toast'
 import { useGuardedRouter } from '@/lib/useGuardedRouter'
@@ -93,7 +93,7 @@ export default function ProductCardMobile({
             )}
           </Link>
 
-          {productoTieneVideo(producto) ? (
+          {getProductVideos(producto).length > 0 ? (
             <span className="pointer-events-none absolute bottom-2 right-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 text-[var(--accent-deep)] shadow-[var(--shadow-soft)]">
               <Play size={13} className="ml-0.5" fill="currentColor" />
             </span>

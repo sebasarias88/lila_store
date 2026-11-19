@@ -25,7 +25,6 @@ export default function ProductosNovedades({
       verMasHref={catalogPath(catalogType, '/productos')}
       verMasLabel="Ver más"
       sectionId="novedades"
-      layout="carousel"
       muted
     />
   )

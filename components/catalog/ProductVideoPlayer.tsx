@@ -12,6 +12,8 @@ type Props = {
   className?: string
   /** autoplay muted — útil en preview admin */
   autoPlay?: boolean
+  /** Product photo shown before an uploaded video starts. */
+  poster?: string | null
 }
 
 /**
@@ -22,7 +24,29 @@ export default function ProductVideoPlayer({
   tipo,
   className = '',
   autoPlay = false,
+  poster,
 }: Props) {
+  if (tipo === 'archivo') {
+    // Uploaded MP4 on R2: native player, only metadata is downloaded until play.
+    return (
+      <div className={`relative flex w-full items-center justify-center bg-black ${className}`}>
+        <video
+          key={url}
+          src={url}
+          poster={poster ?? undefined}
+          controls
+          playsInline
+          preload="metadata"
+          autoPlay={autoPlay}
+          muted={autoPlay}
+          className="max-h-[70vh] w-full object-contain"
+        >
+          Tu navegador no puede reproducir este video.
+        </video>
+      </div>
+    )
+  }
+
   const embed = getVideoEmbedUrl(url, tipo)
   const portrait = videoEmbedAspect(tipo) === 'portrait'
 
