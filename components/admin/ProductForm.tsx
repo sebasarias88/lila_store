@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Producto, Categoria, VideoTipo } from '@/types'
 import { Input, Textarea } from '@/components/ui/Input'
-import { AdminMultiSelect } from '@/components/ui/AdminSelect'
+import { AdminMultiSelect, AdminSelect } from '@/components/ui/AdminSelect'
 import { CopInput } from '@/components/ui/CopInput'
 import { formatCopInput, parseCopInput } from '@/lib/currency'
 import Button from '@/components/ui/Button'
@@ -270,25 +270,20 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
       <FormSection title="Video (opcional)">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,180px)_minmax(0,1fr)]">
           <div className="space-y-1.5">
-            <label className="admin-form-label" htmlFor="producto-video-tipo">
-              Plataforma
-            </label>
-            <select
-              id="producto-video-tipo"
+            <span className="admin-form-label">Plataforma</span>
+            <AdminSelect
               value={form.video_tipo}
-              onChange={e =>
-                setForm(f => ({
-                  ...f,
-                  video_tipo: e.target.value as '' | VideoTipo,
-                }))
+              onChange={value =>
+                setForm(f => ({ ...f, video_tipo: value as '' | VideoTipo }))
               }
-              className="admin-input w-full rounded-xl border px-4 py-3 text-[13px] md:rounded-[2px]"
-            >
-              <option value="">Sin video</option>
-              <option value="youtube">YouTube</option>
-              <option value="tiktok">TikTok</option>
-              <option value="instagram">Instagram</option>
-            </select>
+              placeholder="Sin video"
+              options={[
+                { value: '', label: 'Sin video' },
+                { value: 'youtube', label: 'YouTube' },
+                { value: 'tiktok', label: 'TikTok' },
+                { value: 'instagram', label: 'Instagram' },
+              ]}
+            />
           </div>
           <Input
             label="Link de video (opcional)"
