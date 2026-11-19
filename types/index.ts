@@ -157,6 +157,8 @@ export type DatosCliente = {
   celular: string
   direccion: string
   ciudad: string
+  /** DANE code of the chosen city (8 digits), used for the Mipaquete quote. '' if typed freely. */
+  ciudadCodigo: string
   metodoPago: string
   notas: string
   /** Envío a domicilio o recoger en tienda física */
