@@ -99,8 +99,8 @@ export default function ConfigTabPanels({
               label="WhatsApp de consultas *"
               value={config['whatsapp_numero'] || ''}
               onChange={e => updateConfig('whatsapp_numero', e.target.value)}
-              placeholder="573178928174"
-              hint="Con código de país, sin espacios. Ej: 573178928174"
+              placeholder="573104244912"
+              hint="Con código de país, sin espacios. Ej: 573104244912"
             />
           </div>
         </FormSection>

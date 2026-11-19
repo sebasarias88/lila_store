@@ -15,8 +15,8 @@ export type Sucursal = {
  * WhatsApp de consultas (flotante, footer, nosotros, menú, etc.).
  * No usar para el resumen del pedido del carrito.
  */
-export const WHATSAPP_CONSULTA_NUMERO = '573178928174'
-export const WHATSAPP_CONSULTA_DISPLAY = '317 892 8174'
+export const WHATSAPP_CONSULTA_NUMERO = '573104244912'
+export const WHATSAPP_CONSULTA_DISPLAY = '310 424 4912'
 
 /**
  * WhatsApp solo para enviar el resumen del pedido desde el carrito
@@ -29,11 +29,17 @@ export const WHATSAPP_PEDIDO_DISPLAY = '310 424 4912'
 export const WHATSAPP_NUMERO = WHATSAPP_CONSULTA_NUMERO
 export const WHATSAPP_DISPLAY = WHATSAPP_CONSULTA_DISPLAY
 
-/** Números antiguos de otra tienda — no usar. */
+/**
+ * Numbers that must never be used: an old one from another store, and the
+ * Servientrega kiosk line (removed Nov 2026). If the admin config still has
+ * one of them, the site falls back to the official number.
+ */
 const WHATSAPP_BLOQUEADOS = new Set([
   '573185867702',
   '3185867702',
   '57318586770',
+  '573178928174',
+  '3178928174',
 ])
 
 const WHATSAPP_PEDIDO_DIGITOS = new Set([
