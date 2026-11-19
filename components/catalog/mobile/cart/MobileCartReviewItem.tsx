@@ -8,6 +8,7 @@ import {
   variacionesCarritoClassName,
 } from '@/lib/cart'
 import { type CatalogType } from '@/lib/catalog'
+import ThumbImg from '@/components/catalog/ThumbImg'
 
 const MAX_NOMBRE_RESUMEN = 46
 
@@ -44,7 +45,7 @@ export default function MobileCartReviewItem({ item, catalogType }: MobileCartRe
     <article className="mobile-cart-review-item">
       <div className="mobile-cart-review-item__thumb">
         {producto.imagenes?.[0] ? (
-          <img src={producto.imagenes[0]} alt="" className="h-full w-full object-cover" />
+          <ThumbImg src={producto.imagenes[0]} alt="" className="h-full w-full object-cover" />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-[var(--bg-surface)]">
             <ShoppingBag size={16} className="text-[var(--text-faint)]" aria-hidden />

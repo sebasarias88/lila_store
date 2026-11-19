@@ -6,6 +6,7 @@ import { Categoria } from '@/types'
 import { catalogPath, catalogCategoriaPath, type CatalogType } from '@/lib/catalog'
 import { ArrowRight, Sparkles } from 'lucide-react'
 import { categoriaTieneDescuentoActivo } from '@/lib/descuentos'
+import ThumbImg from '@/components/catalog/ThumbImg'
 
 const MAX_VISIBLE = 8
 
@@ -151,7 +152,7 @@ function CategoriaCard({
           }`}
         >
           {cat.imagen_url ? (
-            <img
+            <ThumbImg
               src={cat.imagen_url}
               alt={cat.nombre}
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"

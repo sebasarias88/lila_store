@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
+import { deleteCatalogImages } from '@/lib/catalogImages'
 import { Producto } from '@/types'
 import Modal from '@/components/ui/Modal'
 import Button from '@/components/ui/Button'
@@ -163,18 +164,15 @@ export default function ProductosPage() {
         .update({ producto_id: null })
         .eq('producto_id', productoId)
 
-      if (selected.imagenes?.length) {
-        const paths = selected.imagenes
-          .map(url => {
-            const parts = url.split('/productos/')
-            return parts.length > 1 ? `productos/${parts[1]}` : null
-          })
-          .filter(Boolean) as string[]
-        if (paths.length) await supabase.storage.from('productos').remove(paths)
-      }
-
       const { error } = await supabase.from('productos').delete().eq('id', productoId)
       if (error) throw error
+
+      // Files are removed only after the product is gone (legacy Supabase URLs are skipped).
+      if (selected.imagenes?.length) {
+        await deleteCatalogImages(selected.imagenes).catch(err =>
+          console.error('[admin] Eliminar imágenes:', err),
+        )
+      }
 
       toast.success('Producto eliminado')
       setDeleteModal(false)

@@ -20,6 +20,7 @@ import { toastProductoAgregado } from '@/lib/toastCatalog'
 import { productoTieneVideo } from '@/lib/video-url'
 import { productoComprableEnCatalogo } from '@/lib/stock'
 import { useGuardedRouter } from '@/lib/useGuardedRouter'
+import ThumbImg from '@/components/catalog/ThumbImg'
 
 const MAX_TITULO_CARD = 52
 const NUEVO_DIAS = 21
@@ -86,7 +87,7 @@ export default function ProductCard({
       <div className="catalog-product-card group relative flex h-full min-h-0 flex-col overflow-hidden rounded-[26px] border border-[var(--border)] bg-[var(--bg-surface)] shadow-[var(--shadow-soft)] transition-all duration-300 hover:-translate-y-1.5 hover:border-[color-mix(in_srgb,var(--accent-primary)_50%,var(--border))] hover:shadow-[var(--shadow-card-hover)]">
         <div className="relative aspect-[3/4] w-full flex-shrink-0 overflow-hidden bg-gradient-to-b from-[#EEE8FC] to-[var(--bg-muted)]">
           {producto.imagenes?.[0] ? (
-            <img
+            <ThumbImg
               src={producto.imagenes[0]}
               alt={producto.nombre}
               className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.06]"

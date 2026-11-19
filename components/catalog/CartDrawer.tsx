@@ -20,6 +20,7 @@ import {
 } from '@/lib/stock'
 import toast from 'react-hot-toast'
 import { PAGOS_COPY } from '@/lib/pagos-proximos'
+import ThumbImg from '@/components/catalog/ThumbImg'
 
 type CartDrawerProps = {
   open: boolean
@@ -162,7 +163,7 @@ export default function CartDrawer({
                         >
                           <div className="h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-[16px] bg-gradient-to-b from-[#EEE8FC] to-[var(--bg-muted)] ring-1 ring-[var(--border)]">
                             {producto.imagenes?.[0] ? (
-                              <img
+                              <ThumbImg
                                 src={producto.imagenes[0]}
                                 alt={producto.nombre}
                                 className="h-full w-full object-cover"

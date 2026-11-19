@@ -78,6 +78,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import ThumbImg from '@/components/catalog/ThumbImg'
 
 function formatPrecio(precio: number) {
   return new Intl.NumberFormat('es-CO', {
@@ -197,7 +198,7 @@ function OrderSummaryPanel({
             <div key={key} className="flex gap-3">
               <div className="h-12 w-12 shrink-0 overflow-hidden rounded-[12px] bg-[var(--bg-muted)]">
                 {producto.imagenes?.[0] ? (
-                  <img
+                  <ThumbImg
                     src={producto.imagenes[0]}
                     alt={producto.nombre}
                     className="h-full w-full object-cover"
@@ -843,7 +844,7 @@ export default function CarritoPage() {
                               className="h-24 w-20 shrink-0 overflow-hidden rounded-[16px] bg-gradient-to-b from-[#EEE8FC] to-[var(--bg-muted)] ring-1 ring-[var(--border)] sm:h-28 sm:w-24"
                             >
                               {producto.imagenes?.[0] ? (
-                                <img
+                                <ThumbImg
                                   src={producto.imagenes[0]}
                                   alt={producto.nombre}
                                   className="h-full w-full object-cover"
@@ -1336,7 +1337,7 @@ export default function CarritoPage() {
                         <div key={key} className="flex items-center gap-3">
                           <div className="h-14 w-14 shrink-0 overflow-hidden rounded-[14px] bg-[var(--bg-muted)]">
                             {producto.imagenes?.[0] && (
-                              <img
+                              <ThumbImg
                                 src={producto.imagenes[0]}
                                 alt={producto.nombre}
                                 className="h-full w-full object-cover"

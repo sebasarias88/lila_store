@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
-import { optimizeImage } from '@/lib/optimizeImage'
+import { uploadCatalogImage } from '@/lib/catalogImages'
 import { Categoria } from '@/types'
 import { Input } from '@/components/ui/Input'
 import { AdminSelect } from '@/components/ui/AdminSelect'
@@ -139,31 +139,15 @@ export default function CategoriaForm({
 
   const handleImagenUpload = async (file: File) => {
     setUploadingImg(true)
-    const optimized = await optimizeImage(file)
-    if (!optimized.ok) {
-      toast.error(optimized.message)
+    try {
+      const url = await uploadCatalogImage(file, 'categorias')
+      setForm(f => ({ ...f, imagen_url: url }))
+      toast.success('Imagen subida')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error al subir imagen')
+    } finally {
       setUploadingImg(false)
-      return
     }
-    const toUpload = optimized.file
-    const ext = toUpload.name.split('.').pop() || 'webp'
-    const path = `categorias/${Date.now()}.${ext}`
-
-    const { error } = await supabase.storage.from('productos').upload(path, toUpload, {
-      upsert: true,
-      contentType: toUpload.type || 'image/webp',
-    })
-
-    if (error) {
-      toast.error('Error al subir imagen')
-      setUploadingImg(false)
-      return
-    }
-
-    const { data } = supabase.storage.from('productos').getPublicUrl(path)
-    setForm(f => ({ ...f, imagen_url: data.publicUrl }))
-    toast.success('Imagen subida')
-    setUploadingImg(false)
   }
 
   const handleGuardar = async () => {
