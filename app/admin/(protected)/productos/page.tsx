@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { deleteCatalogImages } from '@/lib/catalogImages'
+import { getProductVideos } from '@/lib/productVideos'
 import { Producto } from '@/types'
 import Modal from '@/components/ui/Modal'
 import Button from '@/components/ui/Button'
@@ -167,10 +168,15 @@ export default function ProductosPage() {
       const { error } = await supabase.from('productos').delete().eq('id', productoId)
       if (error) throw error
 
-      // Files are removed only after the product is gone (legacy Supabase URLs are skipped).
-      if (selected.imagenes?.length) {
-        await deleteCatalogImages(selected.imagenes).catch(err =>
-          console.error('[admin] Eliminar imágenes:', err),
+      // Files are removed only after the product is gone (legacy Supabase URLs are skipped):
+      // its photos plus the videos uploaded to R2 (links to TikTok/YouTube are not files).
+      const files = [
+        ...(selected.imagenes ?? []),
+        ...getProductVideos(selected).filter(v => v.tipo === 'archivo').map(v => v.url),
+      ]
+      if (files.length) {
+        await deleteCatalogImages(files).catch(err =>
+          console.error('[admin] Eliminar archivos:', err),
         )
       }
 

@@ -22,6 +22,10 @@ import type { DatosTransferencia } from '@/lib/transferencia'
 import { esMetodoTransferencia } from '@/lib/transferencia'
 import EntregaPicker from '@/components/catalog/cart/EntregaPicker'
 import PoliciesConsent from '@/components/legal/PoliciesConsent'
+import CitySelect from '@/components/catalog/cart/CitySelect'
+import ShippingOptions from '@/components/catalog/cart/ShippingOptions'
+import type { LoadStatus } from '@/lib/useShipping'
+import type { ShippingCity, ShippingOption } from '@/lib/shippingShared'
 import type { Sucursal } from '@/lib/negocio'
 import MetodoPagoPicker from '@/components/catalog/cart/MetodoPagoPicker'
 import TransferenciaCheckout from '@/components/catalog/cart/TransferenciaCheckout'
@@ -56,6 +60,11 @@ function WhatsAppIcon({ size = 16 }: { size?: number }) {
 
 type CarritoMobileProps = {
   sucursales: Sucursal[] | null
+  shippingCities: { status: LoadStatus; cities: ShippingCity[] }
+  shippingQuote: { status: LoadStatus; options: ShippingOption[] }
+  envioCotizable: boolean
+  envioOpcionId: string
+  onEnvioOpcionChange: (id: string) => void
   catalogType: CatalogType
   productosHref: string
   step: Step
@@ -128,6 +137,11 @@ const checkoutInputClass = 'mobile-cart-checkout-field__input'
 
 export default function CarritoMobile({
   sucursales,
+  shippingCities,
+  shippingQuote,
+  envioCotizable,
+  envioOpcionId,
+  onEnvioOpcionChange,
   catalogType,
   productosHref,
   step,
@@ -461,21 +475,32 @@ export default function CarritoMobile({
                 ) : (
                   <>
                     <CartFormField id="cart-ciudad" label="Ciudad" required error={errores.ciudad}>
-                      <input
+                      <CitySelect
                         id="cart-ciudad"
-                        type="text"
                         value={datos.ciudad}
-                        onChange={e => {
-                          setDatos(d => ({ ...d, ciudad: e.target.value }))
+                        selectedCode={datos.ciudadCodigo}
+                        status={shippingCities.status}
+                        cities={shippingCities.cities}
+                        invalid={Boolean(errores.ciudad)}
+                        onChange={({ name, code }) => {
+                          setDatos(d => ({ ...d, ciudad: name, ciudadCodigo: code }))
+                          onEnvioOpcionChange('')
                           if (errores.ciudad) setErrores(er => ({ ...er, ciudad: '' }))
                         }}
-                        placeholder="Ej: Armenia, Bogotá..."
-                        className={checkoutInputClass}
-                        autoComplete="address-level2"
+                        placeholder="Escribe tu ciudad…"
+                        inputClassName={checkoutInputClass}
                       />
                     </CartFormField>
 
-                    {datos.ciudad.trim() ? (
+                    {envioCotizable ? (
+                      <ShippingOptions
+                        status={shippingQuote.status}
+                        options={shippingQuote.options}
+                        selectedId={envioOpcionId}
+                        onSelect={onEnvioOpcionChange}
+                        fallbackText="No pudimos calcular el envío ahora. Te confirmamos el valor por WhatsApp 💕"
+                      />
+                    ) : datos.ciudad.trim() && (datos.ciudadCodigo || shippingCities.status !== 'ready') ? (
                       <div className="mobile-cart-checkout-shipping">
                         <p className="flex items-start gap-2">
                           <Truck size={14} className="mt-0.5 shrink-0 text-[var(--accent-deep)]" />

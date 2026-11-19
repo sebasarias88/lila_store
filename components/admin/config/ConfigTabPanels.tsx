@@ -166,7 +166,8 @@ export default function ConfigTabPanels({
     return (
       <>
         <InfoBanner icon={Truck} compact={mobile}>
-          Armenia usa tarifa local; el resto del país, tarifa nacional.
+          Armenia usa la tarifa local. Las demás ciudades se cotizan en vivo con Mipaquete
+          (siempre despachando desde Quimbaya). Si Mipaquete no responde, se usa la tarifa nacional.
         </InfoBanner>
         <FormSection title="Tarifas por zona">
           <div className={`grid grid-cols-1 gap-4 ${mobile ? '' : 'sm:grid-cols-2'}`}>
@@ -193,7 +194,7 @@ export default function ConfigTabPanels({
                   value={config['envio_nacional'] || ''}
                   onChange={value => updateConfig('envio_nacional', value)}
                   placeholder="0"
-                  hint="0 = A convenir con el cliente"
+                  hint="Solo si Mipaquete falla. 0 = A convenir con el cliente"
                 />
                 <Input
                   label="Tiempo de entrega"
@@ -203,6 +204,39 @@ export default function ConfigTabPanels({
                 />
               </div>
             </ZoneCard>
+          </div>
+        </FormSection>
+        <FormSection title="Caja estándar (Mipaquete)">
+          <div className={`admin-form-panel mobile-admin-field space-y-4 ${mobile ? 'p-4' : 'p-5'}`}>
+            <p className="text-[12px] text-[var(--text-subtle)]">
+              Los productos no tienen peso propio: cada pedido se cotiza como una caja con estas
+              medidas. Ajústalas con una caja real para que el valor del envío salga exacto.
+            </p>
+            <div className={`grid grid-cols-1 gap-4 ${mobile ? '' : 'sm:grid-cols-3'}`}>
+              <Input
+                label="Peso base (kg)"
+                inputMode="decimal"
+                value={config['envio_paquete_peso_base_kg'] || ''}
+                onChange={e => updateConfig('envio_paquete_peso_base_kg', e.target.value)}
+                placeholder="1"
+                hint="Caja con 1 producto"
+              />
+              <Input
+                label="Peso por producto extra (kg)"
+                inputMode="decimal"
+                value={config['envio_paquete_peso_unidad_kg'] || ''}
+                onChange={e => updateConfig('envio_paquete_peso_unidad_kg', e.target.value)}
+                placeholder="0.2"
+                hint="Se suma por cada unidad adicional"
+              />
+              <Input
+                label="Medidas de la caja (cm)"
+                value={config['envio_paquete_medidas_cm'] || ''}
+                onChange={e => updateConfig('envio_paquete_medidas_cm', e.target.value)}
+                placeholder="25x20x15"
+                hint="Largo x ancho x alto"
+              />
+            </div>
           </div>
         </FormSection>
         <FormSection title="Promoción de envío">

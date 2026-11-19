@@ -20,8 +20,6 @@ type Props = {
   /** Fondo sutil para alternar secciones */
   muted?: boolean
   sectionId?: string
-  /** Desktop: carousel o grid (web-first) */
-  layout?: 'carousel' | 'grid'
 }
 
 export default function ProductosCarousel({
@@ -34,11 +32,8 @@ export default function ProductosCarousel({
   verMasLabel = 'Ver más',
   muted = false,
   sectionId,
-  layout = 'carousel',
 }: Props) {
   if (!productos.length) return null
-
-  const useGrid = layout === 'grid'
 
   return (
     <section
@@ -92,63 +87,24 @@ export default function ProductosCarousel({
           </Link>
         </motion.div>
 
-        {useGrid ? (
-          <>
-            {/* Mobile: carousel */}
-            <div className="sm:hidden">
-              <HorizontalCarousel
-                itemClassName="w-[68vw]"
-                gapClassName="gap-3"
-              >
-                {productos.map((producto, i) => (
-                  <motion.div
-                    key={producto.id}
-                    className="h-full overflow-hidden rounded-[22px]"
-                    initial={{ opacity: 0, y: 10 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.04 }}
-                  >
-                    <ResponsiveProductCard producto={producto} catalogType={catalogType} />
-                  </motion.div>
-                ))}
-              </HorizontalCarousel>
-            </div>
-            {/* Desktop: grid */}
-            <div className="hidden grid-cols-2 gap-4 sm:grid md:grid-cols-3 lg:grid-cols-4 lg:gap-5">
-              {productos.slice(0, 8).map((producto, i) => (
-                <motion.div
-                  key={producto.id}
-                  className="overflow-hidden rounded-[22px]"
-                  initial={{ opacity: 0, y: 12 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: Math.min(i * 0.04, 0.28) }}
-                >
-                  <ResponsiveProductCard producto={producto} catalogType={catalogType} />
-                </motion.div>
-              ))}
-            </div>
-          </>
-        ) : (
-          <HorizontalCarousel
-            itemClassName="w-[68vw] sm:w-[240px] lg:w-[260px]"
-            gapClassName="gap-3 sm:gap-4"
-          >
-            {productos.map((producto, i) => (
-              <motion.div
-                key={producto.id}
-                className="h-full overflow-hidden rounded-[22px]"
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.04 }}
-              >
-                <ResponsiveProductCard producto={producto} catalogType={catalogType} />
-              </motion.div>
-            ))}
-          </HorizontalCarousel>
-        )}
+        <HorizontalCarousel
+          label={typeof title === 'string' ? title : eyebrow}
+          itemClassName="w-[68vw] sm:w-[240px] lg:w-[260px]"
+          gapClassName="gap-3 sm:gap-4"
+        >
+          {productos.map((producto, i) => (
+            <motion.div
+              key={producto.id}
+              className="h-full overflow-hidden rounded-[22px]"
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: Math.min(i * 0.04, 0.24) }}
+            >
+              <ResponsiveProductCard producto={producto} catalogType={catalogType} />
+            </motion.div>
+          ))}
+        </HorizontalCarousel>
       </div>
     </section>
   )

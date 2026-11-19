@@ -54,6 +54,10 @@ import { PAGOS_COPY } from '@/lib/pagos-proximos'
 import EntregaPicker from '@/components/catalog/cart/EntregaPicker'
 import MetodoPagoPicker from '@/components/catalog/cart/MetodoPagoPicker'
 import PoliciesConsent from '@/components/legal/PoliciesConsent'
+import CitySelect from '@/components/catalog/cart/CitySelect'
+import ShippingOptions from '@/components/catalog/cart/ShippingOptions'
+import { useShippingCities, useShippingQuote } from '@/lib/useShipping'
+import { ARMENIA_DANE, formatShippingDays } from '@/lib/shippingShared'
 import TransferenciaCheckout from '@/components/catalog/cart/TransferenciaCheckout'
 import CarritoMobile from '@/components/catalog/mobile/cart/CarritoMobile'
 import PageGoldAccent from '@/components/catalog/PageGoldAccent'
@@ -314,6 +318,7 @@ export default function CarritoPage() {
     celular: '',
     direccion: '',
     ciudad: '',
+    ciudadCodigo: '',
     metodoPago: '',
     notas: '',
     tipoEntrega: 'envio',
@@ -406,13 +411,30 @@ export default function CarritoPage() {
     [metodosPagoDb, catalogType, transferencia.activo],
   )
   const esTransferencia = esMetodoTransferencia(datos.metodoPago)
-  const esArmenia = CIUDADES_ARMENIA.includes(datos.ciudad.toLowerCase().trim())
+  const esArmenia = datos.ciudadCodigo
+    ? datos.ciudadCodigo === ARMENIA_DANE
+    : CIUDADES_ARMENIA.includes(datos.ciudad.split(',')[0].toLowerCase().trim())
   const subtotal = useMemo(
     () => cartSubtotal(items, catalogType),
     [items, catalogType],
   )
+  const unidades = useMemo(() => items.reduce((acc, i) => acc + i.cantidad, 0), [items])
   const envioGratisDesde = parseCopValue(config.envio_gratis_desde)
   const envioGratis = !esRecogida && envioGratisDesde > 0 && subtotal >= envioGratisDesde
+
+  // Mipaquete: real cost and time for cities outside Armenia (always shipped from Quimbaya).
+  const shippingCities = useShippingCities(mounted && !esRecogida)
+  const envioCotizable = !esRecogida && !envioGratis && !esArmenia && Boolean(datos.ciudadCodigo)
+  const shippingQuote = useShippingQuote({
+    cityCode: datos.ciudadCodigo,
+    subtotal,
+    units: unidades,
+    enabled: envioCotizable,
+  })
+  const [envioOpcionId, setEnvioOpcionId] = useState('')
+  const envioOpcion =
+    shippingQuote.options.find(o => o.id === envioOpcionId) ?? shippingQuote.options[0] ?? null
+  const usaCotizacion = envioCotizable && shippingQuote.status === 'ready' && envioOpcion !== null
 
   const costoEnvio = esRecogida
     ? 0
@@ -420,13 +442,17 @@ export default function CarritoPage() {
       ? 0
       : esArmenia
         ? parseCopValue(config.envio_armenia)
-        : parseCopValue(config.envio_nacional)
+        : usaCotizacion
+          ? envioOpcion.cost
+          : parseCopValue(config.envio_nacional)
 
   const tiempoEntrega = esRecogida
     ? 'Recoger en tienda'
     : esArmenia
       ? config.tiempo_entrega_armenia
-      : config.tiempo_entrega_nacional
+      : usaCotizacion
+        ? `${envioOpcion.carrier} · ${formatShippingDays(envioOpcion.days)}`
+        : config.tiempo_entrega_nacional
 
   const recargoPago = useMemo(
     () =>
@@ -492,6 +518,9 @@ export default function CarritoPage() {
     if (!esRecogida) {
       if (!datos.direccion.trim()) e.direccion = 'La dirección es requerida'
       if (!datos.ciudad.trim()) e.ciudad = 'La ciudad es requerida'
+      else if (shippingCities.status === 'ready' && !datos.ciudadCodigo) {
+        e.ciudad = 'Elige tu ciudad de la lista para calcular el envío'
+      }
     }
     if (!datos.metodoPago) e.metodoPago = 'Selecciona un método de pago'
     if (datos.aceptaPoliticas !== 'si') {
@@ -523,6 +552,10 @@ export default function CarritoPage() {
   }
 
   const handleConfirmar = () => {
+    if (envioCotizable && shippingQuote.status === 'loading') {
+      toast('Estamos calculando tu envío, un momento… ✨')
+      return
+    }
     if (!validar()) {
       toast.error('Completa todos los campos requeridos')
       return
@@ -665,6 +698,11 @@ export default function CarritoPage() {
       <div className={`relative min-h-screen md:hidden ${mobilePaddingTop}`}>
         <CarritoMobile
           sucursales={sucursales}
+          shippingCities={shippingCities}
+          shippingQuote={shippingQuote}
+          envioCotizable={envioCotizable}
+          envioOpcionId={envioOpcion?.id ?? ''}
+          onEnvioOpcionChange={setEnvioOpcionId}
           catalogType={catalogType}
           productosHref={productosHref}
           step={step}
@@ -1120,22 +1158,34 @@ export default function CarritoPage() {
                           <label className="mb-2 block text-[12px] font-bold text-[var(--text-muted)]">
                             Ciudad *
                           </label>
-                          <input
-                            type="text"
+                          <CitySelect
                             value={datos.ciudad}
-                            onChange={e => {
-                              setDatos(d => ({ ...d, ciudad: e.target.value }))
+                            selectedCode={datos.ciudadCodigo}
+                            status={shippingCities.status}
+                            cities={shippingCities.cities}
+                            invalid={Boolean(errores.ciudad)}
+                            onChange={({ name, code }) => {
+                              setDatos(d => ({ ...d, ciudad: name, ciudadCodigo: code }))
+                              setEnvioOpcionId('')
                               if (errores.ciudad) setErrores(er => ({ ...er, ciudad: '' }))
                             }}
-                            placeholder="Ej: Armenia, Bogotá, Medellín..."
-                            className={inputClass('ciudad')}
+                            placeholder="Escribe tu ciudad: Armenia, Bogotá, Medellín…"
+                            inputClassName={inputClass('ciudad')}
                           />
                           {errores.ciudad && (
                             <p className="mt-1.5 text-[12px] font-medium text-red-400">
                               {errores.ciudad}
                             </p>
                           )}
-                          {datos.ciudad.trim() && (
+                          {envioCotizable ? (
+                            <ShippingOptions
+                              status={shippingQuote.status}
+                              options={shippingQuote.options}
+                              selectedId={envioOpcion?.id ?? ''}
+                              onSelect={setEnvioOpcionId}
+                              fallbackText="No pudimos calcular el envío ahora. Te confirmamos el valor por WhatsApp 💕"
+                            />
+                          ) : datos.ciudad.trim() && (datos.ciudadCodigo || shippingCities.status !== 'ready') ? (
                             <motion.p
                               initial={{ opacity: 0, y: 4 }}
                               animate={{ opacity: 1, y: 0 }}
@@ -1151,7 +1201,7 @@ export default function CarritoPage() {
                                   ? 'Envío a convenir con el negocio'
                                   : `Envío estimado: ${formatPrecio(costoEnvio)} — ${tiempoEntrega}`}
                             </motion.p>
-                          )}
+                          ) : null}
                         </div>
                         <div>
                           <label className="mb-2 block text-[12px] font-bold text-[var(--text-muted)]">

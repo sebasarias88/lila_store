@@ -54,6 +54,7 @@ export const PRODUCTO_LIST_SELECT = [
 export const PRODUCTO_DETAIL_SELECT = [
   PRODUCTO_CARD_COLUMNS,
   'descripcion',
+  'videos',
   CATEGORIA_PADRE_EMBED,
   PRODUCTO_CATEGORIAS_EMBED,
 ].join(',')

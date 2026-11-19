@@ -7,8 +7,10 @@ import { catalogPath, catalogCategoriaPath, type CatalogType } from '@/lib/catal
 import { ArrowRight, Sparkles } from 'lucide-react'
 import { categoriaTieneDescuentoActivo } from '@/lib/descuentos'
 import ThumbImg from '@/components/catalog/ThumbImg'
+import HorizontalCarousel from '@/components/ui/HorizontalCarousel'
 
-const MAX_VISIBLE = 8
+/** Categories shown in the home carousel; the rest are one click away ("Ver todas"). */
+const MAX_VISIBLE = 16
 
 const PASTELS = [
   'from-[#EEE8FC] to-[#F3EBFF]',
@@ -82,32 +84,22 @@ export default function CategoriasGrid({
           </Link>
         </motion.div>
 
-        {/* Mobile: horizontal scroll — pt evita que se corten círculos/sombras */}
-        <div className="flex gap-4 overflow-x-auto overflow-y-hidden overscroll-x-contain px-0.5 pb-2 pt-2 scrollbar-hide sm:hidden">
+        {/* One row on every screen: swipe on phones, arrows on desktop. */}
+        <HorizontalCarousel
+          label="Categorías favoritas"
+          itemClassName="w-[6.75rem] sm:w-[9rem] lg:w-[10.25rem]"
+          gapClassName="gap-4 sm:gap-6"
+          arrowTopClassName="top-[38%]"
+        >
           {visibles.map((cat, i) => (
             <CategoriaCard
               key={cat.id}
               cat={cat}
               index={i}
-              productosHref={productosHref}
-              catalogType={catalogType}
-              compact
-            />
-          ))}
-        </div>
-
-        {/* Desktop: roomy grid — max 4 per row so circles stay readable */}
-        <div className="hidden gap-x-8 gap-y-10 sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4">
-          {visibles.map((cat, i) => (
-            <CategoriaCard
-              key={cat.id}
-              cat={cat}
-              index={i}
-              productosHref={productosHref}
               catalogType={catalogType}
             />
           ))}
-        </div>
+        </HorizontalCarousel>
       </div>
     </section>
   )
@@ -116,15 +108,11 @@ export default function CategoriasGrid({
 function CategoriaCard({
   cat,
   index,
-  productosHref,
   catalogType = 'detal',
-  compact = false,
 }: {
   cat: Categoria
   index: number
-  productosHref: string
   catalogType?: CatalogType
-  compact?: boolean
 }) {
   const conDescuento = categoriaTieneDescuentoActivo(cat, catalogType)
   const pctDescuento =
@@ -140,16 +128,14 @@ function CategoriaCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: Math.min(index * 0.04, 0.28) }}
-      className={compact ? 'w-[6.5rem] shrink-0' : 'mx-auto w-full max-w-[11rem]'}
+      className="w-full px-0.5"
     >
       <Link
         href={catalogCategoriaPath(catalogType, cat.slug)}
         className="group flex flex-col items-center text-center"
       >
         <div
-          className={`relative overflow-hidden rounded-full border-2 border-white bg-gradient-to-br ${pastel} shadow-[0_10px_28px_-10px_rgba(169,137,224,0.4)] ring-2 ring-[color-mix(in_srgb,var(--accent-primary)_20%,transparent)] transition-all duration-300 group-hover:-translate-y-1.5 group-hover:shadow-[0_16px_36px_-12px_rgba(169,137,224,0.5)] group-hover:ring-[var(--accent-primary)] group-active:scale-[0.97] ${
-            compact ? 'h-[6.5rem] w-[6.5rem]' : 'aspect-square w-full'
-          }`}
+          className={`relative aspect-square w-full overflow-hidden rounded-full border-2 border-white bg-gradient-to-br ${pastel} shadow-[0_10px_28px_-10px_rgba(169,137,224,0.4)] ring-2 ring-[color-mix(in_srgb,var(--accent-primary)_20%,transparent)] transition-all duration-300 group-hover:-translate-y-1.5 group-hover:shadow-[0_16px_36px_-12px_rgba(169,137,224,0.5)] group-hover:ring-[var(--accent-primary)] group-active:scale-[0.97]`}
         >
           {cat.imagen_url ? (
             <ThumbImg
@@ -160,9 +146,7 @@ function CategoriaCard({
           ) : (
             <div className="flex h-full w-full items-center justify-center">
               <span
-                className={`font-bold tracking-wide text-[var(--accent-deep)] opacity-80 ${
-                  compact ? 'text-[1.35rem]' : 'text-[1.75rem]'
-                }`}
+                className="text-[1.35rem] font-bold tracking-wide text-[var(--accent-deep)] opacity-80 sm:text-[1.75rem]"
               >
                 {initials(cat.nombre)}
               </span>
@@ -177,14 +161,12 @@ function CategoriaCard({
         </div>
 
         <p
-          className={`mt-3.5 line-clamp-2 font-bold leading-snug text-[var(--text-primary)] transition-colors group-hover:text-[var(--accent-deep)] ${
-            compact ? 'text-[12px]' : 'text-[14px] sm:text-[15px]'
-          }`}
+          className="mt-3.5 line-clamp-2 text-[12px] font-bold leading-snug text-[var(--text-primary)] transition-colors group-hover:text-[var(--accent-deep)] sm:text-[14px]"
         >
           {cat.nombre}
         </p>
-        {!compact && subCount > 0 ? (
-          <p className="mt-1 text-[11px] font-medium text-[var(--text-muted)]">
+        {subCount > 0 ? (
+          <p className="mt-1 hidden text-[11px] font-medium text-[var(--text-muted)] sm:block">
             {subCount} {subCount === 1 ? 'subcategoría' : 'subcategorías'}
           </p>
         ) : null}

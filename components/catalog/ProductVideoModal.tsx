@@ -16,6 +16,8 @@ type Props = {
   url: string
   tipo: VideoTipo
   titulo?: string
+  /** Product photo shown before an uploaded video starts. */
+  poster?: string | null
 }
 
 export default function ProductVideoModal({
@@ -24,9 +26,10 @@ export default function ProductVideoModal({
   url,
   tipo,
   titulo,
+  poster,
 }: Props) {
   useScrollLock(open)
-  const embed = getVideoEmbedUrl(url, tipo)
+  const playable = tipo === 'archivo' || Boolean(getVideoEmbedUrl(url, tipo))
   const portrait = videoEmbedAspect(tipo) === 'portrait'
 
   return (
@@ -73,8 +76,8 @@ export default function ProductVideoModal({
             </div>
 
             <div className="bg-black p-0">
-              {embed ? (
-                <ProductVideoPlayer url={url} tipo={tipo} />
+              {playable ? (
+                <ProductVideoPlayer url={url} tipo={tipo} poster={poster} />
               ) : (
                 <div className="flex flex-col items-center gap-3 px-5 py-12 text-center">
                   <p className="text-[13px] font-medium text-white/90">
