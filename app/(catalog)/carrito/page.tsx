@@ -53,6 +53,7 @@ import {
 import { PAGOS_COPY } from '@/lib/pagos-proximos'
 import EntregaPicker from '@/components/catalog/cart/EntregaPicker'
 import MetodoPagoPicker from '@/components/catalog/cart/MetodoPagoPicker'
+import PoliciesConsent from '@/components/legal/PoliciesConsent'
 import TransferenciaCheckout from '@/components/catalog/cart/TransferenciaCheckout'
 import CarritoMobile from '@/components/catalog/mobile/cart/CarritoMobile'
 import PageGoldAccent from '@/components/catalog/PageGoldAccent'
@@ -316,6 +317,7 @@ export default function CarritoPage() {
     notas: '',
     tipoEntrega: 'envio',
     sucursalRecogida: '',
+    aceptaPoliticas: '',
   })
 
   const [errores, setErrores] = useState<Partial<DatosCliente>>({})
@@ -491,6 +493,9 @@ export default function CarritoPage() {
       if (!datos.ciudad.trim()) e.ciudad = 'La ciudad es requerida'
     }
     if (!datos.metodoPago) e.metodoPago = 'Selecciona un método de pago'
+    if (datos.aceptaPoliticas !== 'si') {
+      e.aceptaPoliticas = 'Para enviar tu pedido debes aceptar los términos y la política de privacidad'
+    }
     setErrores(e)
     return Object.keys(e).length === 0
   }
@@ -1212,6 +1217,15 @@ export default function CarritoPage() {
                     className="w-full resize-none rounded-[20px] border border-[var(--border)] bg-[var(--bg-muted)] px-4 py-3 text-[14px] font-medium text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-faint)] focus:border-[var(--accent-primary)] focus:bg-white"
                   />
                 </section>
+
+                <PoliciesConsent
+                  checked={datos.aceptaPoliticas === 'si'}
+                  error={errores.aceptaPoliticas}
+                  onChange={checked => {
+                    setDatos(d => ({ ...d, aceptaPoliticas: checked ? 'si' : '' }))
+                    if (errores.aceptaPoliticas) setErrores(er => ({ ...er, aceptaPoliticas: '' }))
+                  }}
+                />
 
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <button

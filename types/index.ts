@@ -163,6 +163,8 @@ export type DatosCliente = {
   tipoEntrega: TipoEntrega
   /** Texto de la sucursal elegida (solo si tipoEntrega === 'recogida') */
   sucursalRecogida: string
+  /** 'si' when the customer accepted the terms and the data policy ('' otherwise). */
+  aceptaPoliticas: string
 }
 
 export type Banner = {

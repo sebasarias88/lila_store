@@ -46,7 +46,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'daily',
       priority: 0.7,
     },
-    ...['/politica-de-privacidad', '/politica-de-cookies'].map(path => ({
+    ...['/terminos-y-condiciones', '/politica-de-privacidad', '/politica-de-cookies'].map(path => ({
       url: toAbsoluteUrl(path),
       lastModified: now,
       changeFrequency: 'yearly' as const,

@@ -21,6 +21,7 @@ import type { MetodoPagoOpcion } from '@/lib/payment-methods'
 import type { DatosTransferencia } from '@/lib/transferencia'
 import { esMetodoTransferencia } from '@/lib/transferencia'
 import EntregaPicker from '@/components/catalog/cart/EntregaPicker'
+import PoliciesConsent from '@/components/legal/PoliciesConsent'
 import type { Sucursal } from '@/lib/negocio'
 import MetodoPagoPicker from '@/components/catalog/cart/MetodoPagoPicker'
 import TransferenciaCheckout from '@/components/catalog/cart/TransferenciaCheckout'
@@ -556,6 +557,16 @@ export default function CarritoMobile({
                 />
               </div>
             </div>
+
+            <PoliciesConsent
+              compact
+              checked={datos.aceptaPoliticas === 'si'}
+              error={errores.aceptaPoliticas}
+              onChange={checked => {
+                setDatos(d => ({ ...d, aceptaPoliticas: checked ? 'si' : '' }))
+                if (errores.aceptaPoliticas) setErrores(er => ({ ...er, aceptaPoliticas: '' }))
+              }}
+            />
 
             <div className={stickySpacer} aria-hidden />
 
