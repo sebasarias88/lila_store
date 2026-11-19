@@ -45,7 +45,7 @@ import { CATALOG_STICKY_TOP_CLASS } from '@/lib/catalog-layout'
 import MobileQuickAddSheet from '@/components/catalog/mobile/MobileQuickAddSheet'
 import ProductVideoThumb from '@/components/catalog/ProductVideoThumb'
 import ProductVideoModal from '@/components/catalog/ProductVideoModal'
-import { productoTieneVideo } from '@/lib/video-url'
+import { getProductVideos } from '@/lib/productVideos'
 import {
   mensajeStockRestante,
   productoComprableEnCatalogo,
@@ -162,10 +162,11 @@ export default function ProductoDetalle({
     setImagenActiva(0)
   }, [imagenVariacion])
 
-  const tieneVideo = productoTieneVideo(producto)
-  const totalSlides = imagenes.length + (tieneVideo ? 1 : 0)
-  const videoSlideIndex = tieneVideo ? imagenes.length : -1
-  const enSlideVideo = tieneVideo && imagenActiva === videoSlideIndex
+  // Videos come after the photos in the gallery (one slide per video, max 5).
+  const videos = useMemo(() => getProductVideos(producto), [producto])
+  const totalSlides = imagenes.length + videos.length
+  const videoActivo = imagenActiva >= imagenes.length ? videos[imagenActiva - imagenes.length] ?? null : null
+  const enSlideVideo = videoActivo !== null
   const posterVideo = imagenes[0] || null
   const comprable = productoComprableEnCatalogo(producto, catalogType)
   const stockRestante = stockRestanteParaProducto(producto, items, catalogType)
@@ -346,10 +347,10 @@ export default function ProductoDetalle({
                 if (imagenes.length) setZoomOpen(true)
               }}
             >
-              {enSlideVideo && producto.video_url && producto.video_tipo ? (
+              {videoActivo ? (
                 <ProductVideoThumb
                   posterUrl={posterVideo}
-                  tipo={producto.video_tipo}
+                  tipo={videoActivo.tipo}
                   playSize="lg"
                   asButton={false}
                 />
@@ -444,25 +445,29 @@ export default function ProductoDetalle({
                     <img src={url} alt={`Vista ${i + 1}`} className="h-full w-full object-cover" />
                   </button>
                 ))}
-                {tieneVideo && producto.video_tipo ? (
-                  <button
-                    type="button"
-                    onClick={() => setImagenActiva(videoSlideIndex)}
-                    className={`relative h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-[16px] border-2 transition-all ${
-                      enSlideVideo
-                        ? 'border-[var(--accent-primary)] opacity-100 shadow-[var(--shadow-soft)] ring-2 ring-[color-mix(in_srgb,var(--accent-primary)_35%,transparent)]'
-                        : 'border-transparent opacity-55 hover:opacity-90'
-                    }`}
-                    aria-label="Video del producto"
-                  >
-                    <ProductVideoThumb
-                      posterUrl={posterVideo}
-                      tipo={producto.video_tipo}
-                      playSize="sm"
-                      asButton={false}
-                    />
-                  </button>
-                ) : null}
+                {videos.map((video, k) => {
+                  const slide = imagenes.length + k
+                  return (
+                    <button
+                      key={`${video.url}-${k}`}
+                      type="button"
+                      onClick={() => setImagenActiva(slide)}
+                      className={`relative h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-[16px] border-2 transition-all ${
+                        imagenActiva === slide
+                          ? 'border-[var(--accent-primary)] opacity-100 shadow-[var(--shadow-soft)] ring-2 ring-[color-mix(in_srgb,var(--accent-primary)_35%,transparent)]'
+                          : 'border-transparent opacity-55 hover:opacity-90'
+                      }`}
+                      aria-label={videos.length > 1 ? `Video ${k + 1} del producto` : 'Video del producto'}
+                    >
+                      <ProductVideoThumb
+                        posterUrl={posterVideo}
+                        tipo={video.tipo}
+                        playSize="sm"
+                        asButton={false}
+                      />
+                    </button>
+                  )
+                })}
               </div>
             )}
           </motion.div>
@@ -794,12 +799,13 @@ export default function ProductoDetalle({
         )}
       </AnimatePresence>
 
-      {tieneVideo && producto.video_url && producto.video_tipo ? (
+      {videoActivo ? (
         <ProductVideoModal
           open={videoOpen}
           onClose={() => setVideoOpen(false)}
-          url={producto.video_url}
-          tipo={producto.video_tipo}
+          url={videoActivo.url}
+          tipo={videoActivo.tipo}
+          poster={posterVideo}
           titulo={producto.nombre}
         />
       ) : null}

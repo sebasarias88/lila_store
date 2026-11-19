@@ -2,14 +2,15 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Producto, Categoria, VideoTipo } from '@/types'
+import { Producto, Categoria, ProductoVideo } from '@/types'
 import { Input, Textarea } from '@/components/ui/Input'
-import { AdminMultiSelect, AdminSelect } from '@/components/ui/AdminSelect'
+import { AdminMultiSelect } from '@/components/ui/AdminSelect'
 import { CopInput } from '@/components/ui/CopInput'
 import { formatCopInput, parseCopInput } from '@/lib/currency'
 import Button from '@/components/ui/Button'
 import ImageUploader from '@/components/admin/ImageUploader'
-import AdminVideoPreview from '@/components/admin/AdminVideoPreview'
+import ProductVideosField from '@/components/admin/ProductVideosField'
+import { getProductVideos } from '@/lib/productVideos'
 import VariacionesEditor from '@/components/admin/VariacionesEditor'
 import SeccionesEditor from '@/components/admin/SeccionesEditor'
 import AdminFormLayout from '@/components/admin/mobile/AdminFormLayout'
@@ -45,6 +46,7 @@ function FormSection({
 export default function ProductForm({ producto, onSuccess, onCancel }: ProductFormProps) {
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [saving, setSaving] = useState(false)
+  const [uploadingVideo, setUploadingVideo] = useState(false)
   const [form, setForm] = useState({
     nombre: '',
     slug: '',
@@ -57,8 +59,7 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
     disponible_mayoreo: true,
     destacado: false,
     imagenes: [] as string[],
-    video_url: '',
-    video_tipo: '' as '' | VideoTipo,
+    videos: [] as ProductoVideo[],
     sku: '',
     orden: 0,
   })
@@ -86,8 +87,7 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
         disponible_mayoreo: producto.disponible_mayoreo ?? producto.disponible,
         destacado: producto.destacado,
         imagenes: producto.imagenes || [],
-        video_url: producto.video_url || '',
-        video_tipo: (producto.video_tipo as VideoTipo | null) || '',
+        videos: getProductVideos(producto),
         sku: producto.sku || '',
         orden: producto.orden,
       })
@@ -156,22 +156,9 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
       return
     }
 
-    const videoUrl = form.video_url.trim()
-    if (videoUrl) {
-      try {
-        const parsed = new URL(videoUrl)
-        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-          toast.error('El link de video debe ser una URL válida (http/https)')
-          return
-        }
-      } catch {
-        toast.error('El link de video no es una URL válida')
-        return
-      }
-      if (!form.video_tipo) {
-        toast.error('Elige la plataforma del video')
-        return
-      }
+    if (uploadingVideo) {
+      toast.error('Espera a que termine de subir el video')
+      return
     }
 
     setSaving(true)
@@ -190,8 +177,10 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
       destacado: form.destacado,
       categoria_id: mainCatId,
       imagenes: form.imagenes,
-      video_url: videoUrl || null,
-      video_tipo: videoUrl && form.video_tipo ? form.video_tipo : null,
+      videos: form.videos,
+      // Legacy single video mirrors the first one (older code and rollbacks keep working).
+      video_url: form.videos[0]?.url ?? null,
+      video_tipo: form.videos[0]?.tipo ?? null,
       sku: form.sku.trim() || null,
       marca: null,
       orden: form.orden,
@@ -254,7 +243,7 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
           <Button variant="outline" onClick={onCancel} fullWidth>
             Cancelar
           </Button>
-          <Button onClick={handleGuardar} loading={saving} fullWidth>
+          <Button onClick={handleGuardar} loading={saving} disabled={uploadingVideo} fullWidth>
             {producto ? 'Guardar cambios' : 'Crear producto'}
           </Button>
         </div>
@@ -267,38 +256,12 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
         />
       </FormSection>
 
-      <FormSection title="Video (opcional)">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-[minmax(0,180px)_minmax(0,1fr)]">
-          <div className="space-y-1.5">
-            <span className="admin-form-label">Plataforma</span>
-            <AdminSelect
-              value={form.video_tipo}
-              onChange={value =>
-                setForm(f => ({ ...f, video_tipo: value as '' | VideoTipo }))
-              }
-              placeholder="Sin video"
-              options={[
-                { value: '', label: 'Sin video' },
-                { value: 'youtube', label: 'YouTube' },
-                { value: 'tiktok', label: 'TikTok' },
-                { value: 'instagram', label: 'Instagram' },
-              ]}
-            />
-          </div>
-          <Input
-            label="Link de video (opcional)"
-            type="url"
-            inputMode="url"
-            value={form.video_url}
-            onChange={e => setForm(f => ({ ...f, video_url: e.target.value }))}
-            placeholder="https://..."
-            hint="Pega el link del video o reel. Si lo dejas vacío, no se muestra video."
-          />
-        </div>
-        <AdminVideoPreview
-          url={form.video_url}
-          tipo={form.video_tipo}
-          posterUrl={form.imagenes[0] || null}
+      <FormSection title="Videos (opcional)">
+        <ProductVideosField
+          videos={form.videos}
+          onChange={videos => setForm(f => ({ ...f, videos }))}
+          onUploadingChange={setUploadingVideo}
+          poster={form.imagenes[0] || null}
         />
       </FormSection>
 

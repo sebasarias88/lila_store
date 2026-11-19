@@ -58,7 +58,10 @@ export type ProductoSeccion = {
   orden: number
 }
 
-export type VideoTipo = 'youtube' | 'tiktok' | 'instagram'
+/** 'archivo' = video file uploaded to our own storage (R2). */
+export type VideoTipo = 'youtube' | 'tiktok' | 'instagram' | 'archivo'
+
+export type ProductoVideo = { url: string; tipo: VideoTipo }
 
 export type AnuncioModal = {
   id: string
@@ -104,6 +107,8 @@ export type Producto = {
   video_url?: string | null
   /** Plataforma del video */
   video_tipo?: VideoTipo | null
+  /** Product videos (max 5), shown after the photos. video_url/video_tipo mirror the first. */
+  videos?: ProductoVideo[] | null
   sku: string | null
   orden: number
   created_at: string

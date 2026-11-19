@@ -44,7 +44,7 @@ export default function ProductVideoThumb({
         ? 'Ver video de TikTok'
         : tipo === 'instagram'
           ? 'Ver video de Instagram'
-          : 'Ver video'
+          : 'Ver video del producto'
 
   const content = (
     <>
@@ -67,7 +67,7 @@ export default function ProductVideoThumb({
       </span>
       {tipo ? (
         <span className="absolute bottom-3 left-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[var(--accent-deep)] shadow-sm">
-          {tipo}
+          {tipo === 'archivo' ? 'video' : tipo}
         </span>
       ) : null}
     </>
