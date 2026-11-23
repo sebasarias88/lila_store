@@ -38,7 +38,9 @@ export default function PrivacyPolicyPage() {
       <section>
         <h2>2. Qué datos recogemos</h2>
         <ul>
-          <li>Al hacer un pedido: nombre, teléfono, ciudad, dirección de entrega, notas del pedido y el método de pago que eliges.</li>
+          <li>Al hacer un pedido: nombre, teléfono, tipo y número de documento de identidad, ciudad, dirección de entrega (o la tienda donde recoges), notas del pedido, los productos que compras y el método de pago que eliges.</li>
+          <li>Si pides factura electrónica: el correo donde quieres recibirla y, si la factura va a nombre de otra persona o empresa, su nombre o razón social y su documento o NIT.</li>
+          <li>Si pagas en línea: la referencia y el estado del pago que nos informa la pasarela de pagos. Los datos de tu tarjeta o cuenta los recibe directamente la pasarela; nosotros nunca los vemos ni los guardamos.</li>
           <li>Si pagas por transferencia y adjuntas el comprobante: la imagen o PDF del comprobante.</li>
           <li>Cuando nos escribes por WhatsApp: tu número y lo que nos cuentas en la conversación.</li>
           <li>
@@ -53,7 +55,9 @@ export default function PrivacyPolicyPage() {
       <section>
         <h2>3. Para qué usamos tus datos</h2>
         <ul>
-          <li>Preparar, confirmar, cobrar y entregar tu pedido.</li>
+          <li>Preparar, confirmar, cobrar y entregar tu pedido, y generar la guía de envío.</li>
+          <li>Expedir la factura electrónica cuando la pides.</li>
+          <li>Llevar el historial de pedidos de la tienda y escribirte por WhatsApp sobre el estado de tu pedido.</li>
           <li>Verificar los pagos por transferencia.</li>
           <li>Responder tus preguntas, solicitudes, quejas y reclamos.</li>
           <li>Atender garantías, cambios, retracto y reversión de pagos.</li>
@@ -120,9 +124,18 @@ export default function PrivacyPolicyPage() {
         <h2>8. Cuánto tiempo guardamos tus datos y cómo los protegemos</h2>
         <p>
           Guardamos tus datos solo el tiempo necesario para las finalidades anteriores y para
-          cumplir obligaciones legales y contables. Los comprobantes de pago se guardan en un
-          almacenamiento privado al que solo accede la administración de la tienda; nunca se
-          publican.
+          cumplir obligaciones legales, contables y tributarias. Los datos personales de los
+          pedidos ya terminados (entregados o cancelados) se eliminan periódicamente, por lo
+          general a más tardar a los 2 años, salvo que una ley nos obligue a conservarlos por más
+          tiempo; de esos pedidos solo conservamos los productos y montos, sin datos que te
+          identifiquen.
+        </p>
+        <p>
+          Tus pedidos y comprobantes de pago se guardan en bases de datos y almacenamiento
+          privados, protegidos con acceso restringido: solo la administración de la tienda puede
+          verlos, ningún cliente puede ver los pedidos de otros y nunca se publican. Si llegara a
+          presentarse un incidente de seguridad que afecte tus datos, te informaremos y lo
+          reportaremos a la Superintendencia de Industria y Comercio como exige la ley.
         </p>
       </section>
 
