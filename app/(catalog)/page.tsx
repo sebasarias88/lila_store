@@ -93,6 +93,7 @@ export default async function HomePage() {
         .select(PRODUCTO_SHELF_SELECT)
         .eq('disponible_detal', true)
         .eq('destacado', true)
+        .order('agotado', { ascending: true })
         .order('orden')
         .limit(10),
       supabase
@@ -100,12 +101,14 @@ export default async function HomePage() {
         .select(PRODUCTO_SHELF_SELECT)
         .eq('disponible_detal', true)
         .not('precio_antes', 'is', null)
+        .order('agotado', { ascending: true })
         .order('orden')
         .limit(12),
       supabase
         .from('productos')
         .select(PRODUCTO_SHELF_SELECT)
         .eq('disponible_detal', true)
+        .order('agotado', { ascending: true })
         .order('created_at', { ascending: false })
         .limit(16),
     ])

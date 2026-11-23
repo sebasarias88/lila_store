@@ -59,7 +59,7 @@ type ProductoReciente = {
   nombre: string
   slug: string
   precio: number
-  disponible: boolean
+  agotado: boolean
   imagenes: string[] | null
   categoria: { nombre: string } | { nombre: string }[] | null
 }
@@ -241,8 +241,8 @@ export default function MobileDashboardView({
                   key={p.id}
                   nombre={p.nombre}
                   imagen={p.imagenes?.[0]}
-                  badge={p.disponible ? 'Disponible' : 'Agotado'}
-                  badgeTone={p.disponible ? 'success' : 'danger'}
+                  badge={p.agotado ? 'Agotado' : 'Disponible'}
+                  badgeTone={p.agotado ? 'danger' : 'success'}
                   meta={[cat?.nombre, formatPrecio(p.precio)].filter(Boolean).join(' · ')}
                 />
               )

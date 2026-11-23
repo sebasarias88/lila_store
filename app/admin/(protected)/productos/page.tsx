@@ -36,6 +36,7 @@ import {
 } from '@/lib/pagination'
 import toast from 'react-hot-toast'
 import {
+  Loader2,
   Plus,
   Star,
   Package,
@@ -67,8 +68,8 @@ export default function ProductosPage() {
       .select('*, categoria:categorias(id, nombre, slug)')
       .order('orden', { ascending: true })
 
-    if (filtroDisponible === 'disponible') query = query.eq('disponible', true)
-    if (filtroDisponible === 'agotado') query = query.eq('disponible', false)
+    if (filtroDisponible === 'disponible') query = query.eq('agotado', false)
+    if (filtroDisponible === 'agotado') query = query.eq('agotado', true)
 
     const [{ data, error }, { data: cats }] = await Promise.all([
       query,
@@ -199,23 +200,37 @@ export default function ProductosPage() {
     }
   }
 
-  const toggleDisponible = async (p: Producto) => {
+  /** "id:campo" of the toggle that is saving (shows a spinner and blocks double clicks). */
+  const [pendingToggle, setPendingToggle] = useState<string | null>(null)
+
+  const toggleAgotado = async (p: Producto) => {
+    const key = `${p.id}:agotado`
+    if (pendingToggle) return
+    setPendingToggle(key)
+    const nuevoValor = !p.agotado
     const { error } = await supabase
       .from('productos')
-      .update({ disponible: !p.disponible })
+      .update({ agotado: nuevoValor })
       .eq('id', p.id)
 
     if (error) toast.error('Error al actualizar')
     else {
-      toast.success(p.disponible ? 'Marcado como agotado' : 'Marcado como disponible')
-      fetchProductos()
+      toast.success(
+        nuevoValor
+          ? 'Marcado como agotado — sigue visible, pero no se puede comprar'
+          : 'Marcado como disponible',
+      )
+      await fetchProductos()
     }
+    setPendingToggle(null)
   }
 
   const toggleCatalogo = async (
     p: Producto,
     campo: 'disponible_detal' | 'disponible_mayoreo',
   ) => {
+    if (pendingToggle) return
+    setPendingToggle(`${p.id}:${campo}`)
     const nuevoValor = !p[campo]
     const detal = campo === 'disponible_detal' ? nuevoValor : p.disponible_detal
     const mayoreo = campo === 'disponible_mayoreo' ? nuevoValor : p.disponible_mayoreo
@@ -232,8 +247,9 @@ export default function ProductosPage() {
     else {
       const etiqueta = campo === 'disponible_detal' ? 'Detal' : 'Mayorista'
       toast.success(`${etiqueta} ${nuevoValor ? 'activado' : 'desactivado'}`)
-      fetchProductos()
+      await fetchProductos()
     }
+    setPendingToggle(null)
   }
 
   const formatPrecio = (precio: number) =>
@@ -414,13 +430,27 @@ export default function ProductosPage() {
                       label="Detal"
                       active={p.disponible_detal}
                       tone="detal"
+                      loading={pendingToggle === `${p.id}:disponible_detal`}
                       onClick={() => toggleCatalogo(p, 'disponible_detal')}
                     />
                     <CatalogToggle
                       label="Mayorista"
                       active={p.disponible_mayoreo}
                       tone="mayoreo"
+                      loading={pendingToggle === `${p.id}:disponible_mayoreo`}
                       onClick={() => toggleCatalogo(p, 'disponible_mayoreo')}
+                    />
+                    <CatalogToggle
+                      label="Agotado"
+                      active={Boolean(p.agotado)}
+                      tone="agotado"
+                      loading={pendingToggle === `${p.id}:agotado`}
+                      onClick={() => toggleAgotado(p)}
+                      title={
+                        p.agotado
+                          ? 'Agotado: visible pero no se puede comprar — click para marcar disponible'
+                          : 'Click para marcar como agotado (seguirá visible en el catálogo)'
+                      }
                     />
                   </div>
                 </AdminTableTd>
@@ -527,7 +557,8 @@ export default function ProductosPage() {
                 setSelected(p)
                 setDeleteModal(true)
               }}
-              onToggleDisponible={() => toggleDisponible(p)}
+              onToggleAgotado={() => toggleAgotado(p)}
+              togglingAgotado={pendingToggle === `${p.id}:agotado`}
             />
           ))}
         </div>
@@ -588,9 +619,11 @@ export default function ProductosPage() {
   )
 }
 
-type CatalogToggleTone = 'detal' | 'mayoreo'
+type CatalogToggleTone = 'detal' | 'mayoreo' | 'agotado'
 
 const CATALOG_TOGGLE_STYLES: Record<CatalogToggleTone, string> = {
+  agotado:
+    'border-[rgba(248,113,113,0.4)] bg-[rgba(248,113,113,0.1)] text-red-400 shadow-[0_0_0_1px_rgba(248,113,113,0.06),inset_0_1px_0_rgba(248,113,113,0.12)]',
   detal:
     'border-[rgba(52,211,153,0.35)] bg-[rgba(52,211,153,0.1)] text-emerald-400 shadow-[0_0_0_1px_rgba(52,211,153,0.06),inset_0_1px_0_rgba(52,211,153,0.12)]',
   mayoreo:
@@ -602,25 +635,39 @@ function CatalogToggle({
   active,
   tone,
   onClick,
+  loading = false,
+  title,
 }: {
   label: string
   active: boolean
   tone: CatalogToggleTone
   onClick: () => void
+  loading?: boolean
+  title?: string
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      title={active ? `Visible en ${label.toLowerCase()} — click para ocultar` : `Oculto en ${label.toLowerCase()} — click para mostrar`}
+      disabled={loading}
+      aria-busy={loading}
+      title={
+        title ??
+        (active
+          ? `Visible en ${label.toLowerCase()} — click para ocultar`
+          : `Oculto en ${label.toLowerCase()} — click para mostrar`)
+      }
       aria-pressed={active}
-      className={`inline-flex w-[5rem] items-center justify-center rounded-full border px-2.5 py-1 text-[10px] font-light uppercase tracking-[1.2px] transition-all duration-200 ${
+      className={`relative inline-flex w-[5rem] items-center justify-center rounded-full disabled:cursor-wait border px-2.5 py-1 text-[10px] font-light uppercase tracking-[1.2px] transition-all duration-200 ${
         active
           ? CATALOG_TOGGLE_STYLES[tone]
           : 'border-[var(--border-subtle)] bg-transparent text-[var(--text-faint)] hover:border-[rgba(248,246,241,0.18)] hover:text-[var(--text-muted)]'
       }`}
     >
-      {label}
+      <span className={loading ? 'invisible' : undefined}>{label}</span>
+      {loading ? (
+        <Loader2 size={11} className="absolute animate-spin" aria-hidden />
+      ) : null}
     </button>
   )
 }

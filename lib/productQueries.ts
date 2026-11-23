@@ -15,6 +15,7 @@ export const PRODUCTO_CARD_COLUMNS = [
   'disponible',
   'disponible_detal',
   'disponible_mayoreo',
+  'agotado',
   'destacado',
   'marca',
   'categoria_id',

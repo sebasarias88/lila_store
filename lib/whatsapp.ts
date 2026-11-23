@@ -79,7 +79,7 @@ export function generarMensajeWhatsApp(
   const total = subtotal + envio + recargoMonto
 
   const productosLineas = items
-    .map((item) => {
+    .map((item, index) => {
       const { precio, precioAntes, consultar } = getItemPrecios(
         item,
         catalogType,
@@ -96,11 +96,21 @@ export function generarMensajeWhatsApp(
         precioAntes > unitario
           ? ` ~~${formatPrecio(precioAntes * item.cantidad)}~~`
           : ''
+      // Each cart line holds ONE option per type, so the owner reads exactly
+      // what the customer picked (e.g. "Color: Rojo"), each on its own line.
       const vars = formatVariacionesResumen(item.variacionesSeleccionadas)
-      const varsSuffix = vars ? ` | ${vars}` : ''
-      return `▸ ${item.producto.nombre} × ${item.cantidad} — ${linea}${tachado}${varsSuffix}`
+      const detalles = [
+        vars ? `   ↳ ${vars}` : '',
+        item.producto.sku ? `   ↳ Ref: ${item.producto.sku}` : '',
+      ].filter(Boolean)
+      return [
+        `${index + 1}. *${item.producto.nombre}* × ${item.cantidad} — ${linea}${tachado}`,
+        ...detalles,
+      ].join('\n')
     })
-    .join('\n')
+    .join('\n\n')
+
+  const totalUnidades = items.reduce((acc, item) => acc + item.cantidad, 0)
 
   const envioTexto = esRecogida
     ? 'Sin envío (recogida en tienda)'
@@ -131,7 +141,7 @@ ${bloqueEntrega}
 
 💳 *Método de pago:* ${cliente.metodoPago}${cliente.notas ? `\n📝 *Notas:* ${cliente.notas}` : ''}${comprobanteUrl ? `\n📎 *Comprobante:* ${comprobanteUrl}` : ''}${cliente.aceptaPoliticas === 'si' ? `\n✅ Aceptó términos y tratamiento de datos (${new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' })})` : ''}
 
-🛍️ *Productos*
+🛍️ *Productos* (${totalUnidades} ${totalUnidades === 1 ? 'unidad' : 'unidades'})
 ${productosLineas}
 
 📦 *Resumen*

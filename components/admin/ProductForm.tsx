@@ -57,6 +57,7 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
     precio_antes_mayoreo: '',
     disponible_detal: true,
     disponible_mayoreo: true,
+    agotado: false,
     destacado: false,
     imagenes: [] as string[],
     videos: [] as ProductoVideo[],
@@ -85,6 +86,7 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
           producto.precio_antes_mayoreo != null ? formatCopInput(producto.precio_antes_mayoreo) : '',
         disponible_detal: producto.disponible_detal ?? producto.disponible,
         disponible_mayoreo: producto.disponible_mayoreo ?? producto.disponible,
+        agotado: Boolean(producto.agotado),
         destacado: producto.destacado,
         imagenes: producto.imagenes || [],
         videos: getProductVideos(producto),
@@ -174,6 +176,7 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
       disponible_detal: form.disponible_detal,
       disponible_mayoreo: form.disponible_mayoreo,
       disponible: form.disponible_detal || form.disponible_mayoreo,
+      agotado: form.agotado,
       destacado: form.destacado,
       categoria_id: mainCatId,
       imagenes: form.imagenes,
@@ -393,6 +396,24 @@ export default function ProductForm({ producto, onSuccess, onCancel }: ProductFo
               </button>
             </div>
           ))}
+        </div>
+
+        <div className="admin-form-panel mt-3 flex items-center justify-between px-4 py-3.5">
+          <div className="pr-4">
+            <p className="admin-form-panel__title">Marcar como agotado</p>
+            <p className="admin-form-panel__desc">
+              Sigue visible en el catálogo con la etiqueta “Agotado”, pero no se puede comprar
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setForm(f => ({ ...f, agotado: !f.agotado }))}
+            className={`admin-toggle ${form.agotado ? 'admin-toggle--on' : 'admin-toggle--off'}`}
+            aria-pressed={form.agotado}
+            aria-label="Marcar como agotado"
+          >
+            <span className="admin-toggle__thumb" />
+          </button>
         </div>
 
         <div className="admin-form-panel mt-3 flex items-center justify-between px-4 py-3.5">

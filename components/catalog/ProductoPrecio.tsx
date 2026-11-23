@@ -28,7 +28,7 @@ type ProductoPrecioProps = {
 export default function ProductoPrecio({
   producto,
   catalogType = 'detal',
-  disponible = producto.disponible,
+  disponible = producto.disponible && !producto.agotado,
   size = 'sm',
   layout = 'inline',
   variacionOverride = null,

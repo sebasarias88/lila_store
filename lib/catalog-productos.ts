@@ -147,6 +147,9 @@ export async function getCatalogProductosPage(opts: {
     dataQuery = dataQuery.in('id', idFilter)
   }
 
+  // Sold-out products stay visible but always after the ones that can be bought.
+  dataQuery = dataQuery.order('agotado', { ascending: true })
+
   switch (orden) {
     case 'precio-asc':
       dataQuery = dataQuery.order(precioCol, { ascending: true, nullsFirst: false })

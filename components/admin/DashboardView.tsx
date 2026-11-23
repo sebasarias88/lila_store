@@ -77,7 +77,7 @@ type ProductoReciente = {
   nombre: string
   slug: string
   precio: number
-  disponible: boolean
+  agotado: boolean
   imagenes: string[] | null
   categoria: { nombre: string } | { nombre: string }[] | null
 }
@@ -405,9 +405,9 @@ export default function DashboardView({
                     </AdminTableTd>
                     <AdminTableTd>
                       <AdminTableStatus
-                        label={p.disponible ? 'Disponible' : 'Agotado'}
-                        icon={p.disponible ? CheckCircle2 : XCircle}
-                        variant={p.disponible ? 'success' : 'danger'}
+                        label={p.agotado ? 'Agotado' : 'Disponible'}
+                        icon={p.agotado ? XCircle : CheckCircle2}
+                        variant={p.agotado ? 'danger' : 'success'}
                       />
                     </AdminTableTd>
                   </AdminTableRow>
