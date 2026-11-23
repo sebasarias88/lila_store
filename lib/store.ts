@@ -7,6 +7,7 @@ import type { VariacionPrecioOverride } from '@/lib/variaciones'
 import {
   getStockCatalogo,
   mensajeStockRestante,
+  productoAgotado,
   stockRestanteParaProducto,
   type StockProductoFresh,
 } from '@/lib/stock'
@@ -50,6 +51,9 @@ export const useCarrito = create<CartStore>()(
         variacionPrecioOverride = null,
       ) => {
         const qty = Math.max(1, Math.floor(cantidad) || 1)
+        if (productoAgotado(producto)) {
+          return { ok: false, restantes: 0, message: 'Este producto está agotado 💕' }
+        }
         const restantes = stockRestanteParaProducto(
           producto,
           get().items,
@@ -165,6 +169,7 @@ export const useCarrito = create<CartStore>()(
                 disponible: fresh.disponible,
                 disponible_detal: fresh.disponible_detal,
                 disponible_mayoreo: fresh.disponible_mayoreo,
+                agotado: fresh.agotado ?? false,
               },
             }
           }),

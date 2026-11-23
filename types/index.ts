@@ -96,6 +96,8 @@ export type Producto = {
   disponible: boolean
   disponible_detal: boolean
   disponible_mayoreo: boolean
+  /** Sold out: still visible in the catalog but cannot be bought. */
+  agotado?: boolean | null
   destacado: boolean
   marca: string | null
   categoria_id: string | null

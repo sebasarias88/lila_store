@@ -23,17 +23,17 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     supabase.from('productos').select('*', { count: 'exact', head: true }),
     supabase.from('categorias').select('*', { count: 'exact', head: true }).eq('activa', true),
-    supabase.from('productos').select('*', { count: 'exact', head: true }).eq('disponible', false),
+    supabase.from('productos').select('*', { count: 'exact', head: true }).eq('agotado', true),
     supabase.from('productos').select('*', { count: 'exact', head: true }).eq('destacado', true),
     supabase
       .from('productos')
-      .select('id, nombre, slug, precio, disponible, imagenes, created_at, categoria:categorias(nombre)')
+      .select('id, nombre, slug, precio, agotado, imagenes, created_at, categoria:categorias(nombre)')
       .order('created_at', { ascending: false })
       .limit(3),
     supabase
       .from('productos')
       .select('id, nombre, slug, imagenes')
-      .eq('disponible', false)
+      .eq('agotado', true)
       .order('updated_at', { ascending: false })
       .limit(3),
   ])

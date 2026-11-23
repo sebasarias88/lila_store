@@ -167,7 +167,7 @@ export function productJsonLd(
             url,
             priceCurrency: 'COP',
             price,
-            availability: producto.disponible
+            availability: producto.disponible && !producto.agotado
               ? 'https://schema.org/InStock'
               : 'https://schema.org/OutOfStock',
             seller: { '@type': 'Organization', name: siteName },

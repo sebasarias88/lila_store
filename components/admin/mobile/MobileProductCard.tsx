@@ -1,6 +1,6 @@
 'use client'
 
-import { CheckCircle2, ChevronRight, CornerDownRight, Edit2, Star, Tag, Trash2, XCircle } from 'lucide-react'
+import { CheckCircle2, ChevronRight, CornerDownRight, Edit2, Loader2, Star, Tag, Trash2, XCircle } from 'lucide-react'
 import { Producto } from '@/types'
 
 type MobileProductCardProps = {
@@ -9,7 +9,9 @@ type MobileProductCardProps = {
   parentCategoria?: string | null
   onEdit: () => void
   onDelete: () => void
-  onToggleDisponible: () => void
+  /** Toggles the "sold out" flag (product stays visible in the catalog). */
+  onToggleAgotado: () => void
+  togglingAgotado?: boolean
 }
 
 export default function MobileProductCard({
@@ -18,8 +20,10 @@ export default function MobileProductCard({
   parentCategoria,
   onEdit,
   onDelete,
-  onToggleDisponible,
+  onToggleAgotado,
+  togglingAgotado = false,
 }: MobileProductCardProps) {
+  const agotado = Boolean(producto.agotado)
   const imagen = producto.imagenes?.[0]
 
   return (
@@ -85,15 +89,22 @@ export default function MobileProductCard({
       <div className="flex items-center justify-between border-t border-[rgba(169,137,224,0.12)] px-3 py-2.5">
         <button
           type="button"
-          onClick={onToggleDisponible}
-          className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-lg px-2.5 text-[10px] uppercase tracking-[0.8px] ${
-            producto.disponible
-              ? 'text-emerald-400'
-              : 'text-red-400'
+          onClick={onToggleAgotado}
+          disabled={togglingAgotado}
+          aria-pressed={agotado}
+          title={agotado ? 'Agotado — toca para marcar disponible' : 'Disponible — toca para marcar agotado'}
+          className={`inline-flex min-h-[36px] items-center gap-1.5 rounded-lg px-2.5 text-[10px] uppercase tracking-[0.8px] disabled:opacity-60 ${
+            agotado ? 'text-red-400' : 'text-emerald-400'
           }`}
         >
-          {producto.disponible ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
-          {producto.disponible ? 'Disponible' : 'Agotado'}
+          {togglingAgotado ? (
+            <Loader2 size={14} className="animate-spin" aria-hidden />
+          ) : agotado ? (
+            <XCircle size={14} />
+          ) : (
+            <CheckCircle2 size={14} />
+          )}
+          {agotado ? 'Agotado' : 'Disponible'}
         </button>
         <div className="flex items-center gap-1">
           <button

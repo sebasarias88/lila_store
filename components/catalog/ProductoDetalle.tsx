@@ -6,8 +6,9 @@ import { useCarrito } from '@/lib/store'
 import { Producto, ProductoSeccion, VariacionTipo } from '@/types'
 import { getLineKey } from '@/lib/cart'
 import {
-  buildVariacionesSeleccionadas,
+  buildVariationCombinations,
   buildVariacionPrecioOverride,
+  MAX_VARIATION_COMBINATIONS,
   getPreciosConVariacion,
   imagenUrlVariacionActiva,
   precioOpcionLabel,
@@ -47,6 +48,7 @@ import ProductVideoThumb from '@/components/catalog/ProductVideoThumb'
 import ProductVideoModal from '@/components/catalog/ProductVideoModal'
 import { getProductVideos } from '@/lib/productVideos'
 import {
+  MAX_UNITS_PER_PRODUCT,
   mensajeStockRestante,
   productoComprableEnCatalogo,
   stockRestanteParaProducto,
@@ -170,7 +172,6 @@ export default function ProductoDetalle({
   const posterVideo = imagenes[0] || null
   const comprable = productoComprableEnCatalogo(producto, catalogType)
   const stockRestante = stockRestanteParaProducto(producto, items, catalogType)
-  const maxCantidadSeleccionable = Math.max(0, stockRestante)
 
   const toggleOpcion = (tipoId: string, opcionId: string) => {
     setSelectedVariaciones(prev => {
@@ -184,20 +185,38 @@ export default function ProductoDetalle({
     })
   }
 
-  const variacionesParaCarrito = buildVariacionesSeleccionadas(
-    variaciones,
-    selectedVariaciones,
-  )
   const variacionPrecioOverride = buildVariacionPrecioOverride(
     variaciones,
     selectedVariaciones,
   )
-  const lineKeyActual = getLineKey(producto.id, variacionesParaCarrito)
 
-  const enCarrito = items.find(i => {
+  // One cart line per chosen combination (never "Color: Rojo, Azul" in one line).
+  const combinaciones = useMemo(
+    () =>
+      tieneVariaciones
+        ? buildVariationCombinations(variaciones, selectedVariaciones)
+        : [{ selection: {}, variacionesSeleccionadas: undefined }],
+    [tieneVariaciones, variaciones, selectedVariaciones],
+  )
+  const totalCombinaciones = combinaciones.length
+  const variasOpciones = tieneVariaciones && totalCombinaciones > 1
+  const maxCantidadSeleccionable = Math.max(
+    0,
+    Math.floor(stockRestante / Math.max(1, totalCombinaciones)),
+  )
+
+  const lineKeysActuales = useMemo(
+    () =>
+      new Set(
+        combinaciones.map(c => getLineKey(producto.id, c.variacionesSeleccionadas)),
+      ),
+    [combinaciones, producto.id],
+  )
+  const cantidadEnCarrito = items.reduce((acc, i) => {
     const key = i.lineKey ?? getLineKey(i.producto.id, i.variacionesSeleccionadas)
-    return key === lineKeyActual
-  })
+    return lineKeysActuales.has(key) ? acc + i.cantidad : acc
+  }, 0)
+  const enCarrito = cantidadEnCarrito > 0 ? { cantidad: cantidadEnCarrito } : null
 
   const imagenAnterior = () => {
     if (totalSlides <= 1) return
@@ -222,23 +241,45 @@ export default function ProductoDetalle({
       }
     }
 
+    if (totalCombinaciones > MAX_VARIATION_COMBINATIONS) {
+      toast.error(
+        `Puedes agregar hasta ${MAX_VARIATION_COMBINATIONS} opciones a la vez. Quita algunas y vuelve a intentar 💕`,
+      )
+      return
+    }
+
     if (stockRestante <= 0) {
       toast.error(mensajeStockRestante(0))
       return
     }
 
-    const qty = Math.min(cantidad, stockRestante)
-    const result = agregar(
-      producto,
-      variacionesParaCarrito,
-      catalogType,
-      qty,
-      variacionPrecioOverride,
-    )
-    if (!result.ok) {
-      toast.error(result.message)
-      if (qty <= 0) return
+    const qty = Math.max(1, cantidad)
+    if (qty * totalCombinaciones > stockRestante) {
+      toast.error(
+        `Máximo ${MAX_UNITS_PER_PRODUCT} unidades de este producto por pedido. Para más, escríbenos por WhatsApp.`,
+      )
+      return
     }
+
+    let lineasAgregadas = 0
+    let ultimoError: string | null = null
+    for (const combo of combinaciones) {
+      const result = agregar(
+        producto,
+        combo.variacionesSeleccionadas,
+        catalogType,
+        qty,
+        buildVariacionPrecioOverride(variaciones, combo.selection),
+      )
+      if (result.ok) lineasAgregadas++
+      else ultimoError = result.message
+    }
+    if (lineasAgregadas === 0) {
+      toast.error(ultimoError ?? 'No pudimos agregar el producto. Intenta de nuevo.')
+      return
+    }
+    if (ultimoError) toast.error(ultimoError)
+    const result = { ok: ultimoError == null }
 
     setAgregado(true)
     setCantidad(1)
@@ -248,7 +289,12 @@ export default function ProductoDetalle({
     if (isMobile) {
       setQuickAddOpen(true)
     } else if (result.ok) {
-      toastProductoAgregado(producto.nombre, '💕')
+      toastProductoAgregado(
+        lineasAgregadas > 1
+          ? `${producto.nombre} (${lineasAgregadas} opciones)`
+          : producto.nombre,
+        '💕',
+      )
     }
     setTimeout(() => setAgregado(false), 2500)
   }
@@ -505,7 +551,7 @@ export default function ProductoDetalle({
               <ProductoPrecio
                 producto={producto}
                 catalogType={catalogType}
-                disponible={producto.disponible}
+                disponible={comprable}
                 size="lg"
                 layout="stack"
                 variacionOverride={variacionPrecioOverride}
@@ -524,6 +570,15 @@ export default function ProductoDetalle({
                   <div key={tipo.id}>
                     <p className="mb-3 text-[12px] font-bold text-[var(--accent-deep)]">
                       Elige {tipo.nombre.toLowerCase()} ✨
+                      {selectedVariaciones[tipo.id]?.length ? (
+                        <span className="ml-1.5 font-semibold text-[var(--text-secondary)]">
+                          ·{' '}
+                          {(tipo.opciones || [])
+                            .filter(o => selectedVariaciones[tipo.id]?.includes(o.id))
+                            .map(o => o.nombre)
+                            .join(', ')}
+                        </span>
+                      ) : null}
                     </p>
                     <div className="flex flex-wrap gap-2.5">
                       {tipo.opciones?.map(opcion => {
@@ -604,6 +659,29 @@ export default function ProductoDetalle({
                 ))}
               </div>
             )}
+
+            {comprable && variasOpciones ? (
+              <div className="mt-5 rounded-2xl border border-[var(--border)] bg-[var(--bg-muted)] px-4 py-3">
+                <p className="text-[12px] font-bold text-[var(--accent-deep)]">
+                  Elegiste {totalCombinaciones} opciones ✨
+                </p>
+                <p className="mt-1 text-[12px] font-medium leading-relaxed text-[var(--text-secondary)]">
+                  Agregaremos {cantidad} {cantidad === 1 ? 'unidad' : 'unidades'} de cada una, por separado:
+                </p>
+                <ul className="mt-1.5 space-y-0.5 text-[12px] font-semibold text-[var(--text-primary)]">
+                  {combinaciones.slice(0, MAX_VARIATION_COMBINATIONS).map(c => (
+                    <li key={getLineKey(producto.id, c.variacionesSeleccionadas)}>
+                      • {Object.values(c.variacionesSeleccionadas ?? {}).join(' · ')}
+                    </li>
+                  ))}
+                </ul>
+                {totalCombinaciones > MAX_VARIATION_COMBINATIONS ? (
+                  <p className="mt-1.5 text-[11px] font-bold text-[var(--accent-deep)]">
+                    Máximo {MAX_VARIATION_COMBINATIONS} opciones a la vez.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
 
             <div className="my-7 h-px bg-[var(--border)]" />
 

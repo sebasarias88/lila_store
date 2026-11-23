@@ -600,7 +600,7 @@ export default function CarritoPage() {
       const { data, error } = await supabase
         .from('productos')
         .select(
-          'id, nombre, stock_detal, stock_mayoreo, disponible, disponible_detal, disponible_mayoreo',
+          'id, nombre, stock_detal, stock_mayoreo, disponible, disponible_detal, disponible_mayoreo, agotado',
         )
         .in('id', ids)
 
