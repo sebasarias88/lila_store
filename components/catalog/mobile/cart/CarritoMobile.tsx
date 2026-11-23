@@ -22,6 +22,8 @@ import type { DatosTransferencia } from '@/lib/transferencia'
 import { esMetodoTransferencia } from '@/lib/transferencia'
 import EntregaPicker from '@/components/catalog/cart/EntregaPicker'
 import PoliciesConsent from '@/components/legal/PoliciesConsent'
+import { DocumentFields, InvoiceFields } from '@/components/catalog/cart/CheckoutIdentityFields'
+import { documentShort } from '@/lib/orders/shared'
 import CitySelect from '@/components/catalog/cart/CitySelect'
 import ShippingOptions from '@/components/catalog/cart/ShippingOptions'
 import type { LoadStatus } from '@/lib/useShipping'
@@ -105,6 +107,7 @@ type CarritoMobileProps = {
   handleReabrirWhatsApp: () => void
   handleConfirmarPedidoEnviado: () => void
   whatsappHref?: string | null
+  orderCode?: string | null
   inputClass: (campo: keyof DatosCliente) => string
 }
 
@@ -178,6 +181,7 @@ export default function CarritoMobile({
   handleReabrirWhatsApp,
   handleConfirmarPedidoEnviado,
   whatsappHref = null,
+  orderCode = null,
   inputClass,
 }: CarritoMobileProps) {
   const esRecogida = datos.tipoEntrega === 'recogida'
@@ -451,6 +455,14 @@ export default function CarritoMobile({
                   />
                 </CartFormField>
 
+                <DocumentFields
+                  variant="mobile"
+                  datos={datos}
+                  setDatos={setDatos}
+                  errores={errores}
+                  setErrores={setErrores}
+                />
+
                 {esRecogida ? (
                   <div className="mt-3 mb-3 rounded-xl border border-[var(--border)] bg-[var(--bg-muted)] p-3.5">
                     <div className="flex items-start gap-2.5">
@@ -569,6 +581,17 @@ export default function CarritoMobile({
                 </div>
               ) : null}
 
+              <div className="px-3 pb-3">
+                <p className="mb-2 text-[12px] font-bold text-[var(--accent-deep)]">Factura electrónica</p>
+                <InvoiceFields
+                  variant="mobile"
+                  datos={datos}
+                  setDatos={setDatos}
+                  errores={errores}
+                  setErrores={setErrores}
+                />
+              </div>
+
               <div className="mobile-cart-checkout-notes">
                 <label htmlFor="cart-notas" className="mobile-cart-checkout-notes__label">
                   Notas para la entrega <span>(opcional)</span>
@@ -676,6 +699,10 @@ export default function CarritoMobile({
                 {[
                   { label: 'Nombre', value: datos.nombre, icon: User },
                   { label: 'Celular', value: datos.celular, icon: Phone },
+                  { label: 'Documento', value: `${documentShort(datos.tipoDocumento)} ${datos.numeroDocumento}`, icon: User },
+                  ...(datos.quiereFactura === 'si'
+                    ? [{ label: 'Factura', value: datos.facturaCorreo, icon: FileText }]
+                    : []),
                   ...(esRecogida
                     ? [{ label: 'Recoger en', value: datos.sucursalRecogida, icon: Store }]
                     : [
@@ -770,6 +797,7 @@ export default function CarritoMobile({
               onReabrirWhatsApp={handleReabrirWhatsApp}
               onVolverResumen={() => setStep('resumen')}
               onConfirmarEnviado={handleConfirmarPedidoEnviado}
+              orderCode={orderCode}
             />
           </motion.div>
         )}

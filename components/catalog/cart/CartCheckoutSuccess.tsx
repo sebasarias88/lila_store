@@ -11,6 +11,8 @@ type CartCheckoutSuccessProps = {
   onVolverResumen: () => void
   onConfirmarEnviado: () => void
   compact?: boolean
+  /** Saved order number, e.g. LILA-1042. */
+  orderCode?: string | null
 }
 
 function WhatsAppIcon({ size = 18 }: { size?: number }) {
@@ -38,6 +40,7 @@ export default function CartCheckoutSuccess({
   onVolverResumen,
   onConfirmarEnviado,
   compact = false,
+  orderCode = null,
 }: CartCheckoutSuccessProps) {
   return (
     <div
@@ -54,6 +57,11 @@ export default function CartCheckoutSuccess({
         <Sparkles size={14} />
         <span className="text-[12px] font-bold">Pedido listo</span>
       </div>
+      {orderCode ? (
+        <p className="mb-3 rounded-full border border-[var(--border)] bg-white px-4 py-1.5 text-[13px] font-bold text-[var(--accent-deep)]">
+          Tu número de pedido: {orderCode}
+        </p>
+      ) : null}
       <h2 className="text-[1.35rem] font-bold text-[var(--text-primary)] sm:text-[1.5rem]">
         Abre WhatsApp y envía tu mensaje
       </h2>

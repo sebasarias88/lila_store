@@ -54,6 +54,9 @@ import { PAGOS_COPY } from '@/lib/pagos-proximos'
 import EntregaPicker from '@/components/catalog/cart/EntregaPicker'
 import MetodoPagoPicker from '@/components/catalog/cart/MetodoPagoPicker'
 import PoliciesConsent from '@/components/legal/PoliciesConsent'
+import { DocumentFields, InvoiceFields } from '@/components/catalog/cart/CheckoutIdentityFields'
+import { submitOrder } from '@/lib/orders/client'
+import { EMAIL_RE, documentShort, validateDocument, type CreatedOrder } from '@/lib/orders/shared'
 import CitySelect from '@/components/catalog/cart/CitySelect'
 import ShippingOptions from '@/components/catalog/cart/ShippingOptions'
 import { useShippingCities, useShippingQuote } from '@/lib/useShipping'
@@ -324,7 +327,20 @@ export default function CarritoPage() {
     tipoEntrega: 'envio',
     sucursalRecogida: '',
     aceptaPoliticas: '',
+    tipoDocumento: 'CC',
+    numeroDocumento: '',
+    quiereFactura: '',
+    facturaCorreo: '',
+    facturaOtroTitular: '',
+    facturaNombre: '',
+    facturaTipoDocumento: 'NIT',
+    facturaNumeroDocumento: '',
   })
+  const [pedidoCreado, setPedidoCreado] = useState<CreatedOrder | null>(null)
+  // Any change to the cart or the customer data means a new order next time.
+  useEffect(() => {
+    setPedidoCreado(null)
+  }, [items, datos])
 
   const [errores, setErrores] = useState<Partial<DatosCliente>>({})
 
@@ -522,6 +538,16 @@ export default function CarritoPage() {
         e.ciudad = 'Elige tu ciudad de la lista para calcular el envío'
       }
     }
+    const docError = validateDocument(datos.tipoDocumento, datos.numeroDocumento)
+    if (docError) e.numeroDocumento = docError
+    if (datos.quiereFactura === 'si') {
+      if (!EMAIL_RE.test(datos.facturaCorreo.trim())) e.facturaCorreo = 'Escribe un correo válido'
+      if (datos.facturaOtroTitular === 'si') {
+        if (datos.facturaNombre.trim().length < 2) e.facturaNombre = 'Escribe el nombre o razón social'
+        const invErr = validateDocument(datos.facturaTipoDocumento, datos.facturaNumeroDocumento)
+        if (invErr) e.facturaNumeroDocumento = invErr
+      }
+    }
     if (!datos.metodoPago) e.metodoPago = 'Selecciona un método de pago'
     if (datos.aceptaPoliticas !== 'si') {
       e.aceptaPoliticas = 'Para enviar tu pedido debes aceptar los términos y la política de privacidad'
@@ -571,6 +597,13 @@ export default function CarritoPage() {
     }
     if (items.length === 0) {
       toast.error('Tu carrito está vacío')
+      return
+    }
+
+    // Already saved and nothing changed since: just open WhatsApp again (no duplicate order).
+    if (pedidoCreado && ultimoMensajeWa) {
+      setStep('exito')
+      abrirWhatsApp(ultimoMensajeWa, resolveWhatsAppPedidoNumero())
       return
     }
 
@@ -629,6 +662,7 @@ export default function CarritoPage() {
       }
 
       let comprobanteUrl: string | null = null
+      let comprobantePath: string | null = null
       if (esTransferencia && comprobantePago) {
         const uploaded = await subirComprobantePago(comprobantePago)
         if (!uploaded.ok) {
@@ -637,6 +671,25 @@ export default function CarritoPage() {
           return
         }
         comprobanteUrl = uploaded.url
+        comprobantePath = uploaded.path
+      }
+
+      // The server prices the cart again and saves the order (LILA-xxxx).
+      const created = await submitOrder({
+        items: useCarrito.getState().items,
+        datos,
+        catalog: catalogType,
+        shippingOptionId: usaCotizacion && envioOpcion ? envioOpcion.id : '',
+        receiptPath: comprobantePath,
+      })
+      if (!created.ok) {
+        cerrarVentanaReservada(waWin)
+        toast.error(created.message, { duration: 6000 })
+        return
+      }
+      setPedidoCreado(created.order)
+      if (created.order.total !== totalFinal && !created.order.hasUnpricedItems) {
+        toast('Actualizamos el total con los precios vigentes ✨', { duration: 5000 })
       }
 
       const mensaje = generarMensajeWhatsApp(
@@ -649,6 +702,7 @@ export default function CarritoPage() {
           ? { labelLinea: recargoPago.labelLinea, monto: recargoPago.monto }
           : null,
         comprobanteUrl,
+        created.order,
       )
       setUltimoMensajeWa(mensaje)
       setStep('exito')
@@ -675,6 +729,7 @@ export default function CarritoPage() {
     vaciar()
     setComprobantePago(null)
     setUltimoMensajeWa(null)
+    setPedidoCreado(null)
     setStep('carrito')
     toast.success('¡Gracias! Pedido confirmado ✨')
   }
@@ -742,6 +797,7 @@ export default function CarritoPage() {
           handleReabrirWhatsApp={handleReabrirWhatsApp}
           handleConfirmarPedidoEnviado={handleConfirmarPedidoEnviado}
           whatsappHref={whatsappPedidoHref}
+          orderCode={pedidoCreado?.code ?? null}
           inputClass={inputClass}
         />
       </div>
@@ -1121,6 +1177,16 @@ export default function CarritoPage() {
                         <p className="mt-1.5 text-[12px] font-medium text-red-400">{errores.celular}</p>
                       )}
                     </div>
+                    <div className="sm:col-span-2">
+                      <DocumentFields
+                        variant="desktop"
+                        datos={datos}
+                        setDatos={setDatos}
+                        errores={errores}
+                        setErrores={setErrores}
+                        inputClass={inputClass}
+                      />
+                    </div>
                   </div>
                 </section>
 
@@ -1254,6 +1320,18 @@ export default function CarritoPage() {
                 </section>
 
                 <section className="rounded-[24px] border border-[var(--border)] bg-[var(--bg-surface)] p-5 shadow-[var(--shadow-soft)] sm:p-6">
+                  <SectionTitle icon={FileText}>Factura electrónica</SectionTitle>
+                  <InvoiceFields
+                    variant="desktop"
+                    datos={datos}
+                    setDatos={setDatos}
+                    errores={errores}
+                    setErrores={setErrores}
+                    inputClass={inputClass}
+                  />
+                </section>
+
+                <section className="rounded-[24px] border border-[var(--border)] bg-[var(--bg-surface)] p-5 shadow-[var(--shadow-soft)] sm:p-6">
                   <SectionTitle icon={FileText}>Notitas extras 💕</SectionTitle>
                   <p className="mb-3 text-[12px] font-medium text-[var(--text-subtle)]">Opcional</p>
                   <textarea
@@ -1353,6 +1431,10 @@ export default function CarritoPage() {
                     {[
                       { label: 'Nombre', value: datos.nombre },
                       { label: 'Celular', value: datos.celular },
+                      { label: 'Documento', value: `${documentShort(datos.tipoDocumento)} ${datos.numeroDocumento}` },
+                      ...(datos.quiereFactura === 'si'
+                        ? [{ label: 'Factura electrónica', value: datos.facturaCorreo }]
+                        : []),
                       ...(esRecogida
                         ? [{ label: 'Recoger en', value: datos.sucursalRecogida }]
                         : [
@@ -1633,6 +1715,7 @@ export default function CarritoPage() {
                 onReabrirWhatsApp={handleReabrirWhatsApp}
                 onVolverResumen={() => setStep('resumen')}
                 onConfirmarEnviado={handleConfirmarPedidoEnviado}
+                orderCode={pedidoCreado?.code ?? null}
               />
             </motion.div>
           )}

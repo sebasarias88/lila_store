@@ -14,7 +14,13 @@ export const LEGAL_OWNER = {
 } as const
 
 /** Date shown as "última actualización" on the legal pages. */
-export const LEGAL_UPDATED_AT = '17 de noviembre de 2026'
+export const LEGAL_UPDATED_AT = '23 de noviembre de 2026'
+
+/**
+ * Version stored with every order as proof of which policy the customer
+ * accepted (Ley 1581/2012). Change it whenever the privacy policy changes.
+ */
+export const LEGAL_VERSION = '2026-11-23'
 
 export const LEGAL_LINKS = [
   { href: '/terminos-y-condiciones', label: 'Términos y condiciones' },

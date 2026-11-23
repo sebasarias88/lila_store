@@ -2,6 +2,7 @@ import { ItemCarrito, DatosCliente } from '@/types'
 import { formatVariacionesResumen } from '@/lib/cart'
 import type { CatalogType } from '@/lib/catalog'
 import { getItemPrecios } from '@/lib/variaciones'
+import { documentShort, type CreatedOrder } from '@/lib/orders/shared'
 
 export type WhatsAppConsultaContext = 'flotante' | 'nosotros' | 'footer'
 
@@ -66,17 +67,22 @@ export function generarMensajeWhatsApp(
   catalogType: CatalogType = 'detal',
   recargoPago: WhatsAppRecargoPago | null = null,
   comprobanteUrl: string | null = null,
+  /** Saved order: its number and the amounts the SERVER calculated win. */
+  pedido: CreatedOrder | null = null,
 ): string {
-  const subtotal = items.reduce((acc, item) => {
+  const subtotalLocal = items.reduce((acc, item) => {
     const unitario = precioUnitarioItem(item, catalogType)
     if (unitario == null) return acc
     return acc + unitario * item.cantidad
   }, 0)
 
   const esRecogida = cliente.tipoEntrega === 'recogida'
-  const envio = esRecogida ? 0 : costoEnvio
-  const recargoMonto = recargoPago?.monto ?? 0
-  const total = subtotal + envio + recargoMonto
+  const subtotal = pedido ? pedido.subtotal : subtotalLocal
+  const envioServidor = pedido ? pedido.shippingCost : null
+  const envio = esRecogida ? 0 : pedido ? (envioServidor ?? 0) : costoEnvio
+  const recargoMonto = pedido ? pedido.surcharge : (recargoPago?.monto ?? 0)
+  const recargoLabel = pedido ? pedido.surchargeLabel : (recargoPago?.labelLinea ?? null)
+  const total = pedido ? pedido.total : subtotal + envio + recargoMonto
 
   const productosLineas = items
     .map((item, index) => {
@@ -84,8 +90,12 @@ export function generarMensajeWhatsApp(
         item,
         catalogType,
       )
-      const unitario =
-        consultar || precio == null ? null : precio
+      const lineaServidor = pedido?.lines[index]
+      const unitario = lineaServidor
+        ? lineaServidor.unitPrice
+        : consultar || precio == null
+          ? null
+          : precio
       const linea =
         unitario != null
           ? formatPrecio(unitario * item.cantidad)
@@ -114,9 +124,15 @@ export function generarMensajeWhatsApp(
 
   const envioTexto = esRecogida
     ? 'Sin envío (recogida en tienda)'
-    : costoEnvio === 0
-      ? 'A convenir'
-      : formatPrecio(costoEnvio)
+    : pedido
+      ? envioServidor == null
+        ? 'A convenir'
+        : envioServidor === 0
+          ? 'Gratis'
+          : formatPrecio(envioServidor)
+      : costoEnvio === 0
+        ? 'A convenir'
+        : formatPrecio(costoEnvio)
 
   const bloqueEntrega = esRecogida
     ? `🏪 *Entrega:* Recoger en tienda
@@ -128,16 +144,32 @@ export function generarMensajeWhatsApp(
     catalogType === 'mayoreo' ? '📦 *Pedido Mayorista*\n\n' : ''
 
   const lineaRecargo =
-    recargoPago && recargoPago.monto > 0
-      ? `${recargoPago.labelLinea}: +${formatPrecio(recargoPago.monto)}\n`
+    recargoLabel && recargoMonto > 0
+      ? `${recargoLabel}: +${formatPrecio(recargoMonto)}\n`
       : ''
 
-  const mensaje = `${encabezadoMayoreo}✨ *Nuevo Pedido — Lila-store*
+  const lineaDocumento = cliente.numeroDocumento
+    ? `\nDocumento: ${documentShort(cliente.tipoDocumento)} ${cliente.numeroDocumento.trim()}`
+    : ''
+  const lineaFactura =
+    cliente.quiereFactura === 'si'
+      ? `\n🧾 *Factura electrónica:* Sí → ${cliente.facturaCorreo.trim()}${
+          cliente.facturaOtroTitular === 'si'
+            ? `\n   A nombre de: ${cliente.facturaNombre.trim()} (${documentShort(cliente.facturaTipoDocumento)} ${cliente.facturaNumeroDocumento.trim()})`
+            : ''
+        }`
+      : ''
+  const encabezadoPedido = pedido ? `🧾 *Pedido ${pedido.code}*\n` : ''
+  const notaPrecios = pedido?.hasUnpricedItems
+    ? '\n_Hay productos con precio por confirmar: te lo confirmamos por aquí._'
+    : ''
 
+  const mensaje = `${encabezadoMayoreo}✨ *Nuevo Pedido — Lila-store*
+${encabezadoPedido}
 👤 *Datos del cliente*
 Nombre: ${cliente.nombre}
-Celular: ${cliente.celular}
-${bloqueEntrega}
+Celular: ${cliente.celular}${lineaDocumento}
+${bloqueEntrega}${lineaFactura}
 
 💳 *Método de pago:* ${cliente.metodoPago}${cliente.notas ? `\n📝 *Notas:* ${cliente.notas}` : ''}${comprobanteUrl ? `\n📎 *Comprobante:* ${comprobanteUrl}` : ''}${cliente.aceptaPoliticas === 'si' ? `\n✅ Aceptó términos y tratamiento de datos (${new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' })})` : ''}
 
@@ -147,9 +179,9 @@ ${productosLineas}
 📦 *Resumen*
 Subtotal: ${formatPrecio(subtotal)}
 Envío: ${envioTexto}
-${lineaRecargo}⏱️ Entrega: ${esRecogida ? 'Recoger en tienda' : tiempoEntrega}
+${lineaRecargo}⏱️ Entrega: ${esRecogida ? 'Recoger en tienda' : (pedido?.shippingLabel || tiempoEntrega)}
 
-*TOTAL: ${formatPrecio(total)}* 💰
+*TOTAL: ${formatPrecio(total)}* 💰${notaPrecios}
 
 _Pedido generado desde el catálogo de Lila-store_`
 
