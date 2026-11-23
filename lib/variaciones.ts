@@ -41,6 +41,68 @@ export function buildVariacionesSeleccionadas(
   return Object.keys(result).length > 0 ? result : undefined
 }
 
+/** Max cart lines one "add" can create (e.g. 3 colours × 4 sizes = 12). */
+export const MAX_VARIATION_COMBINATIONS = 12
+
+/** One cart line: exactly one option per variation type. */
+export type VariationCombination = {
+  /** tipo nombre → opción nombre (one option each, never a joined list). */
+  variacionesSeleccionadas: Record<string, string> | undefined
+  /** Same shape as the page selection, with a single option per type. */
+  selection: Record<string, string[]>
+}
+
+/**
+ * The product page lets the customer tick several options of one type (e.g.
+ * red AND blue). Each combination must become its own cart line so the
+ * WhatsApp order says exactly what was chosen ("Color: Rojo × 1",
+ * "Color: Azul × 1") instead of one ambiguous line ("Color: Rojo, Azul × 2").
+ */
+export function buildVariationCombinations(
+  variaciones: VariacionTipo[],
+  selectedByTipoId: Record<string, string[]>,
+): VariationCombination[] {
+  const tipos = [...variaciones].sort((a, b) => a.orden - b.orden)
+  let combos: Record<string, string[]>[] = [{}]
+
+  for (const tipo of tipos) {
+    const picked = selectedByTipoId[tipo.id] ?? []
+    // Keep the type's own option order so lines are stable and readable.
+    const opcionIds = (tipo.opciones || [])
+      .filter(o => picked.includes(o.id))
+      .map(o => o.id)
+    if (!opcionIds.length) continue
+    const next: Record<string, string[]>[] = []
+    for (const combo of combos) {
+      for (const opcionId of opcionIds) {
+        next.push({ ...combo, [tipo.id]: [opcionId] })
+      }
+    }
+    combos = next
+  }
+
+  return combos.map(selection => ({
+    selection,
+    variacionesSeleccionadas: buildVariacionesSeleccionadas(variaciones, selection),
+  }))
+}
+
+/** How many cart lines the current selection would create (0 if nothing picked). */
+export function countVariationCombinations(
+  variaciones: VariacionTipo[],
+  selectedByTipoId: Record<string, string[]>,
+): number {
+  let total = 1
+  let any = false
+  for (const tipo of variaciones) {
+    const n = (selectedByTipoId[tipo.id] ?? []).length
+    if (!n) continue
+    any = true
+    total *= n
+  }
+  return any ? total : 0
+}
+
 /** Última opción seleccionada (por tipo) que tenga foto. */
 export function imagenUrlVariacionActiva(
   variaciones: VariacionTipo[],

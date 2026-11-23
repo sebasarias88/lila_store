@@ -9,11 +9,17 @@ import type { CatalogType } from '@/lib/catalog'
  */
 export const MAX_UNITS_PER_PRODUCT = 50
 
-/** Units of this product that can be ordered in this catalog (cap or 0 if hidden). */
+/** Sold out: visible in the catalog but it cannot be bought. */
+export function productoAgotado(producto: Pick<Producto, 'agotado'>): boolean {
+  return Boolean(producto.agotado)
+}
+
+/** Units of this product that can be ordered in this catalog (cap, or 0 if hidden / sold out). */
 export function getStockCatalogo(
   producto: Producto,
   catalogType: CatalogType = 'detal',
 ): number {
+  if (productoAgotado(producto)) return 0
   return productoVisibleEnCatalogo(producto, catalogType) ? MAX_UNITS_PER_PRODUCT : 0
 }
 
@@ -28,13 +34,14 @@ export function productoVisibleEnCatalogo(
   return Boolean(producto.disponible_detal ?? producto.disponible)
 }
 
-/** Se puede comprar en este catálogo: depende solo del toggle de visibilidad. */
+/** Se puede comprar en este catálogo: visible y no marcado como agotado. */
 export function productoComprableEnCatalogo(
   producto: Producto,
   catalogType: CatalogType,
 ): boolean {
   return (
     productoVisibleEnCatalogo(producto, catalogType) &&
+    !productoAgotado(producto) &&
     getStockCatalogo(producto, catalogType) > 0
   )
 }
@@ -83,6 +90,7 @@ export type StockProductoFresh = Pick<
   | 'disponible'
   | 'disponible_detal'
   | 'disponible_mayoreo'
+  | 'agotado'
 >
 
 /**
@@ -111,6 +119,12 @@ export function validarStockCarrito(
       }
     }
     const asProducto = fresh as Producto
+    if (productoAgotado(asProducto)) {
+      return {
+        ok: false,
+        message: `${fresh.nombre} se agotó 💕 Quítalo del carrito para continuar.`,
+      }
+    }
     if (!productoComprableEnCatalogo(asProducto, catalogType)) {
       return {
         ok: false,

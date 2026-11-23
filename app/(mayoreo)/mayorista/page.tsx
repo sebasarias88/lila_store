@@ -96,6 +96,7 @@ export default async function MayoreoHomePage() {
         .select(PRODUCTO_SHELF_SELECT)
         .eq('disponible_mayoreo', true)
         .eq('destacado', true)
+        .order('agotado', { ascending: true })
         .order('orden')
         .limit(10),
       supabase
@@ -103,12 +104,14 @@ export default async function MayoreoHomePage() {
         .select(PRODUCTO_SHELF_SELECT)
         .eq('disponible_mayoreo', true)
         .not('precio_antes_mayoreo', 'is', null)
+        .order('agotado', { ascending: true })
         .order('orden')
         .limit(10),
       supabase
         .from('productos')
         .select(PRODUCTO_SHELF_SELECT)
         .eq('disponible_mayoreo', true)
+        .order('agotado', { ascending: true })
         .order('created_at', { ascending: false })
         .limit(10),
     ])
