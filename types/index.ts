@@ -174,6 +174,17 @@ export type DatosCliente = {
   sucursalRecogida: string
   /** 'si' when the customer accepted the terms and the data policy ('' otherwise). */
   aceptaPoliticas: string
+  /** Identity document (required for invoices and shipping guides). */
+  tipoDocumento: string
+  numeroDocumento: string
+  /** 'si' when the customer wants an electronic invoice. */
+  quiereFactura: string
+  facturaCorreo: string
+  /** 'si' when the invoice goes to another person / company. */
+  facturaOtroTitular: string
+  facturaNombre: string
+  facturaTipoDocumento: string
+  facturaNumeroDocumento: string
 }
 
 export type Banner = {

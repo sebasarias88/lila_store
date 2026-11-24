@@ -8,6 +8,7 @@ import {
   Sparkles,
   CreditCard,
   MapPin,
+  ShoppingBag,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -19,6 +20,7 @@ export type AdminNavLink = {
 
 export const ADMIN_NAV_LINKS: AdminNavLink[] = [
   { href: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin/pedidos', label: 'Pedidos', icon: ShoppingBag },
   { href: '/admin/banners', label: 'Banners', icon: ImageIcon },
   { href: '/admin/promociones', label: 'Promociones', icon: Tag },
   { href: '/admin/anuncio', label: 'Anuncio destacado', icon: Sparkles },
@@ -30,6 +32,7 @@ export const ADMIN_NAV_LINKS: AdminNavLink[] = [
 ]
 
 export function adminPageTitle(pathname: string): string {
+  if (pathname.startsWith('/admin/pedidos')) return 'Pedidos'
   if (pathname.startsWith('/admin/banners')) return 'Banners'
   if (pathname.startsWith('/admin/promociones')) return 'Promociones'
   if (pathname.startsWith('/admin/anuncio')) return 'Anuncio destacado'

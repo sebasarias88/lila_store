@@ -76,7 +76,7 @@ export function validarArchivoComprobante(
  */
 export async function subirComprobantePago(
   file: File,
-): Promise<{ ok: true; url: string } | { ok: false; message: string }> {
+): Promise<{ ok: true; url: string; path: string } | { ok: false; message: string }> {
   const valid = validarArchivoComprobante(file)
   if (!valid.ok) return valid
 
@@ -113,5 +113,5 @@ export async function subirComprobantePago(
     }
   }
 
-  return { ok: true, url: `${window.location.origin}/admin/comprobantes/${path}` }
+  return { ok: true, url: `${window.location.origin}/admin/comprobantes/${path}`, path }
 }

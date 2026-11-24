@@ -39,7 +39,7 @@ export default function TermsPage() {
       <section>
         <h2>2. Cómo funciona un pedido</h2>
         <ul>
-          <li>Eliges los productos, llenas tus datos y envías el pedido por WhatsApp desde el carrito.</li>
+          <li>Eliges los productos, llenas tus datos y envías el pedido desde el carrito. Tu pedido queda registrado con un número (por ejemplo LILA-1042) y se abre WhatsApp con el resumen para confirmarlo.</li>
           <li>Antes de enviarlo ves el resumen completo: productos, cantidades, precio total, costo de envío, recargos del medio de pago (si aplican) y tiempo estimado de entrega.</li>
           <li>El pedido queda confirmado cuando te respondemos por WhatsApp y verificamos el pago. Si un producto no está disponible, te avisamos y puedes cambiarlo o recibir la devolución de lo pagado por él.</li>
         </ul>
