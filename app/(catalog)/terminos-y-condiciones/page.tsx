@@ -63,6 +63,12 @@ export default function TermsPage() {
           pedido. Si pagas por transferencia, puedes adjuntar el comprobante para agilizar la
           verificación.
         </p>
+        <p>
+          Si eliges <strong>pago en línea</strong>, el pago se hace en la página segura de Wompi
+          (Grupo Bancolombia) con tarjeta, PSE, Nequi o Botón Bancolombia. Nosotros no vemos ni
+          guardamos los datos de tu tarjeta o cuenta. Tu pedido queda confirmado cuando Wompi
+          aprueba el pago.
+        </p>
       </section>
 
       <section>

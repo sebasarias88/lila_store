@@ -48,7 +48,7 @@ type Busy = null | 'status' | 'payment' | 'shipping' | 'notes' | 'cancel'
 
 function Card({ title, icon: Icon, children, action }: { title: string; icon: typeof User; children: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <section className="rounded-[20px] border border-[var(--border)] bg-[var(--bg-surface)] p-4 shadow-[var(--shadow-soft)] sm:p-5">
+    <section className="rounded-[18px] border border-[var(--border)] bg-[var(--bg-surface)] p-3.5 shadow-[var(--shadow-soft)] sm:rounded-[20px] sm:p-5">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-[14px] font-extrabold text-[var(--text-primary)]">
           <Icon size={16} className="text-[var(--accent-primary)]" aria-hidden />
@@ -167,14 +167,14 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
   const anonymized = Boolean(order.anonymized_at)
 
   return (
-    <div className="min-h-screen bg-[var(--bg-base)] px-4 py-5 sm:p-8 lg:p-10">
+    <div className="min-h-screen bg-[var(--bg-base)] px-3.5 py-4 sm:p-8 lg:p-10">
       <Link href="/admin/pedidos" className="mb-4 inline-flex items-center gap-1.5 text-[12px] font-bold text-[var(--text-muted)] hover:text-[var(--accent-deep)]">
         <ArrowLeft size={14} /> Pedidos
       </Link>
 
-      <header className="mb-6 flex flex-col gap-3 border-b border-[rgba(169,137,224,0.16)] pb-5 sm:flex-row sm:items-end sm:justify-between">
+      <header className="mb-5 flex flex-col gap-2 border-b border-[rgba(169,137,224,0.16)] pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-[26px] font-extrabold text-[var(--text-primary)]">{code}</h1>
+          <h1 className="text-[22px] font-extrabold text-[var(--text-primary)] sm:text-[26px]">{code}</h1>
           <p className="mt-1 text-[13px] text-[var(--text-secondary)]">
             {formatOrderDate(order.created_at)} · Catálogo {order.catalog === 'mayoreo' ? 'mayorista' : 'detal'}
           </p>
@@ -186,7 +186,7 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
             ) : null}
           </div>
         </div>
-        <p className="text-[28px] font-extrabold text-[var(--text-primary)]">{formatPrecio(Number(order.total))}</p>
+        <p className="text-[22px] font-extrabold text-[var(--text-primary)] sm:text-[28px]">{formatPrecio(Number(order.total))}</p>
       </header>
 
       {/* Progress */}
@@ -206,8 +206,8 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
         </ol>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="min-w-0 space-y-4">
+      <div className="grid gap-3 sm:gap-4 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="min-w-0 space-y-3 sm:space-y-4">
           <Card title={`Productos (${items.reduce((a, i) => a + i.quantity, 0)} unidades)`} icon={Package}>
             <ul className="divide-y divide-[var(--border)]">
               {items.map(item => (
@@ -237,7 +237,7 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
               <Row label={`Envío${order.shipping_label ? ` · ${order.shipping_label}` : ''}`} value={order.delivery_type === 'recogida' ? 'No aplica' : formatMoney(order.shipping_cost)} />
               {order.surcharge > 0 ? <Row label={order.surcharge_label || 'Recargo'} value={`+${formatPrecio(Number(order.surcharge))}`} /> : null}
               <Row label="Total" value={<span className="text-[16px]">{formatPrecio(Number(order.total))}</span>} />
-              {order.has_unpriced_items ? <p className="mt-1 text-[12px] font-bold text-amber-500">Hay productos con precio por confirmar (no están sumados).</p> : null}
+              {order.has_unpriced_items ? <p className="mt-1 text-[12px] font-bold text-[#A8487E]">Hay productos con precio por confirmar (no están sumados).</p> : null}
             </dl>
           </Card>
 
@@ -298,10 +298,10 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
           </Card>
         </div>
 
-        <aside className="min-w-0 space-y-4">
+        <aside className="min-w-0 space-y-3 sm:space-y-4">
           <Card title="Estado del pedido" icon={Check}>
             {cancelled ? (
-              <p className="text-[13px] font-semibold text-red-500">Pedido cancelado {order.cancelled_at ? `el ${formatOrderDate(order.cancelled_at)}` : ''}.</p>
+              <p className="text-[13px] font-semibold text-[#B83F55]">Pedido cancelado {order.cancelled_at ? `el ${formatOrderDate(order.cancelled_at)}` : ''}.</p>
             ) : (
               <div className="space-y-2">
                 {nextStatus ? (
@@ -314,7 +314,7 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
                     Marcar como {ORDER_STATUS[nextStatus].label.toLowerCase()}
                   </Button>
                 ) : (
-                  <p className="text-[13px] font-semibold text-emerald-500">Pedido entregado ✨</p>
+                  <p className="text-[13px] font-semibold text-[#2E7D5B]">Pedido entregado ✨</p>
                 )}
                 <div className="flex flex-wrap gap-1.5 pt-1" role="group" aria-label="Cambiar a otro estado">
                   {ORDER_FLOW.filter(s => s !== order.status && s !== nextStatus).map(s => (
@@ -333,7 +333,7 @@ export default function PedidoDetallePage({ params }: { params: Promise<{ id: st
                   type="button"
                   disabled={busy !== null}
                   onClick={() => setConfirmCancel(true)}
-                  className="mt-1 inline-flex items-center gap-1.5 text-[12px] font-bold text-red-500 disabled:opacity-50"
+                  className="mt-1 inline-flex items-center gap-1.5 text-[12px] font-bold text-[#B83F55] disabled:opacity-50"
                 >
                   <XCircle size={13} /> Cancelar pedido
                 </button>

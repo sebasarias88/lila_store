@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Heart, LogOut, X } from 'lucide-react'
+import { useState } from 'react'
+import { Heart, Loader2, LogOut, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabase'
 import { ADMIN_NAV_LINKS } from '@/lib/admin-nav'
@@ -15,9 +16,13 @@ type MobileNavigationProps = {
 export default function MobileNavigation({ open, onClose }: MobileNavigationProps) {
   const pathname = usePathname()
   const router = useRouter()
+  const [loggingOut, setLoggingOut] = useState(false)
 
   const handleLogout = async () => {
+    if (loggingOut) return
+    setLoggingOut(true)
     await supabase.auth.signOut()
+    setLoggingOut(false)
     onClose()
     router.push('/admin/login')
     router.refresh()
@@ -65,7 +70,7 @@ export default function MobileNavigation({ open, onClose }: MobileNavigationProp
               </div>
             </div>
 
-            <nav className="flex-1 overflow-y-auto px-3 py-4">
+            <nav className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4">
               {ADMIN_NAV_LINKS.map(({ href, label, icon: Icon }) => {
                 const active = pathname.startsWith(href)
                 return (
@@ -86,14 +91,16 @@ export default function MobileNavigation({ open, onClose }: MobileNavigationProp
               })}
             </nav>
 
-            <div className="border-t border-[var(--border)] px-4 py-4">
+            <div className="shrink-0 border-t border-[var(--border)] px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
               <button
                 type="button"
                 onClick={handleLogout}
-                className="flex min-h-[48px] w-full items-center gap-3 rounded-xl px-2 text-[14px] font-semibold text-[var(--text-secondary)] active:text-[var(--danger)]"
+                disabled={loggingOut}
+                aria-busy={loggingOut || undefined}
+                className="flex min-h-[48px] disabled:opacity-60 w-full items-center gap-3 rounded-xl px-2 text-[14px] font-semibold text-[var(--text-secondary)] active:text-[var(--danger)]"
               >
-                <LogOut size={16} />
-                Cerrar sesión
+                {loggingOut ? <Loader2 size={16} className="animate-spin" aria-hidden /> : <LogOut size={16} />}
+                {loggingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}
               </button>
             </div>
           </motion.aside>

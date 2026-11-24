@@ -68,7 +68,7 @@ export function generarMensajeWhatsApp(
   recargoPago: WhatsAppRecargoPago | null = null,
   comprobanteUrl: string | null = null,
   /** Saved order: its number and the amounts the SERVER calculated win. */
-  pedido: CreatedOrder | null = null,
+  pedido: (CreatedOrder & { paidOnline?: boolean }) | null = null,
 ): string {
   const subtotalLocal = items.reduce((acc, item) => {
     const unitario = precioUnitarioItem(item, catalogType)
@@ -159,7 +159,9 @@ export function generarMensajeWhatsApp(
             : ''
         }`
       : ''
-  const encabezadoPedido = pedido ? `🧾 *Pedido ${pedido.code}*\n` : ''
+  const encabezadoPedido = pedido
+    ? `🧾 *Pedido ${pedido.code}*${pedido.paidOnline ? '\n✅ *PAGADO en línea con Wompi*' : ''}\n`
+    : ''
   const notaPrecios = pedido?.hasUnpricedItems
     ? '\n_Hay productos con precio por confirmar: te lo confirmamos por aquí._'
     : ''

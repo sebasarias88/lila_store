@@ -124,26 +124,26 @@ export default function PedidosPage() {
   )
 
   return (
-    <div className="min-h-screen bg-[var(--bg-base)] px-4 py-5 sm:p-8 lg:p-10">
-      <header className="mb-6 border-b border-[rgba(169,137,224,0.16)] pb-6">
+    <div className="min-h-screen bg-[var(--bg-base)] px-3.5 py-4 sm:p-8 lg:p-10">
+      <header className="mb-4 border-b border-[rgba(169,137,224,0.16)] pb-4 sm:mb-6 sm:pb-6">
         <p className="text-[12px] font-bold text-[var(--accent-deep)]">Ventas</p>
-        <h1 className="mt-1 text-[26px] font-extrabold text-[var(--text-primary)]">Pedidos</h1>
-        <p className="mt-1 max-w-2xl text-[13px] text-[var(--text-secondary)]">
+        <h1 className="mt-1 text-[22px] font-extrabold text-[var(--text-primary)] sm:text-[26px]">Pedidos</h1>
+        <p className="mt-1 hidden max-w-2xl text-[13px] text-[var(--text-secondary)] sm:block">
           Todos los pedidos de la tienda. Entra a cada uno para ver el detalle, cambiar el estado,
           registrar la guía de envío y escribirle al cliente por WhatsApp.
         </p>
       </header>
 
-      <section className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Resumen">
+      <section className="mb-4 grid grid-cols-2 gap-2 sm:mb-6 sm:gap-3 lg:grid-cols-4" aria-label="Resumen">
         {statCards.map(card => (
-          <div key={card.label} className="rounded-[18px] border border-[var(--border)] bg-[var(--bg-surface)] p-4 shadow-[var(--shadow-soft)]">
-            <p className="text-[11px] font-bold text-[var(--text-muted)]">{card.label}</p>
+          <div key={card.label} className="rounded-[14px] border border-[var(--border)] bg-[var(--bg-surface)] px-3 py-2.5 shadow-[var(--shadow-soft)] sm:rounded-[18px] sm:p-4">
+            <p className="truncate text-[10px] font-bold text-[var(--text-muted)] sm:text-[11px]">{card.label}</p>
             {card.value === null ? (
-              <div className="mt-2 h-7 w-16 animate-pulse rounded-lg bg-[var(--bg-muted)]" />
+              <div className="mt-1.5 h-6 w-12 animate-pulse rounded-lg bg-[var(--bg-muted)] sm:h-7 sm:w-16" />
             ) : (
-              <p className="mt-1 text-[24px] font-extrabold text-[var(--text-primary)]">{card.value}</p>
+              <p className="text-[19px] font-extrabold leading-tight text-[var(--text-primary)] sm:mt-1 sm:text-[24px]">{card.value}</p>
             )}
-            <p className="mt-0.5 truncate text-[11px] font-semibold text-[var(--accent-deep)]">{card.hint}</p>
+            <p className="truncate text-[10px] font-semibold text-[var(--accent-deep)] sm:mt-0.5 sm:text-[11px]">{card.hint}</p>
           </div>
         ))}
       </section>
@@ -195,7 +195,7 @@ export default function PedidosPage() {
         <ul className="space-y-3" aria-busy="true">
           <span role="status" className="sr-only">Cargando pedidos…</span>
           {Array.from({ length: 6 }).map((_, i) => (
-            <li key={i} className="h-[84px] animate-pulse rounded-[18px] border border-[var(--border)] bg-[var(--bg-card)]" />
+            <li key={i} className="h-[112px] animate-pulse rounded-[18px] md:h-[76px] border border-[var(--border)] bg-[var(--bg-card)]" />
           ))}
         </ul>
       ) : rows.length === 0 ? (
@@ -217,7 +217,7 @@ export default function PedidosPage() {
               const wa = customerWhatsAppDigits(o.customer_phone)
               return (
                 <li key={o.id} className="rounded-[18px] border border-[var(--border)] bg-[var(--bg-surface)] shadow-[var(--shadow-soft)] transition-colors hover:border-[var(--accent-primary)]">
-                  <div className="flex items-center gap-3 p-3.5 sm:p-4">
+                  <div className="flex items-center gap-2 p-3 sm:gap-3 sm:p-4">
                     <Link href={`/admin/pedidos/${o.id}`} className="grid min-w-0 flex-1 grid-cols-1 gap-2 md:grid-cols-[9rem_minmax(0,1fr)_9rem_auto] md:items-center md:gap-4">
                       <div className="min-w-0">
                         <p className="text-[14px] font-extrabold text-[var(--accent-deep)]">{orderCode(o.order_number)}</p>
@@ -227,7 +227,7 @@ export default function PedidosPage() {
                         <p className="truncate text-[13px] font-bold text-[var(--text-primary)]">
                           {o.customer_name || 'Datos eliminados'}
                           {o.catalog === 'mayoreo' ? (
-                            <span className="ml-2 rounded-full bg-[rgba(96,165,250,0.12)] px-2 py-0.5 text-[10px] font-bold text-blue-500">Mayorista</span>
+                            <span className="ml-2 rounded-full bg-[var(--bg-muted)] px-2 py-0.5 text-[10px] font-bold text-[var(--accent-deep)]">Mayorista</span>
                           ) : null}
                         </p>
                         <p className="flex items-center gap-1.5 truncate text-[12px] text-[var(--text-secondary)]">
@@ -239,7 +239,7 @@ export default function PedidosPage() {
                       </div>
                       <p className="text-[14px] font-extrabold text-[var(--text-primary)] md:text-right">
                         {formatPrecio(Number(o.total))}
-                        {o.has_unpriced_items ? <span className="block text-[10px] font-bold text-amber-500">+ precio por confirmar</span> : null}
+                        {o.has_unpriced_items ? <span className="block text-[10px] font-bold text-[#A8487E]">+ precio por confirmar</span> : null}
                       </p>
                       <div className="flex flex-wrap items-center gap-1.5">
                         <OrderStatusBadge status={o.status} />
