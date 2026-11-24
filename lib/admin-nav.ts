@@ -9,6 +9,7 @@ import {
   CreditCard,
   MapPin,
   ShoppingBag,
+  HardDrive,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -29,6 +30,7 @@ export const ADMIN_NAV_LINKS: AdminNavLink[] = [
   { href: '/admin/metodos-pago', label: 'Métodos de pago', icon: CreditCard },
   { href: '/admin/sucursales', label: 'Sucursales', icon: MapPin },
   { href: '/admin/configuracion', label: 'Configuración', icon: Settings },
+  { href: '/admin/almacenamiento', label: 'Almacenamiento', icon: HardDrive },
 ]
 
 export function adminPageTitle(pathname: string): string {
@@ -41,5 +43,6 @@ export function adminPageTitle(pathname: string): string {
   if (pathname.startsWith('/admin/metodos-pago')) return 'Métodos de pago'
   if (pathname.startsWith('/admin/sucursales')) return 'Sucursales'
   if (pathname.startsWith('/admin/configuracion')) return 'Configuración'
+  if (pathname.startsWith('/admin/almacenamiento')) return 'Almacenamiento'
   return 'Dashboard'
 }

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ChevronRight, Search, ShoppingBag, Store, Truck, X } from 'lucide-react'
+import { ChevronRight, Loader2, Search, ShoppingBag, Store, Truck, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { formatPrecio } from '@/lib/catalog'
 import { orderCode, type OrderStatus } from '@/lib/orders/shared'
@@ -60,10 +60,8 @@ export default function PedidosPage() {
   const [loadError, setLoadError] = useState(false)
   const [stats, setStats] = useState<Stats | null>(null)
 
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(search), 350)
-    return () => clearTimeout(t)
-  }, [search])
+  // Search only runs on Enter / "Buscar" (not on every key) to save database requests.
+  const submitSearch = () => setDebounced(search.trim())
 
   useEffect(() => setPage(1), [filter, debounced])
 
@@ -149,10 +147,19 @@ export default function PedidosPage() {
       </section>
 
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center">
+        <form
+          role="search"
+          onSubmit={e => {
+            e.preventDefault()
+            submitSearch()
+          }}
+          className="flex min-w-0 flex-1 gap-2"
+        >
         <div className="relative min-w-0 flex-1">
           <Search size={15} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-subtle)]" />
           <input
             type="search"
+            enterKeyHint="search"
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Buscar por número de pedido, nombre, celular o documento…"
@@ -161,7 +168,10 @@ export default function PedidosPage() {
           {search ? (
             <button
               type="button"
-              onClick={() => setSearch('')}
+              onClick={() => {
+                setSearch('')
+                setDebounced('')
+              }}
               aria-label="Limpiar búsqueda"
               className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
             >
@@ -169,6 +179,15 @@ export default function PedidosPage() {
             </button>
           ) : null}
         </div>
+          <button
+            type="submit"
+            disabled={rows === null && Boolean(debounced)}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[var(--accent-primary)] px-4 text-[12px] font-bold text-white disabled:opacity-60"
+          >
+            {rows === null && debounced ? <Loader2 size={13} className="animate-spin" aria-hidden /> : <Search size={13} aria-hidden />}
+            Buscar
+          </button>
+        </form>
         <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:px-0 lg:pb-0" role="tablist" aria-label="Filtrar por estado">
           {FILTERS.map(f => (
             <button
