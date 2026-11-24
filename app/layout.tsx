@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Baloo_2, Nunito } from 'next/font/google'
+import localFont from 'next/font/local'
 import './globals.css'
 import Providers from '@/components/Providers'
 import ScrollToTop from '@/components/ScrollToTop'
@@ -13,16 +13,27 @@ import {
   SITE_BRAND_NAME,
 } from '@/lib/seo-brand'
 
-const baloo = Baloo_2({
-  subsets: ['latin'],
-  weight: ['600', '700'],
+/**
+ * Fonts are self-hosted (app/fonts, SIL Open Font License, from Fontsource):
+ * the build no longer downloads them from Google, which made Vercel deploys
+ * fail when Google Fonts didn't answer. Variable fonts = every weight in one file.
+ */
+const baloo = localFont({
+  src: './fonts/baloo-2-latin-wght-normal.woff2',
+  weight: '400 800',
+  style: 'normal',
+  display: 'swap',
   variable: '--font-baloo-2',
+  fallback: ['system-ui', 'sans-serif'],
 })
 
-const nunito = Nunito({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
+const nunito = localFont({
+  src: './fonts/nunito-latin-wght-normal.woff2',
+  weight: '200 1000',
+  style: 'normal',
+  display: 'swap',
   variable: '--font-nunito',
+  fallback: ['system-ui', 'sans-serif'],
 })
 
 export const metadata: Metadata = {

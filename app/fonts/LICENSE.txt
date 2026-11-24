@@ -1,0 +1,7 @@
+Nunito (nunito-latin-wght-normal.woff2) — Copyright 2014 The Nunito Project Authors
+(https://github.com/googlefonts/nunito).
+Baloo 2 (baloo-2-latin-wght-normal.woff2) — Copyright 2019 The Baloo 2 Project Authors
+(https://github.com/EkType/Baloo2).
+
+Both fonts are licensed under the SIL Open Font License, Version 1.1
+(https://openfontlicense.org). Files taken from Fontsource (@fontsource-variable, v5.3.0).
