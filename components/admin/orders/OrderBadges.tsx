@@ -1,12 +1,17 @@
 import { ORDER_STATUS, PAYMENT_STATUS, type OrderStatus, type PaymentStatus } from '@/lib/orders/shared'
 
+/** Only the store's own palette: lilac, pink, mint and rose. */
 const TONES: Record<string, string> = {
   muted: 'border-[var(--border-input)] bg-[var(--bg-muted)] text-[var(--text-muted)]',
-  warning: 'border-[rgba(245,158,11,0.35)] bg-[rgba(245,158,11,0.1)] text-amber-500',
-  info: 'border-[rgba(96,165,250,0.35)] bg-[rgba(96,165,250,0.1)] text-blue-500',
-  accent: 'border-[rgba(169,137,224,0.4)] bg-[rgba(169,137,224,0.12)] text-[var(--accent-deep)]',
-  success: 'border-[rgba(52,211,153,0.35)] bg-[rgba(52,211,153,0.1)] text-emerald-500',
-  danger: 'border-[rgba(248,113,113,0.35)] bg-[rgba(248,113,113,0.1)] text-red-500',
+  // Needs attention → brand pink
+  warning: 'border-[rgba(232,160,200,0.55)] bg-[rgba(232,160,200,0.16)] text-[#A8487E]',
+  // In progress → brand lilac
+  info: 'border-[rgba(169,137,224,0.45)] bg-[rgba(169,137,224,0.14)] text-[var(--accent-deep)]',
+  accent: 'border-[rgba(169,137,224,0.45)] bg-[var(--bg-muted)] text-[var(--accent-deep)]',
+  // Done → brand mint
+  success: 'border-[rgba(143,217,182,0.7)] bg-[rgba(143,217,182,0.2)] text-[#2E7D5B]',
+  // Problem → brand rose
+  danger: 'border-[rgba(232,121,138,0.5)] bg-[rgba(232,121,138,0.12)] text-[#B83F55]',
 }
 
 function Badge({ label, tone }: { label: string; tone: string }) {

@@ -10,9 +10,12 @@ import {
   normalizeDocument,
   orderCode,
   validateDocument,
+  WOMPI_METHOD_NAME,
   type CreateOrderRequest,
   type CreateOrderResponse,
 } from '@/lib/orders/shared'
+import { checkoutUrl, newPaymentReference, wompiConfig } from '@/lib/payments/wompi'
+import { siteOrigin } from '@/lib/payments/origin'
 import { CONFIG_MAYORISTA_MINIMO, MAYOREO_MIN_COMPRA, formatPrecio, parseMayoristaConfigMonto } from '@/lib/catalog'
 import { parseCopValue } from '@/lib/currency'
 import {
@@ -146,19 +149,27 @@ export async function POST(request: Request) {
     }
 
     // ── Payment method + surcharge ──────────────────────────────────────
-    const metodo = findMetodoPagoByNombre((metodos ?? []) as MetodoPago[], text(body.paymentMethod, 80))
-    const transferOn = config.transferencia_activo === 'true'
-    if (!metodo || !metodoPagoVisibleEnCatalogo(metodo, catalog) || (esMetodoTransferencia(metodo.nombre) && !transferOn)) {
-      return fail(400, 'invalid_payment', 'Elige un método de pago disponible.')
+    const requestedMethod = text(body.paymentMethod, 80)
+    const isWompi = requestedMethod === WOMPI_METHOD_NAME
+    const wompi = isWompi ? wompiConfig() : null
+    let paymentMethodName = WOMPI_METHOD_NAME
+    let paymentKind: 'wompi' | 'transfer' | 'other' = 'wompi'
+    let surcharge = 0
+    let surchargeLabel: string | null = null
+    if (isWompi) {
+      if (!wompi) return fail(400, 'invalid_payment', 'El pago en línea no está disponible ahora. Elige otro método.')
+    } else {
+      const metodo = findMetodoPagoByNombre((metodos ?? []) as MetodoPago[], requestedMethod)
+      const transferOn = config.transferencia_activo === 'true'
+      if (!metodo || !metodoPagoVisibleEnCatalogo(metodo, catalog) || (esMetodoTransferencia(metodo.nombre) && !transferOn)) {
+        return fail(400, 'invalid_payment', 'Elige un método de pago disponible.')
+      }
+      paymentMethodName = metodo.nombre
+      paymentKind = esMetodoTransferencia(metodo.nombre) ? 'transfer' : 'other'
+      const pct = recargoPorcentajeCatalogo(metodo, catalog)
+      surcharge = calcularRecargoPago(subtotal, pct)
+      surchargeLabel = surcharge > 0 ? `Recargo ${metodo.nombre} (${formatPorcentajeRecargo(pct)}%)` : null
     }
-    const paymentKind = esMetodoTransferencia(metodo.nombre)
-      ? 'transfer'
-      : /wompi/i.test(metodo.nombre)
-        ? 'wompi'
-        : 'other'
-    const pct = recargoPorcentajeCatalogo(metodo, catalog)
-    const surcharge = calcularRecargoPago(subtotal, pct)
-    const surchargeLabel = surcharge > 0 ? `Recargo ${metodo.nombre} (${formatPorcentajeRecargo(pct)}%)` : null
 
     const receiptPath = typeof body.receiptPath === 'string' && COMPROBANTE_PATH_RE.test(body.receiptPath)
       ? body.receiptPath
@@ -203,10 +214,20 @@ export async function POST(request: Request) {
       }
     }
 
+    // Online payment needs a complete, fixed total.
+    if (isWompi && (shippingCost == null || lines.some(l => l.unitPrice == null))) {
+      return fail(
+        400,
+        'total_not_fixed',
+        'Tu pedido tiene valores por confirmar (precio o envío). Para este pedido elige otro método de pago y te confirmamos por WhatsApp.',
+      )
+    }
+
     const { data, error } = await secret.rpc('create_order', {
       p_order: {
         catalog,
-        payment_method: metodo.nombre,
+        payment_method: paymentMethodName,
+        payment_reference: isWompi ? newPaymentReference() : null,
         payment_kind: paymentKind,
         receipt_path: paymentKind === 'transfer' ? receiptPath : null,
         customer_name: name,
@@ -261,6 +282,25 @@ export async function POST(request: Request) {
       total: number
       has_unpriced_items: boolean
     }
+
+    // Online payment: reference with the order number (easy to find in Wompi's panel) + signed checkout.
+    let wompiCheckoutUrl: string | undefined
+    if (isWompi && wompi) {
+      const reference = newPaymentReference(created.order_number)
+      const { error: refError } = await secret.rpc('set_payment_reference', {
+        p_order_id: created.id,
+        p_reference: reference,
+      })
+      if (refError) {
+        console.error('[orders] set_payment_reference:', refError.message)
+        return fail(500, 'db_error', 'No pudimos preparar el pago. Intenta de nuevo.')
+      }
+      wompiCheckoutUrl = checkoutUrl(wompi, {
+        reference,
+        amountInCents: Number(created.total) * 100,
+        redirectUrl: `${siteOrigin(request)}/pago/resultado`,
+      })
+    }
     return NextResponse.json<CreateOrderResponse>(
       {
         ok: true,
@@ -276,6 +316,7 @@ export async function POST(request: Request) {
           total: Number(created.total),
           hasUnpricedItems: created.has_unpriced_items,
           lines: lines.map(l => ({ unitPrice: l.unitPrice, lineTotal: l.lineTotal })),
+          checkoutUrl: wompiCheckoutUrl,
         },
       },
       { headers: { 'Cache-Control': 'no-store' } },

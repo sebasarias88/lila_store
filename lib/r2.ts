@@ -1,5 +1,6 @@
 import {
   DeleteObjectsCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3'
@@ -120,4 +121,23 @@ export async function createVideoUploadUrl(params: {
     }),
     { expiresIn: 600, signableHeaders: new Set(['content-type', 'cache-control']) },
   )
+}
+
+export type R2Object = { key: string; size: number; lastModified: number }
+
+/** Every object in the bucket (1 request per 1000 files). */
+export async function listAllObjects(): Promise<R2Object[]> {
+  const out: R2Object[] = []
+  let token: string | undefined
+  for (let page = 0; page < 200; page++) {
+    const res = await getR2Client().send(
+      new ListObjectsV2Command({ Bucket: getR2Bucket(), ContinuationToken: token, MaxKeys: 1000 }),
+    )
+    for (const o of res.Contents ?? []) {
+      if (o.Key) out.push({ key: o.Key, size: o.Size ?? 0, lastModified: o.LastModified?.getTime() ?? 0 })
+    }
+    if (!res.IsTruncated || !res.NextContinuationToken) break
+    token = res.NextContinuationToken
+  }
+  return out
 }

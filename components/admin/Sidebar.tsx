@@ -3,22 +3,26 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Heart, LogOut } from 'lucide-react'
+import { useState } from 'react'
+import { Heart, Loader2, LogOut } from 'lucide-react'
 import { ADMIN_NAV_LINKS } from '@/lib/admin-nav'
 
 export default function AdminSidebar() {
   const pathname = usePathname()
   const router = useRouter()
+  const [loggingOut, setLoggingOut] = useState(false)
 
   const handleLogout = async () => {
+    if (loggingOut) return
+    setLoggingOut(true)
     await supabase.auth.signOut()
     router.push('/admin/login')
     router.refresh()
   }
 
   return (
-    <aside className="admin-sidebar fixed left-0 top-0 z-20 hidden h-screen w-64 flex-col border-r border-[var(--border)] bg-[var(--bg-surface)] md:flex">
-      <div className="border-b border-[var(--border)] px-5 py-6">
+    <aside className="admin-sidebar fixed left-0 top-0 z-20 hidden h-[100dvh] w-64 flex-col border-r border-[var(--border)] bg-[var(--bg-surface)] md:flex">
+      <div className="shrink-0 border-b border-[var(--border)] px-5 py-6 [@media(max-height:760px)]:py-4">
         <div className="flex items-center gap-3">
           <span className="admin-blob-badge admin-blob-badge--sm">
             <Heart size={14} fill="currentColor" />
@@ -34,7 +38,7 @@ export default function AdminSidebar() {
         </div>
       </div>
 
-      <nav className="flex flex-1 flex-col px-3 py-5">
+      <nav className="admin-sidebar-nav min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-5 [@media(max-height:760px)]:py-3">
         <div className="space-y-1">
           {ADMIN_NAV_LINKS.map(({ href, label, icon: Icon }) => {
             const active = pathname.startsWith(href)
@@ -42,7 +46,7 @@ export default function AdminSidebar() {
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-[14px] font-semibold transition-all duration-200 ${
+                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-[14px] font-semibold transition-all duration-200 [@media(max-height:760px)]:py-2 ${
                   active
                     ? 'bg-[var(--bg-muted)] text-[var(--accent-deep)] shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--accent-primary)_35%,var(--border))]'
                     : 'text-[var(--text-secondary)] hover:bg-[var(--bg-muted)] hover:text-[var(--text-primary)]'
@@ -64,13 +68,16 @@ export default function AdminSidebar() {
         </div>
       </nav>
 
-      <div className="border-t border-[var(--border)] px-3 py-5">
+      <div className="shrink-0 border-t border-[var(--border)] px-3 py-5 [@media(max-height:760px)]:py-3">
         <button
+          type="button"
           onClick={handleLogout}
-          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-[14px] font-semibold text-[var(--text-secondary)] transition-all duration-200 hover:bg-[color-mix(in_srgb,var(--danger)_10%,transparent)] hover:text-[var(--danger)]"
+          disabled={loggingOut}
+          aria-busy={loggingOut || undefined}
+          className="flex w-full items-center disabled:opacity-60 gap-3 rounded-xl px-4 py-3 text-[14px] font-semibold text-[var(--text-secondary)] transition-all duration-200 hover:bg-[color-mix(in_srgb,var(--danger)_10%,transparent)] hover:text-[var(--danger)]"
         >
-          <LogOut size={15} strokeWidth={2} />
-          Cerrar sesión
+          {loggingOut ? <Loader2 size={15} className="animate-spin" aria-hidden /> : <LogOut size={15} strokeWidth={2} />}
+          {loggingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}
         </button>
       </div>
     </aside>

@@ -78,6 +78,9 @@ export const PAYMENT_STATUS: Record<PaymentStatus, { label: string; tone: 'muted
 /** Order flow shown in the admin, in order. */
 export const ORDER_FLOW: OrderStatus[] = ['pending', 'paid', 'preparing', 'shipped', 'delivered']
 
+/** Name of the built-in online payment option (Wompi), shown in the checkout. */
+export const WOMPI_METHOD_NAME = 'Pago en línea (Wompi)'
+
 export function orderCode(orderNumber: number | string): string {
   return `LILA-${orderNumber}`
 }
@@ -136,6 +139,8 @@ export type CreatedOrder = {
   hasUnpricedItems: boolean
   /** Server price per cart line, same order as the request items. */
   lines: { unitPrice: number | null; lineTotal: number | null }[]
+  /** Only for online payment: Wompi's signed checkout URL. */
+  checkoutUrl?: string
 }
 
 export type CreateOrderResponse =

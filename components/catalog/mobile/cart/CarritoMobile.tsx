@@ -14,6 +14,7 @@ import {
   Sparkles,
   Store,
   Paperclip,
+  Lock,
 } from 'lucide-react'
 import { ItemCarrito, DatosCliente } from '@/types'
 import { type CatalogType } from '@/lib/catalog'
@@ -108,6 +109,8 @@ type CarritoMobileProps = {
   handleConfirmarPedidoEnviado: () => void
   whatsappHref?: string | null
   orderCode?: string | null
+  /** Online payment chosen: the main button goes to Wompi instead of WhatsApp. */
+  esPagoEnLinea?: boolean
   inputClass: (campo: keyof DatosCliente) => string
 }
 
@@ -182,6 +185,7 @@ export default function CarritoMobile({
   handleConfirmarPedidoEnviado,
   whatsappHref = null,
   orderCode = null,
+  esPagoEnLinea = false,
   inputClass,
 }: CarritoMobileProps) {
   const esRecogida = datos.tipoEntrega === 'recogida'
@@ -748,7 +752,9 @@ export default function CarritoMobile({
             <p className="text-center text-[11px] leading-relaxed text-[var(--text-subtle)]">
               {catalogType === 'mayoreo' && !cumpleMinimo
                 ? mensajeMinimoMayoreo
-                : catalogType === 'mayoreo'
+                : esPagoEnLinea
+                  ? 'Te llevamos a la página segura de Wompi para pagar. Al terminar vuelves aquí.'
+                  : catalogType === 'mayoreo'
                   ? 'Al confirmar se abrirá WhatsApp con tu pedido listo.'
                   : PAGOS_COPY.resumenHint}
             </p>
@@ -759,7 +765,9 @@ export default function CarritoMobile({
               totalLabel="Total a pagar"
               totalValue={formatPrecio(totalFinal)}
               primaryLabel={
-                catalogType === 'mayoreo' ? 'Enviar por WhatsApp' : 'Confirmar pedido ✨'
+                esPagoEnLinea
+                  ? `Pagar ${formatPrecio(totalFinal)} en línea`
+                  : catalogType === 'mayoreo' ? 'Enviar por WhatsApp' : 'Confirmar pedido ✨'
               }
               onPrimary={handleEnviarWhatsApp}
               primaryDisabled={
@@ -768,12 +776,14 @@ export default function CarritoMobile({
               primaryLoading={enviando}
               primaryIcon={
                 !enviando
-                  ? catalogType === 'mayoreo'
+                  ? esPagoEnLinea
+                    ? <Lock size={18} />
+                    : catalogType === 'mayoreo'
                     ? <WhatsAppIcon size={18} />
                     : <Sparkles size={18} />
                   : undefined
               }
-              variant={catalogType === 'mayoreo' ? 'whatsapp' : 'gold'}
+              variant={catalogType === 'mayoreo' && !esPagoEnLinea ? 'whatsapp' : 'gold'}
               layout="stack"
               secondaryLabel="Volver a datos"
               onSecondary={() => setStep('datos')}

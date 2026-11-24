@@ -56,7 +56,9 @@ import MetodoPagoPicker from '@/components/catalog/cart/MetodoPagoPicker'
 import PoliciesConsent from '@/components/legal/PoliciesConsent'
 import { DocumentFields, InvoiceFields } from '@/components/catalog/cart/CheckoutIdentityFields'
 import { submitOrder } from '@/lib/orders/client'
-import { EMAIL_RE, documentShort, validateDocument, type CreatedOrder } from '@/lib/orders/shared'
+import { EMAIL_RE, WOMPI_METHOD_NAME, documentShort, validateDocument, type CreatedOrder } from '@/lib/orders/shared'
+import { useWompiStatus } from '@/lib/payments/useWompiStatus'
+import { savePendingPayment } from '@/lib/payments/pendingOrder'
 import CitySelect from '@/components/catalog/cart/CitySelect'
 import ShippingOptions from '@/components/catalog/cart/ShippingOptions'
 import { useShippingCities, useShippingQuote } from '@/lib/useShipping'
@@ -82,6 +84,7 @@ import {
   Sparkles,
   Heart,
   Store,
+  Lock,
 } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -416,16 +419,28 @@ export default function CarritoPage() {
     [config],
   )
 
-  const metodosPago = useMemo(
-    () =>
-      filtrarMetodosPagoCatalogo(
-        metodosPagoDb.filter(
-          m => transferencia.activo || !esMetodoTransferencia(m.nombre),
-        ),
-        catalogType,
-      ).map(m => metodoPagoToOpcion(m, catalogType)),
-    [metodosPagoDb, catalogType, transferencia.activo],
-  )
+  const wompi = useWompiStatus()
+  const metodosPago = useMemo(() => {
+    const base = filtrarMetodosPagoCatalogo(
+      metodosPagoDb.filter(
+        m => transferencia.activo || !esMetodoTransferencia(m.nombre),
+      ),
+      catalogType,
+    ).map(m => metodoPagoToOpcion(m, catalogType))
+    // Online payment (Wompi) only appears where its keys are configured.
+    return wompi.enabled
+      ? [
+          {
+            id: 'wompi',
+            label: WOMPI_METHOD_NAME,
+            hint: wompi.sandbox ? 'Modo de pruebas · tarjeta, PSE, Nequi' : 'Tarjeta, PSE, Nequi o Bancolombia',
+            porcentaje: 0,
+          },
+          ...base,
+        ]
+      : base
+  }, [metodosPagoDb, catalogType, transferencia.activo, wompi.enabled, wompi.sandbox])
+  const esPagoEnLinea = datos.metodoPago === WOMPI_METHOD_NAME
   const esTransferencia = esMetodoTransferencia(datos.metodoPago)
   const esArmenia = datos.ciudadCodigo
     ? datos.ciudadCodigo === ARMENIA_DANE
@@ -590,7 +605,60 @@ export default function CarritoPage() {
     scrollTop()
   }
 
+  /** Online payment: save the order, then go to Wompi's secure page (same tab). */
+  const handlePagarEnLinea = async () => {
+    if (catalogType === 'mayoreo' && !cumpleMinimo) {
+      toast.error(mensajeMinimoMayoreo)
+      return
+    }
+    if (items.length === 0) {
+      toast.error('Tu carrito está vacío')
+      return
+    }
+    setEnviando(true)
+    try {
+      const idsVariaciones =
+        idsConVariaciones ?? (await getProductIdsWithVariaciones(items.map(i => i.producto.id)))
+      const sinVars = findItemsSinVariaciones(items, idsVariaciones)
+      if (sinVars.length > 0) {
+        toast.error(`Elige las opciones de “${sinVars[0].producto.nombre.slice(0, 36)}” antes de pagar`)
+        setEnviando(false)
+        return
+      }
+      const created = await submitOrder({
+        items: useCarrito.getState().items,
+        datos,
+        catalog: catalogType,
+        shippingOptionId: usaCotizacion && envioOpcion ? envioOpcion.id : '',
+        receiptPath: null,
+      })
+      if (!created.ok || !created.order.checkoutUrl) {
+        toast.error(created.ok ? 'No pudimos preparar el pago. Intenta de nuevo.' : created.message, { duration: 6000 })
+        setEnviando(false)
+        return
+      }
+      savePendingPayment({
+        order: created.order,
+        items: useCarrito.getState().items,
+        datos,
+        catalog: catalogType,
+        tiempoEntrega,
+      })
+      window.location.assign(created.order.checkoutUrl)
+      // Keep the spinner: the browser is leaving for Wompi.
+      return
+    } catch (err) {
+      console.error('[carrito] pagar en línea:', err)
+      toast.error('No pudimos preparar el pago. Intenta de nuevo.')
+    }
+    setEnviando(false)
+  }
+
   const handleEnviarWhatsApp = async () => {
+    if (esPagoEnLinea) {
+      await handlePagarEnLinea()
+      return
+    }
     if (catalogType === 'mayoreo' && !cumpleMinimo) {
       toast.error(mensajeMinimoMayoreo)
       return
@@ -798,6 +866,7 @@ export default function CarritoPage() {
           handleConfirmarPedidoEnviado={handleConfirmarPedidoEnviado}
           whatsappHref={whatsappPedidoHref}
           orderCode={pedidoCreado?.code ?? null}
+          esPagoEnLinea={esPagoEnLinea}
           inputClass={inputClass}
         />
       </div>
@@ -1560,7 +1629,7 @@ export default function CarritoPage() {
                     onClick={handleEnviarWhatsApp}
                     disabled={enviando || (catalogType === 'mayoreo' && !cumpleMinimo)}
                     className={`flex flex-1 items-center justify-center gap-2 rounded-full py-4 text-[14px] font-bold transition-colors disabled:opacity-60 ${
-                      catalogType === 'mayoreo'
+                      catalogType === 'mayoreo' && !esPagoEnLinea
                         ? 'bg-[#25D366] text-white hover:bg-[#22c55e]'
                         : 'catalog-gold-cta'
                     }`}
@@ -1568,7 +1637,12 @@ export default function CarritoPage() {
                     {enviando ? (
                       <>
                         <Loader2 size={16} className="animate-spin" />
-                        Abriendo WhatsApp...
+                        {esPagoEnLinea ? 'Preparando tu pago…' : 'Abriendo WhatsApp...'}
+                      </>
+                    ) : esPagoEnLinea ? (
+                      <>
+                        <Lock size={16} />
+                        Pagar {formatPrecio(totalFinal)} en línea
                       </>
                     ) : catalogType === 'mayoreo' ? (
                       <>
@@ -1668,7 +1742,7 @@ export default function CarritoPage() {
                     onClick={handleEnviarWhatsApp}
                     disabled={enviando || (catalogType === 'mayoreo' && !cumpleMinimo)}
                     className={`flex w-full items-center justify-center gap-2 rounded-full py-4 text-[14px] font-bold transition-colors disabled:opacity-60 ${
-                      catalogType === 'mayoreo'
+                      catalogType === 'mayoreo' && !esPagoEnLinea
                         ? 'bg-[#25D366] text-white hover:bg-[#22c55e]'
                         : 'catalog-gold-cta'
                     }`}
@@ -1676,7 +1750,12 @@ export default function CarritoPage() {
                     {enviando ? (
                       <>
                         <Loader2 size={16} className="animate-spin" />
-                        Abriendo WhatsApp...
+                        {esPagoEnLinea ? 'Preparando tu pago…' : 'Abriendo WhatsApp...'}
+                      </>
+                    ) : esPagoEnLinea ? (
+                      <>
+                        <Lock size={16} />
+                        Pagar {formatPrecio(totalFinal)} en línea
                       </>
                     ) : catalogType === 'mayoreo' ? (
                       <>
