@@ -732,9 +732,10 @@ export default function ProductoDetalle({
                   onClick={handleAgregar}
                   disabled={stockRestante <= 0}
                   whileTap={stockRestante > 0 ? { scale: 0.98 } : undefined}
-                  className={`flex w-full items-center justify-center gap-3 rounded-full py-4 text-[14px] font-bold transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50 ${
+                  className={`flex w-full items-center justify-center gap-3 rounded-full py-4 text-[14px] font-bold outline-none transition-all duration-300 focus-visible:ring-2 focus-visible:ring-[var(--accent-primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)] disabled:cursor-not-allowed disabled:opacity-50 ${
                     agregado
-                      ? 'bg-emerald-500 text-white'
+                      ? // "Added" state: brand deep lilac (no off-palette green)
+                        'bg-[var(--accent-deep)] text-white shadow-[0_10px_28px_-10px_rgba(110,79,168,0.55)]'
                       : 'catalog-gold-cta'
                   }`}
                 >
